@@ -1,0 +1,14 @@
+template <^wild Type>
+Type Reinterpret(^wild value){
+	// The smallest size of the from and to location
+	size_t size = sizeof(this);
+	if (sizeof(other) < size){
+		size = sizeof(other);
+	}
+
+	To out;
+	Memory.Duplicate(@value, @out, size);
+
+	return out;
+}
+expose Reinterpret;
