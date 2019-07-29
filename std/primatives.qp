@@ -50,7 +50,7 @@ class i32  primative int16    extends i16    {}
 class i64  primative int32    extends i32    {}
 expose i8; expose i16; expose i32; expose i64;
 
-class float  primative float  extends number {}
+class float  primative float  extends int {}
 class double primative double extends float  {}
 expose float; expose double;
 
