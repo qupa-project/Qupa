@@ -1,0 +1,153 @@
+import "memory.qp" as Memory;
+import "vector.qp;
+
+/**
+ * A static length array defined at compile time
+ */
+template <^wild Type, uint COUNT>
+class Array {
+	private:
+		Container<Type, COUNT> data;
+	public:
+		void __constructor__(){}
+		void __destructor__(){
+			int size = this.size();
+			for (int i=0; i<size; i++){
+				delete this[i];
+			}
+		}
+
+		/**
+		 * Get the address of a specified element
+		 * @param Specify which element by index number (starts from zero)
+		 */
+		@Type __get__(size_t index){
+			if (index >= COUNT){
+				throw "Index Error: Cannot get item "+index+" of "+COUNT;
+			}
+
+			@Type ptr = @this + (index * sizeof(Type));
+			return ptr;
+		}
+
+
+
+		/**
+		 * @return The number of elements this array can hold
+		 */
+		size_t capacity(){
+			return COUNT;
+		}
+		/**
+		 * @return The length of the array
+		 */
+		size_t size(){
+			return COUNT;
+		}
+
+
+
+		/**
+		 * Get a sub section of this Container
+		 * @param Which index to start the slice at
+		 * @param Which index marks the end of the slice. (The slice will not include the element at this index)
+		 * @returns The subsection of the container in vector form
+		 */
+		Vector<Type> slice(size_t start = 0, size_t end = 0){
+			if (end == 0){
+				end = COUNT-1;
+			}else if (end >= COUNT){
+				end = COUNT-1;
+			}
+
+			// Get the number of bytes and elements that will be moved
+			size_t length = end - start;
+			size_t bytes = length * sizeof(Type);
+
+			Vector<Type> out;
+			out.reserve(length);
+
+			Memory::Duplicate(@this[0], @out[0], bytes);
+
+			return out;
+		};
+
+
+
+		/**
+		 * Set all elements in the container to the inputted value.
+		 * Note this will not change elements that are reserved, but not within the active range.
+		 * @param What value will all elements be set too?
+		 */
+		void fill(Type value){
+			size_t length = this.size();
+			for (size_t i=0; i<length; i++){
+				this[i] = value;
+			}
+		}
+
+		Vector<Type> __add__(^Container<Type> other){
+			size_t len = other.size();
+			Vector<Type> res(this);
+
+			// Attach the new elements to the existing item
+			res.concat(other);
+
+			return res;
+		}
+
+
+
+		/**
+		 * Find the index of a specific value
+		 *   Can start the search at a specific offset
+		 * @param A target value to find
+		 * @param An offset to start looking from
+		 * @return a signed integer where -1 means the value was not found
+		 */
+		int64 indexOf(Type target, size_t startAt=0){
+			size_t len = this.size();
+
+			// Search through the container till the target value is found
+			while (startAt < len){
+				if (this[startAt] == target){
+					return startAt;
+				}
+
+				startAt++;
+			}
+
+			return -1;
+		}
+
+		/**
+		 * Find the index of a specific segment is found
+		 *   Can start the search at a specific offset
+		 * @param A target value to find
+		 * @param An offset to start looking from
+		 * @return a signed integer where -1 means the value was not found
+		 */
+		int64 indexOf(^Container<Type> target, size_t startAt=0){
+			size_t seg = target.size();
+			size_t len = this.size() - seg;
+
+			// Search through the container till the target segment is found
+			while (startAt < len){
+				bool match = true;
+				for (size_t offset=0; offset<seg && match=true; offset++){
+					if (this[startAt + offset] != target[offset]){
+						match = false;
+					}
+				}
+
+				if (match){
+					return startAt;
+				}
+
+				startAt++;
+			}
+
+			return -1;
+		}
+}
+expose Array;
