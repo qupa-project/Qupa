@@ -1,5 +1,6 @@
 import "./primatives.qp";
 import "./cast.qp" as Cast;
+import "./array";
 
 
 expose *;
