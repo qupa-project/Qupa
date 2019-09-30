@@ -20,17 +20,16 @@ class MappedString{
 		this.filename = filename;
 		this.data = [];
 
-		let column = 1;
-		let line = 1;
+		let column = 0;
+		let line   = 1;
 		for (let char of string){
-			this.data.push(new CharData(char, column, line, filename))
+			this.data.push(new CharData(char, ++column, line, filename));
 
 			// Move mapping position one line
 			if (char == "\n"){
 				column = 0;
 				line++;
 			}
-			column++;
 		}
 	}
 
@@ -81,11 +80,7 @@ class MappedString{
 	 * @param {Number} end
 	 * @returns {MappedString}
 	 */
-	slice(start=0, end=NaN){
-		if (isNaN(end)){
-			end = this.length;
-		}
-
+	slice(start, end){
 		let result = new MappedString("", this.filename);
 		result.data = this.data.slice(start, end);
 
