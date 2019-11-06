@@ -1,13 +1,17 @@
+const CodeReference = require('./codeReference.js');
+
 class CharData{
 	constructor (char, column, line, file){
 		this.char   = char;
-		this.column = column;
-		this.line   = line;
-		this.file   = file;
+		this.reference = new CodeReference(
+			column,
+			line,
+			file
+		);
 	}
 
 	toString(){
-		return `(${this.column}:${this.line})`;
+		return this.reference.toString();
 	}
 }
 
@@ -27,7 +31,7 @@ class MappedString{
 
 			// Move mapping position one line
 			if (char == "\n"){
-				column = 0;
+				column = 1;
 				line++;
 			}
 		}
@@ -46,8 +50,17 @@ class MappedString{
 	 * @param {Number} index
 	 * @returns {String}
 	 */
-	get(index){
+	getChar(index){
 		return this.data[index].char;
+	}
+
+	/**
+	 * Return a specific character at a given index
+	 * @param {Number} index
+	 * @returns {CharData}
+	 */
+	get(index){
+		return this.data[index];
 	}
 
 	/**
@@ -56,7 +69,7 @@ class MappedString{
 	 * @returns {String}
 	 */
 	getAddress(index){
-		return `"${this.filename}" `+this.data[index].toString();
+		return this.data[index].toString();
 	}
 
 	/**
