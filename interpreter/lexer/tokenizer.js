@@ -28,7 +28,8 @@ function Ingest(string){
 	let out = [];
 	let lastI = 0;
 
-	for (let i=0; i<string.length; i++){
+	let i=0;
+	for (; i<string.length; i++){
 		let matched   = false;
 		let usedChars = 1;
 		let result = null;
@@ -37,8 +38,6 @@ function Ingest(string){
 		if (!matched) {
 			inner: for (let char of SYNTAX.whitespace) {
 				if (string.getChar(i) == char) {
-					console.log('Matched white', string.getAddress(i));
-
 					usedChars = char.length;
 					matched = true;
 					break inner;
@@ -71,6 +70,7 @@ function Ingest(string){
 
 						if (element.inner) {
 							inner = Ingest(inner);
+							// inner = "PROCESS"+inner;
 						} else {
 							inner = inner.toString();
 						}
@@ -93,7 +93,6 @@ function Ingest(string){
 		if (!matched) {
 			inner: for (let name in SYNTAX.tokens) {
 				if (string.slice(i, i+SYNTAX.tokens[name].length).toString() == SYNTAX.tokens[name]){
-					console.log('Match', name, string.getAddress(i));
 					result = new Token(name, SYNTAX.tokens[name], string.get(i).reference);
 
 					usedChars = SYNTAX.tokens[name].length;
@@ -109,7 +108,7 @@ function Ingest(string){
 			let cache = string.slice(lastI, i).toString();
 			if (cache.length > 0){
 				out.push(new Token(
-					'namespace',
+					'token',
 					cache,
 					string.get(lastI).reference
 				));
@@ -122,6 +121,16 @@ function Ingest(string){
 			i += usedChars-1;
 			lastI = i+1;
 		}
+	}
+
+	// Clear the remaining cache
+	let cache = string.slice(lastI, i).toString();
+	if (cache.length > 0){
+		out.push(new Token(
+			'token',
+			cache,
+			string.get(lastI).reference
+		));
 	}
 
 	return out;

@@ -10,9 +10,12 @@ file = new MappedString(file, './example.qp');
 // console.log(file);
 // let res = Patternize(file);
 
-let res = Tokenizer(file);
+let tokens = Tokenizer(file);
 
+let patterns = Patternize(tokens);
 
-console.log(res);
-console.log(JSON.stringify(res, null, 2));
+console.log(patterns);
+// console.log(JSON.stringify(res, null, 2));
+fs.writeFileSync('out-token.json', JSON.stringify(tokens, null, 2));
+fs.writeFileSync('out-patterns.json', JSON.stringify(patterns, null, 2));
 
