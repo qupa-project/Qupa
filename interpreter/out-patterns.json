@@ -144,7 +144,7 @@
     "name": "bracket.curly",
     "data": [
       {
-        "name": "token",
+        "name": "keyword.return",
         "data": "return",
         "reference": {
           "column": 3,

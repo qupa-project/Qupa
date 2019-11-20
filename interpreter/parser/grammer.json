@@ -1,0 +1,75 @@
+{
+	"scope" : [
+		{
+			"name" : "global",
+			"patterns" : [
+				"import.direct",
+				"import.as"
+			]
+		},
+
+		{
+			"name" : "execution",
+			"patterns" : [
+				"return",
+				"if",
+				"elif",
+				"else",
+				"declare"
+			]
+		},
+
+		{
+			"name" : "expression",
+			"patterns" : []
+		}
+	],
+
+	"pattern": [
+		{
+			"name"  : "import.direct",
+			"match" : ["keyword.import", "string", "token.delimiter.assignment"],
+			"sub"   : [null, null, null]
+		}, {
+			"name"  : "import.as",
+			"match" : ["keyword.import", "string", "keyword.as", "namespace", "token.delimiter.assignment"],
+			"sub"   : [null, null, null, null, null]
+		}, {
+			"name"  : "expose",
+			"match" : ["keyword.expose", "namespace", "token.delimiter.assignment"],
+			"sub"   : [null, null, null]
+		},
+
+		{
+			"name"  : "function",
+			"match" : ["namespace", "namespace", "braket.round", "braket.curly"],
+			"sub"   : [null, null, "execution", null]
+		},
+
+		{
+			"name"  : "declare",
+			"match" : ["namespace", "namespace", "token.delimiter.assignment"],
+			"sub"   : [null, null, null]
+		},
+
+		{
+			"name"  : "if",
+			"match" : ["keyword.if", "braket.round", "braket.curly"],
+			"sub"   : [null, "expression", "execution"]
+		}, {
+			"name"  : "elif",
+			"match" : ["keyword.if", "braket.round", "braket.curly"],
+			"sub"   : [null, "expression", "execution"]
+		}, {
+			"name"  : "else",
+			"match" : ["keyword.else", "braket.curly"],
+			"sub"   : [null, "expression", "execution"]
+		},
+
+		{
+			"name"  : "return",
+			"match" : ["keyword.return", "*", "token.delimiter.assignment"],
+			"sub"   : [null, "expression", null]
+		}
+	]
+}

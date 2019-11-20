@@ -1,3 +1,6 @@
+const grammer = require('./grammer.js');
+
+
 class Pattern {
 	constructor (name, tokens, reference) {
 		this.name = name;

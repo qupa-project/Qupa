@@ -15,7 +15,5 @@ let tokens = Tokenizer(file);
 let patterns = Patternize(tokens);
 
 console.log(patterns);
-// console.log(JSON.stringify(res, null, 2));
-fs.writeFileSync('out-token.json', JSON.stringify(tokens, null, 2));
 fs.writeFileSync('out-patterns.json', JSON.stringify(patterns, null, 2));
 
