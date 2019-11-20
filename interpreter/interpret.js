@@ -1,5 +1,5 @@
 const MappedString = require('./lib/mappedString.js');
-const Patternize = require('./lexer/patternize.js');
+const Patternize = require('./parser/patternize.js');
 const Tokenizer = require('./lexer/tokenizer.js');
 const fs = require('fs');
 

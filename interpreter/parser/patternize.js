@@ -22,7 +22,6 @@ function CollapseNameSpaces(tokens) {
 
 		// Select target
 		if (tokens[i].name == "namespace"){
-			console.log(25, tokens[i]);
 			target = tokens[i].data[tokens[i].data.length - 1];
 			continuation = true;
 		} else {
@@ -33,9 +32,6 @@ function CollapseNameSpaces(tokens) {
 			if (tuple[0] == target.name &&
 					tuple[1] == tokens[i+1].name
 			) {
-				console.log('MATCH');
-				console.log(' ', tuple[0], target);
-				console.log(' ', tuple[1], tokens[i+1]);
 				matched = true;
 			}
 		}
@@ -43,7 +39,6 @@ function CollapseNameSpaces(tokens) {
 		// If this is a collapsable element
 		if (matched) {
 			if (continuation) {  // Expand existing name space
-				console.log('append', tokens[i+1].name);
 				tokens[i].data.push( tokens.splice(i+1, 1)[0] );
 			} else {             // Create new namespace
 				tokens[i] = new Pattern(
@@ -74,11 +69,11 @@ function CollapseNameSpaces(tokens) {
 function Process(tokens) {
 	tokens = CollapseNameSpaces(tokens);
 
-	for (let element of tokens) {
-		if (element instanceof Pattern) {
-			console.log(68, element);
-		}
-	}
+	// for (let element of tokens) {
+	// 	if (element instanceof Pattern) {
+	// 		console.log(68, element);
+	// 	}
+	// }
 
 	return tokens;
 }

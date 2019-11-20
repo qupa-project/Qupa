@@ -4,7 +4,7 @@
     "data": [
       {
         "name": "token",
-        "data": "Test",
+        "data": "void",
         "reference": {
           "column": 1,
           "line": 1,
@@ -19,8 +19,18 @@
     }
   },
   {
-    "name": "token.assign",
-    "data": "=",
+    "name": "namespace",
+    "data": [
+      {
+        "name": "token",
+        "data": "main",
+        "reference": {
+          "column": 6,
+          "line": 1,
+          "file": "./example.qp"
+        }
+      }
+    ],
     "reference": {
       "column": 6,
       "line": 1,
@@ -28,19 +38,19 @@
     }
   },
   {
-    "name": "string.double",
-    "data": "Hello World",
+    "name": "bracket.round",
+    "data": [],
     "reference": {
-      "column": 8,
+      "column": 10,
       "line": 1,
       "file": "./example.qp"
     }
   },
   {
-    "name": "token.delimiter.assignment",
-    "data": ";",
+    "name": "bracket.curly",
+    "data": [],
     "reference": {
-      "column": 21,
+      "column": 13,
       "line": 1,
       "file": "./example.qp"
     }
@@ -50,10 +60,10 @@
     "data": [
       {
         "name": "token",
-        "data": "arra",
+        "data": "Array",
         "reference": {
           "column": 2,
-          "line": 2,
+          "line": 5,
           "file": "./example.qp"
         }
       },
@@ -62,33 +72,24 @@
         "data": [
           {
             "name": "token",
-            "data": "0",
+            "data": "int",
             "reference": {
-              "column": 7,
-              "line": 2,
+              "column": 8,
+              "line": 5,
               "file": "./example.qp"
             }
           }
         ],
         "reference": {
-          "column": 6,
-          "line": 2,
+          "column": 7,
+          "line": 5,
           "file": "./example.qp"
         }
       }
     ],
     "reference": {
       "column": 2,
-      "line": 2,
-      "file": "./example.qp"
-    }
-  },
-  {
-    "name": "token.assign",
-    "data": "=",
-    "reference": {
-      "column": 10,
-      "line": 2,
+      "line": 5,
       "file": "./example.qp"
     }
   },
@@ -97,45 +98,82 @@
     "data": [
       {
         "name": "token",
-        "data": "b",
-        "reference": {
-          "column": 12,
-          "line": 2,
-          "file": "./example.qp"
-        }
-      },
-      {
-        "name": "bracket.square",
-        "data": [
-          {
-            "name": "token",
-            "data": "ads",
-            "reference": {
-              "column": 14,
-              "line": 2,
-              "file": "./example.qp"
-            }
-          }
-        ],
+        "data": "process",
         "reference": {
           "column": 13,
-          "line": 2,
+          "line": 5,
           "file": "./example.qp"
         }
       }
     ],
     "reference": {
-      "column": 12,
-      "line": 2,
+      "column": 13,
+      "line": 5,
       "file": "./example.qp"
     }
   },
   {
-    "name": "token.delimiter.assignment",
-    "data": ";",
+    "name": "bracket.round",
+    "data": [
+      {
+        "name": "token",
+        "data": "int",
+        "reference": {
+          "column": 21,
+          "line": 5,
+          "file": "./example.qp"
+        }
+      },
+      {
+        "name": "token",
+        "data": "a",
+        "reference": {
+          "column": 25,
+          "line": 5,
+          "file": "./example.qp"
+        }
+      }
+    ],
     "reference": {
-      "column": 18,
-      "line": 2,
+      "column": 20,
+      "line": 5,
+      "file": "./example.qp"
+    }
+  },
+  {
+    "name": "bracket.curly",
+    "data": [
+      {
+        "name": "token",
+        "data": "return",
+        "reference": {
+          "column": 3,
+          "line": 6,
+          "file": "./example.qp"
+        }
+      },
+      {
+        "name": "bracket.square",
+        "data": [],
+        "reference": {
+          "column": 10,
+          "line": 6,
+          "file": "./example.qp"
+        }
+      },
+      {
+        "name": "token.delimiter.assignment",
+        "data": ";",
+        "reference": {
+          "column": 12,
+          "line": 6,
+          "file": "./example.qp"
+        }
+      }
+    ],
+    "reference": {
+      "column": 28,
+      "line": 5,
       "file": "./example.qp"
     }
   }
