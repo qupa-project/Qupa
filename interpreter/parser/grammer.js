@@ -16,22 +16,24 @@ let patterns = [];
 
 
 function GetScope (name) {
-	for (let i=0; i<patterns.length; i++){
-		if (MatchElementName(scopes[i].name, name)){
-			return patterns[i];
+	for (let i=0; i<scopes.length; i++){
+		if (scopes[i].name == name){
+			return scopes[i];
 		}
 	}
 
 	return null;
 }
-function GetPatternTemplate (name) {
+function GetPatternTemplates (name) {
+	let results = [];
+
 	for (let i=0; i<patterns.length; i++){
 		if (MatchElementName(patterns[i].name, name)){
-			return patterns[i];
+			results.push(patterns[i]);
 		}
 	}
 
-	return null;
+	return results;
 }
 
 
@@ -44,19 +46,21 @@ class Scope {
 	}
 
 	link() {
-		let patternNames = this.patterns;
-		this.patterns = [];
+		if (this.patterns != null) {
+			let patternNames = this.patterns;
+			this.patterns = [];
 
-		for (let name of patternNames) {
-			let pattern = GetPatternTemplate(name);
+			for (let name of patternNames) {
+				let pattern = GetPatternTemplates(name);
 
-			if (pattern === null) {
-				console.error("Error: Grammer config error");
-				console.error(`  Unable to find pattern "${name}" as requested in grammer scope "${this.name}"`);
-				process.exit(1);
+				if (pattern.length == 0) {
+					console.error("Error: Grammer config error");
+					console.error(`  Unable to find pattern "${name}" as requested in grammer scope "${this.name}"`);
+					process.exit(1);
+				}
+
+				this.patterns.push(pattern);
 			}
-
-			this.patterns.push(pattern);
 		}
 
 		this.linked = true;
