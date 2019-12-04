@@ -3,25 +3,24 @@
 		{
 			"name" : "global",
 			"patterns" : [
-				"import.direct",
-				"import.as"
+				"import"
 			]
 		},
 
 		{
 			"name" : "execution",
 			"patterns" : [
-				"return",
 				"if",
 				"elif",
 				"else",
-				"declare"
+				"declare",
+				"return"
 			]
 		},
 
 		{
 			"name" : "expression",
-			"patterns" : []
+			"patterns" : null
 		}
 	],
 
