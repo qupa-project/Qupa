@@ -3,7 +3,10 @@
 		{
 			"name" : "global",
 			"patterns" : [
-				"import"
+				"import",
+				"expose",
+				"function",
+				"declare"
 			]
 		},
 

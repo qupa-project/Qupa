@@ -59,8 +59,19 @@ class Scope {
 					process.exit(1);
 				}
 
-				this.patterns.push(pattern);
+				this.patterns = this.patterns.concat(pattern);
 			}
+
+			// Put the most complex matches first
+			this.patterns = this.patterns.sort((a, b)=>{
+				if (a.tokens.length > b.tokens.length) {
+					return -1;
+				} else if (a.tokens.length < b.tokens.length) {
+					return 1;
+				} else {
+					return 0;
+				}
+			});
 		}
 
 		this.linked = true;

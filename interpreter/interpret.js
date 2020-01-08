@@ -14,6 +14,11 @@ let tokens = Tokenizer(file);
 
 let patterns = Patternize(tokens);
 
-console.log(patterns);
+if (patterns === null) {
+	console.error(" ");
+	console.error("Unable to compile code due to interpretation errors");
+}
+
+// console.log(patterns);
 fs.writeFileSync('out-patterns.json', JSON.stringify(patterns, null, 2));
 

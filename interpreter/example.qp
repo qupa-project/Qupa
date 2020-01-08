@@ -1,7 +1,7 @@
-void main() {
+import "cat";
 
-}
+expose thing;
 
-Array[int] process(int a) {
-	return [];
+if (true) {
+	
 }

@@ -1,6 +1,11 @@
 const grammer = require('./grammer.js');
 
 
+function MatchElementName (value, target){
+	return value.slice(0, target.length) == target;
+}
+
+
 class Pattern {
 	constructor (name, tokens, reference) {
 		this.name = name;
@@ -69,8 +74,42 @@ function CollapseNameSpaces(tokens) {
 }
 
 
-function Process(tokens) {
+function Process(tokens, scope = grammer) {
 	tokens = CollapseNameSpaces(tokens);
+
+	function GetMatch (index) {
+		outer: for (let opt of scope.patterns) {
+			console.log(82, opt);
+			let consumed = 0;
+
+			// Check if the current point completely matches the pattern
+			for (let i=0; i<opt.tokens.length; i++) {
+				if (MatchElementName(tokens[index+i].name, opt.tokens[i])) {
+					consumed++;
+				} else {
+					continue outer;
+				}
+			}
+
+			// If so
+			return consumed;
+		}
+
+		return null;
+	}
+
+	console.log(88, grammer);
+
+	for (let i=0; i<tokens.length;) {
+		let match = GetMatch(i);
+		if (match) {
+			i += match;
+		} else {
+			console.error(`Error: Unexpected ${tokens[i].name}`);
+			console.error(`         at ${tokens[i].reference.toString()}`);
+			return null;
+		}
+	}
 
 	// for (let element of tokens) {
 	// 	if (element instanceof Pattern) {
