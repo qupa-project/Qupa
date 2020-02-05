@@ -108,7 +108,7 @@ function Ingest(string){
 			let cache = string.slice(lastI, i).toString();
 			if (cache.length > 0){
 				out.push(new Token(
-					'token',
+					'namespace',
 					cache,
 					string.get(lastI).reference
 				));
@@ -127,7 +127,7 @@ function Ingest(string){
 	let cache = string.slice(lastI, i).toString();
 	if (cache.length > 0){
 		out.push(new Token(
-			'token',
+			'namespace',
 			cache,
 			string.get(lastI).reference
 		));
