@@ -15,7 +15,6 @@ class CharData{
 	}
 }
 
-
 /**
  * Allows for string manipulation while maintaining character column and line location references
  */
@@ -31,7 +30,7 @@ class MappedString{
 
 			// Move mapping position one line
 			if (char == "\n"){
-				column = 1;
+				column = 0;
 				line++;
 			}
 		}
