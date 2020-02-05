@@ -51,19 +51,19 @@ class Scope {
 			this.patterns = [];
 
 			for (let name of patternNames) {
-				let pattern = GetPatternTemplates(name);
+				let patterns = GetPatternTemplates(name);
 
-				if (pattern.length == 0) {
+				if (patterns.length == 0) {
 					console.error("Error: Grammer config error");
 					console.error(`  Unable to find pattern "${name}" as requested in grammer scope "${this.name}"`);
 					process.exit(1);
 				}
 
-				this.patterns = this.patterns.concat(pattern);
+				this.patterns = this.patterns.concat(patterns);
 			}
 
 			// Put the most complex matches first
-			this.patterns = this.patterns.sort((a, b)=>{
+			this.patterns.sort((a, b)=>{
 				if (a.tokens.length > b.tokens.length) {
 					return -1;
 				} else if (a.tokens.length < b.tokens.length) {
