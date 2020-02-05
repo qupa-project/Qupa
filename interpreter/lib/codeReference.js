@@ -6,7 +6,7 @@ class CodeReference {
 	}
 
 	toString() {
-		return `"${this.file}" (${this.column}:${this.line})`;
+		return `"${this.file}" (${this.line}:${this.column})`;
 	}
 }
 
