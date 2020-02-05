@@ -79,7 +79,6 @@ function Process(tokens, scope = grammer) {
 
 	function GetMatch (index) {
 		outer: for (let opt of scope.patterns) {
-			console.log(82, opt);
 			let consumed = 0;
 
 			// Check if the current point completely matches the pattern
@@ -92,18 +91,16 @@ function Process(tokens, scope = grammer) {
 			}
 
 			// If so
-			return consumed;
+			return {consumes: consumed, pattern: opt};
 		}
 
 		return null;
 	}
 
-	console.log(88, grammer);
-
 	for (let i=0; i<tokens.length;) {
 		let match = GetMatch(i);
 		if (match) {
-			i += match;
+			i += match.consumes;
 		} else {
 			console.error(`Error: Unexpected ${tokens[i].name}`);
 			console.error(`         at ${tokens[i].reference.toString()}`);
