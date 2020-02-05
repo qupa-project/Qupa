@@ -44,7 +44,7 @@
 
 		{
 			"name"  : "function",
-			"match" : ["namespace", "namespace", "braket.round", "braket.curly"],
+			"match" : ["namespace", "namespace", "bracket.round", "bracket.curly"],
 			"sub"   : [null, null, "execution", null]
 		},
 
@@ -56,15 +56,15 @@
 
 		{
 			"name"  : "if",
-			"match" : ["keyword.if", "braket.round", "braket.curly"],
+			"match" : ["keyword.if", "bracket.round", "bracket.curly"],
 			"sub"   : [null, "expression", "execution"]
 		}, {
 			"name"  : "elif",
-			"match" : ["keyword.if", "braket.round", "braket.curly"],
+			"match" : ["keyword.if", "bracket.round", "bracket.curly"],
 			"sub"   : [null, "expression", "execution"]
 		}, {
 			"name"  : "else",
-			"match" : ["keyword.else", "braket.curly"],
+			"match" : ["keyword.else", "bracket.curly"],
 			"sub"   : [null, "expression", "execution"]
 		},
 
