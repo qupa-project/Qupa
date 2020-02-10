@@ -10,8 +10,16 @@ file = new MappedString(file, './example.qp');
 // console.log(file);
 // let res = Patternize(file);
 
+console.log('\n\n\n================================');
+console.log('   Tokens');
+console.log('================================');
 let tokens = Tokenizer(file);
+console.log(tokens);
 
+
+console.log('\n\n\n================================');
+console.log('   Patterns');
+console.log('================================');
 let patterns = Patternize(tokens);
 
 if (patterns === null) {
@@ -19,6 +27,6 @@ if (patterns === null) {
 	console.error("Unable to compile code due to interpretation errors");
 }
 
-// console.log(patterns);
-fs.writeFileSync('out-patterns.json', JSON.stringify(patterns, null, 2));
+console.log(patterns);
+// fs.writeFileSync('out-patterns.json', JSON.stringify(patterns, null, 2));
 
