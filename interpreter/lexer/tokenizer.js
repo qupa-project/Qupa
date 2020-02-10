@@ -50,6 +50,7 @@ function Ingest(string){
 			inner: for (let element of SYNTAX.wrapper) {
 				// Start of wrapppers
 				if (string.slice(i, i+element.open.length).toString() == element.open) {
+					let depth = 1;
 
 					// Search for the end of the wrapppers
 					let j = i + element.open.length;
@@ -60,8 +61,24 @@ function Ingest(string){
 							continue;
 						}
 
+						if (
+							element.inner &&
+							string.slice(j, j+element.close.length).toString() == element.open
+						) {
+							depth++;
+							continue;
+						}
+
 						if (string.slice(j, j+element.close.length).toString() == element.close) {
-							break;
+							if (element.inner) {
+								depth--;
+
+								if (depth == 0) {
+									break;
+								}
+							} else {
+								break;
+							}
 						}
 					}
 
@@ -70,7 +87,6 @@ function Ingest(string){
 
 						if (element.inner) {
 							inner = Ingest(inner);
-							// inner = "PROCESS"+inner;
 						} else {
 							inner = inner.toString();
 						}
