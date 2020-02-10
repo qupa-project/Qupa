@@ -22,6 +22,14 @@
 		},
 
 		{
+			"name" : "class",
+			"patterns" : [
+				"declare",
+				"function"
+			]
+		},
+
+		{
 			"name" : "expression",
 			"patterns" : null
 		}
@@ -45,13 +53,19 @@
 		{
 			"name"  : "function",
 			"match" : ["namespace", "namespace", "bracket.round", "bracket.curly"],
-			"sub"   : [null, null, "execution", null]
+			"sub"   : [null, null, null, "execution", null]
 		},
 
 		{
 			"name"  : "declare",
 			"match" : ["namespace", "namespace", "token.delimiter.assignment"],
 			"sub"   : [null, null, null]
+		},
+
+		{
+			"name"  : "class",
+			"match" : ["keyword.class", "namespace", "bracket.curly"],
+			"sub"   : [null, null, "class"]
 		},
 
 		{
