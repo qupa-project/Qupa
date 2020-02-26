@@ -5,28 +5,61 @@ const fs = require('fs');
 
 
 
-let file = fs.readFileSync('./example.qp', 'utf8');
-file = new MappedString(file, './example.qp');
-// console.log(file);
-// let res = Patternize(file);
+function Ingest (file) {
+	file = new MappedString(file, './example.qp');
+	let tokens = Tokenizer(file);
+	let patterns = Patternize(tokens);
 
-console.log('\n\n\n================================');
-console.log('   Tokens');
-console.log('================================');
-let tokens = Tokenizer(file);
-console.log(tokens);
+	if (patterns === null) {
+		console.error(" ");
+		console.error("Unable to compile code due to interpretation errors");
+		process.exit(1);
+	}
 
 
-console.log('\n\n\n================================');
-console.log('   Patterns');
-console.log('================================');
-let patterns = Patternize(tokens);
+	let output = {
+		functions: [],
+		classes: [],
+		globals: [],
+		imports: [],
+		exports: [],
+	}
 
-if (patterns === null) {
-	console.error(" ");
-	console.error("Unable to compile code due to interpretation errors");
+	for (let element of patterns) {
+		switch (element.pattern.name) {
+			case "function":
+				output.functions.push({
+					type: element.pattern.name, tokens: element.tokens
+				});
+				break;
+			case "import.direct":
+			case "import.as":
+				output.imports.push({
+					type: element.pattern.name, tokens: element.tokens
+				});
+				break;
+			case "declare":
+				output.globals.push({
+					type: element.pattern.name, tokens: element.tokens
+				});
+				break;
+			case "expose":
+				output.exports.push({
+					exports: element.pattern.name, tokens: element.tokens
+				});
+				break;
+			default:
+				console.error(`Internal Error: Unexpected global pattern ${element.pattern.name}`);
+				process.exit(1);
+				break;
+		}
+	}
+
+	return output;
 }
 
-console.log(patterns);
+let out = Ingest(fs.readFileSync('./example.qp', 'utf8'));
+console.log(out);
+
 // fs.writeFileSync('out-patterns.json', JSON.stringify(patterns, null, 2));
 

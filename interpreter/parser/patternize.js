@@ -75,7 +75,12 @@ function CollapseNameSpaces(tokens) {
 
 
 function Process(tokens, scope = grammer) {
+	if (scope.patterns == null) {
+		return tokens;
+	}
+
 	tokens = CollapseNameSpaces(tokens);
+	let patterns = [];
 
 	function GetMatch (index) {
 		outer: for (let opt of scope.patterns) {
@@ -83,6 +88,10 @@ function Process(tokens, scope = grammer) {
 
 			// Check if the current point completely matches the pattern
 			for (let i=0; i<opt.tokens.length; i++) {
+				if (i+index >= tokens.length) {
+					continue outer;
+				}
+
 				if (MatchElementName(tokens[index+i].name, opt.tokens[i])) {
 					consumed++;
 				} else {
@@ -91,7 +100,13 @@ function Process(tokens, scope = grammer) {
 			}
 
 			// If so
-			return {consumes: consumed, pattern: opt};
+			return {
+				consumes: consumed,
+				data: {
+					pattern : opt,
+					tokens  : tokens.slice(index, index+consumed)
+				}
+			};
 		}
 
 		return null;
@@ -101,6 +116,7 @@ function Process(tokens, scope = grammer) {
 		let match = GetMatch(i);
 		if (match) {
 			i += match.consumes;
+			patterns.push(match.data);
 		} else {
 			console.error(`Error: Unexpected ${tokens[i].name}`);
 			console.error(`         at ${tokens[i].reference.toString()}`);
@@ -108,13 +124,25 @@ function Process(tokens, scope = grammer) {
 		}
 	}
 
-	// for (let element of tokens) {
-	// 	if (element instanceof Pattern) {
-	// 		console.log(68, element);
-	// 	}
-	// }
+	for (let i=0; i<patterns.length; i++) {
+		for (let j=0; j<patterns[i].pattern.sub.length; j++){
+			let scope = patterns[i].pattern.sub[j];
 
-	return tokens;
+			// Ignore invalid scopes
+			if (scope == null) {
+				continue;
+			}
+
+			patterns[i].tokens[j] = Process(patterns[i].tokens[j].data, scope);
+
+			// Propergate the error up the execution stack
+			if (patterns[i].tokens[j] == null) {
+				return null;
+			}
+		}
+	}
+
+	return patterns;
 }
 
 
