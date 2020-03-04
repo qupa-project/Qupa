@@ -26,26 +26,41 @@ function Ingest (file) {
 	}
 
 	for (let element of patterns) {
+		let name = "";
+
 		switch (element.pattern.name) {
 			case "function":
 				output.functions.push({
-					type: element.pattern.name, tokens: element.tokens
+					name: element.tokens[1].data,
+					type: element.pattern.name,
+					tokens: element.tokens
 				});
 				break;
-			case "import.direct":
 			case "import.as":
 				output.imports.push({
-					type: element.pattern.name, tokens: element.tokens
+					name: element.tokens[3].data,
+					type: element.pattern.name,
+					tokens: element.tokens
+				});
+			case "import.direct":
+				output.imports.push({
+					name: "",
+					type: element.pattern.name,
+					tokens: element.tokens
 				});
 				break;
 			case "declare":
 				output.globals.push({
-					type: element.pattern.name, tokens: element.tokens
+					name: element.tokens[1].data,
+					type: element.pattern.name,
+					tokens: element.tokens
 				});
 				break;
 			case "expose":
 				output.exports.push({
-					exports: element.pattern.name, tokens: element.tokens
+					name: element.tokens[1].data,
+					type: element.pattern.name,
+					tokens: element.tokens
 				});
 				break;
 			default:
