@@ -47,7 +47,7 @@ Compiler.Configure(config);
 
 fs.writeFileSync(
 	output,
-	Compiler.Compile(path.join(process.argv[1], filename)),
+	Compiler.Compile(path.join(path.dirname(process.argv[1]), filename)),
 );
 
 

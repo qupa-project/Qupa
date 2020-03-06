@@ -5,8 +5,8 @@ const fs = require('fs');
 
 
 
-function Ingest (file) {
-	file = new MappedString(file, './example.qp');
+function Ingest (file, filename) {
+	file = new MappedString(file, filename);
 	let tokens = Tokenizer(file);
 	let patterns = Patternize(tokens);
 
@@ -81,8 +81,4 @@ function Ingest (file) {
 	return output;
 }
 
-let out = Ingest(fs.readFileSync('./example.qp', 'utf8'));
-console.log(out);
-
-// fs.writeFileSync('out-patterns.json', JSON.stringify(patterns, null, 2));
-
+module.exports = Ingest;
