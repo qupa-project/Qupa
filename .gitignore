@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# Local tests
+temp/*
+
 
 # Test files
 *.qp
