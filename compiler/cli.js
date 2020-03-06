@@ -8,7 +8,7 @@ const VERSION = "v0.0.0";
 
 
 if (process.argv[2] == "-v"){
-	console.log(VERSION);
+	console.info(VERSION);
 	process.exit(0);
 }
 
@@ -16,6 +16,11 @@ let filename = process.argv[2];
 let output = "a.cpp";
 let config = {
 	verbose: false
+}
+
+if (!filename || filename.length < 1) {
+	console.error("No file specified");
+	process.exit(1);
 }
 
 // Arguments
