@@ -23,7 +23,8 @@ function Ingest (file) {
 		globals: [],
 		imports: [],
 		exports: [],
-	}
+		enables: []
+	};
 
 	for (let element of patterns) {
 		let name = "";
@@ -58,6 +59,13 @@ function Ingest (file) {
 				break;
 			case "expose":
 				output.exports.push({
+					name: element.tokens[1].data,
+					type: element.pattern.name,
+					tokens: element.tokens
+				});
+				break;
+			case "enable":
+				output.enables.push({
 					name: element.tokens[1].data,
 					type: element.pattern.name,
 					tokens: element.tokens

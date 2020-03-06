@@ -6,7 +6,8 @@
 				"import",
 				"expose",
 				"function",
-				"declare"
+				"declare",
+				"enable"
 			]
 		},
 
@@ -80,6 +81,12 @@
 			"name"  : "else",
 			"match" : ["keyword.else", "bracket.curly"],
 			"sub"   : [null, "expression", "execution"]
+		},
+
+		{
+			"name"  : "enable",
+			"match" : ["keyword.enable", "namespace", "token.delimiter.assignment"],
+			"sub"   : [null, null, null]
 		},
 
 		{
