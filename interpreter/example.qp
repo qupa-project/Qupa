@@ -1,7 +1,0 @@
-import "cat";
-
-expose thing;
-
-if (true) {
-	
-}
