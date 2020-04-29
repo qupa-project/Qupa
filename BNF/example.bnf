@@ -1,0 +1,51 @@
+<program> ::= ( <stmt> <w> )+
+<stmt> ::= ( <return> | <declare> | <assign> | <func_def> | <func_call> ";"? )
+
+
+
+<whitespace> ::= " " | "\t" | "\n" | "\r\n"
+<w> ::= <whitespace>*
+
+<letter> ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z"
+<digit> ::= ( "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" )
+
+<constant> ::= <float> | <int> | <bool>
+<int>      ::= ( "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ) <digit>*
+<float>    ::= <int> "." <int>
+             | <int> "." <int> "e" "-"? <int>
+<bool>     ::= "true" | "false"
+
+<name> ::= ( <letter> | "_" ) ( <letter> | <digit> | "_" )*
+<name_dot> ::= <name> ( "." <name> )*
+
+
+
+<func_def>   ::= <name_dot> " " <w> <name> <w> "(" <w> <arguments>? <w> ")" <w> "{" <w> ( <stmt> <w> )* "}"
+<arguments>  ::= <arg> <w> ( "," <w> <arg> )*
+<arg>        ::= <name_dot> " " <w> <name>
+
+<func_call>  ::= <name_dot> <w> "(" <w> <parameters>? <w> ")"
+<parameters> ::= <param> ( <w> "," <w> <param> )*
+<param>      ::= <expr>
+
+<return> ::= "return " <w> <expr> <w> ";"
+
+
+
+
+
+<expr> ::= <expr_p3>
+<expr_opperand> ::= <name_dot> | <constant> | <func_call> | ( "(" <expr> ")" )
+<expr_p1>       ::= <expr_p1_addr> | <expr_opperand>
+<expr_p1_addr>  ::= "@" <name_dot>
+<expr_p2>       ::= <expr_p2_add> | <expr_p2_sub> | <expr_p1>
+<expr_p2_add>   ::= ( <expr_p2> <w> "+" <w> <expr_p1> )
+<expr_p2_sub>   ::= ( <expr_p2> <w> "-" <w> <expr_p1> )
+<expr_p3>       ::= <expr_p3_mul> | <expr_p3_div> | <expr_p2>
+<expr_p3_mul>   ::= ( <expr_p3> <w> "*" <w> <expr_p2> )
+<expr_p3_div>   ::= ( <expr_p3> <w> "/" <w> <expr_p2> )
+
+
+
+<declare> ::= <name_dot> " " <name> ";"
+<assign> ::= <name_dot> <w> "=" <w> <expr> <w> ";"

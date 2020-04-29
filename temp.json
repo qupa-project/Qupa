@@ -1,0 +1,29 @@
+{
+  "type": "name",
+  "tokens": [
+    [
+      {
+        "type": "literal",
+        "tokens": "<",
+        "consumed": 1
+      }
+    ],
+    [
+      {
+        "type": [
+          "letter"
+        ],
+        "tokens": "a",
+        "consumed": 1
+      }
+    ],
+    [
+      {
+        "type": "literal",
+        "tokens": ">",
+        "consumed": 1
+      }
+    ]
+  ],
+  "consumed": 3
+}
