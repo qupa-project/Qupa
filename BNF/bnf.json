@@ -16,7 +16,7 @@
 			"match": [
 				{
 					"type": "ref",
-					"val": "name",
+					"val": "def",
 					"count": "1"
 				}, {
 					"type": "ref",
@@ -153,10 +153,33 @@
 
 		"expr": {
 			"type": "sequence",
-			"match": [{"type": "ref", "val": "expr_p2"}, {"type": "ref", "val": "#t7", "count": "*"}]
+			"match": [
+				{
+					"type": "ref",
+					"val": "expr_p2"
+				},
+				{
+					"type": "ref",
+					"val": "#t7",
+					"count": "*"
+				}
+			]
 		}, "#t7": {
 			"type": "sequence",
-			"match": [{"type": "literal", "val": " "}, {"type": "ref", "val": "w"}, {"type": "ref", "val": "expr_p2"}]
+			"match": [
+				{
+					"type": "literal",
+					"val": " "
+				},
+				{
+					"type": "ref",
+					"val": "w"
+				},
+				{
+					"type": "ref",
+					"val": "expr_p2"
+				}
+			]
 		},
 		"expr_opperand": {
 			"type": "select",
@@ -183,10 +206,44 @@
 		},
 		"expr_p2": {
 			"type": "select",
-			"match": [{"type": "ref", "val": "expr_p2_or"}, {"type": "ref", "val": "expr_p1"}]
+			"match": [
+				{
+					"type": "ref",
+					"val": "expr_p2_or"
+				},
+				{
+					"type": "ref",
+					"val": "expr_p1"
+				}
+			]
 		}, "expr_p2_or": {
 			"type": "sequence",
-			"match": [{"type": "ref", "val": "expr_p2"}, {"type": "literal", "val": " "}, {"type": "ref", "val":"w"}, {"type":"literal", "val":"| "}, {"type":"ref","val":"w"}, {"type":"ref","val":"expr_p1"}]
+			"match": [
+				{
+					"type": "ref",
+					"val": "expr_p2"
+				},
+				{
+					"type": "literal",
+					"val": " "
+				},
+				{
+					"type": "ref",
+					"val": "w"
+				},
+				{
+					"type": "literal",
+					"val": "| "
+				},
+				{
+					"type": "ref",
+					"val": "w"
+				},
+				{
+					"type": "ref",
+					"val": "expr_p1"
+				}
+			]
 		}
 	}
 }
