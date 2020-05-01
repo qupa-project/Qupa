@@ -8,16 +8,18 @@ let expressions = {
 
 
 class Reference {
-	constructor(line, col) {
+	constructor(line, col, internal) {
 		this.line = line;
 		this.col = col
+		this.internal = internal;
 	}
 };
 
 class SyntaxError {
-	constructor(ref, remaining){
+	constructor(ref, remaining, branch){
 		this.ref = ref;
 		this.remaining = remaining;
+		this.branch = branch;
 	}
 }
 class SyntaxNode {
@@ -46,91 +48,92 @@ function Process_Select   (input, tree, branch, stack = [], level = 0){
 	}
 
 
-	return new SyntaxError(new Reference(0,0), input);
+	return new SyntaxError(new Reference(0,0), input, branch);
 }
 function Process_Sequence(input, tree, branch, stack = [], level = 0) {
-	let out = [];
 
-	console.log('SEQ');
-	for (let target of branch.match) {
-		if (!target.count) { target.count = "1"; } // lazy load
-
-		console.log(65, branch.term, target, input);
-
-		let atMostOnce = target.count == "1" || target.count == "?";
-		let optional = target.count == "?" || target.count == "*";
-		let moreOnce = target.count == "+" || target.count == "*";
-		let first = true;
-		let res = true;
-		let sub = [];
-
-		while (
-			!(res instanceof SyntaxError) &&
-			((atMostOnce && first) || moreOnce)
-		) {
-			first = false;
-			if (target.type == "literal") {
-				if (input.slice(0, target.val.length) == target.val) {
-					res = new SyntaxNode("literal", target.val, target.val.length);
-				} else {
-					res = false;
-				}
-			} else if (target.type == "ref") {
-				res = Process(input, tree, target.val, [...stack], level + 1);
+	function MatchOne(target, string) {
+		if (target.type == "literal") {
+			if (string.slice(0, target.val.length) == target.val) {
+				return new SyntaxNode("literal", [target.val], target.val.length);
 			} else {
-				throw new Error(`Malformed tree: Invalid selector match type ${target.type}`);
+				return new SyntaxError(new Reference(0, 0), string, branch);
 			}
+		} else if (target.type == "ref") {
+			return Process(string, tree, target.val, [...stack], level + 1);
+		}
 
+		throw new Error(`Malformed tree: Invalid selector match type ${target.type}`);
+	}
+
+	function MatchZeroToMany(target, string) {
+		let sub = [];
+		let res;
+
+		while (!(res instanceof SyntaxError)) {
+			res = MatchOne(target, string);
 
 			if (res instanceof SyntaxNode) {
-				input = input.slice(res.consumed);
-				stack = [];
+				string = string.slice(res.consumed);
 				sub.push(res);
 
-				// MUST BE AFTER PUSH
-				// Optional values can return nothing once,
-				// Because if they never return anything the optional will not be valid.
+				// Stop consuming 0 tokens infinitly
+				// But at least consume it once as it is a valid parse for ==1 >=1
 				if (res.consumed == 0) {
 					break;
 				}
 			}
 		}
 
-		console.log(112, branch.term, atMostOnce, optional, moreOnce);
-		console.log(' ', out, sub);
-
-		if (optional) {
-			out.push(sub);
-			continue;
-		} else if (moreOnce && sub.length >= 1) {
-			out.push(sub);
-			continue;
-		} else if (atMostOnce && sub.length <= 1) {
-
-			if (!optional && sub.length == 0) {
-				console.log(126, '  FAIL', branch.term, sub, target, out);
-				return new SyntaxError(new Reference(0, 0), input);
-			} else {
-				out.push(sub);
-				continue;
-			}
-
-		}
-		console.log(133, '  FAIL', branch.term, sub, target, out);
-		return new SyntaxError(new Reference(0, 0), input);
+		return sub;
 	}
 
-	let consumed = out.reduce((prev = 0, curr) => {
-		return prev.concat(curr);
-	});
-	if (consumed.length == 0) {
-		consumed = 0;
-	} else if (consumed.length == 1) {
-		consumed = consumed[0].consumed;
-	} else {
-		consumed = consumed.reduce((prev, curr) => {
-			return (isNaN(prev) ? prev.consumed : prev) + curr.consumed;
-		});
+
+	console.log('SEQ');
+	let consumed = 0;
+	let out = [];
+	for (let target of branch.match) {
+		if (!target.count) { target.count = "1"; } // lazy load
+		console.log(65, branch.term, target, input);
+
+		let sub = [];
+
+		// Match tokens
+		if (target.count == "?" || target.count == "1") {
+			let res = MatchOne(target, input);
+			console.log(92, res);
+			if (res instanceof SyntaxNode) {
+				sub = [res];
+			} else {
+				sub = [];
+			}
+		} else if (target.count == "*" || target.count == "+") {
+			sub = MatchZeroToMany(target, input);
+		}
+
+		// Check number of tokens
+		if (sub.length == 0 && ( target.count == "+" || target.count == "1" )) {
+			console.log(110, 'FAIL', branch.term, target, sub);
+			return new SyntaxError(new Reference(0, 0), input, branch);
+		}
+
+		// Shift the search point forwards to not search consumed tokens
+		let shift = 0;
+		if (sub.length > 0) {
+			shift = sub.reduce((prev, curr) => {
+				return ( prev instanceof SyntaxNode ? prev.consumed : prev ) + curr.consumed;
+			});
+			if (shift instanceof SyntaxNode) {
+				shift = shift.consumed;
+			}
+		}
+		input = input.slice(shift);
+		consumed += shift;
+
+		console.log(119, sub);
+		console.log(120, shift, input);
+
+		out.push(sub);
 	}
 
 	console.log(148, 'END', branch.term);
@@ -142,7 +145,7 @@ function Process_Not(input, tree, branch, stack = [], level = 0) {
 	let out = "";
 	while (res === false) {
 		if (input.length == 0) {
-			return new SyntaxError(new Reference(0, 0), input);
+			return new SyntaxError(new Reference(0, 0), input, branch);
 		}
 
 		res = Process(input, tree, branch.match, [...stack], level + 1);
@@ -159,7 +162,7 @@ function Process_Not(input, tree, branch, stack = [], level = 0) {
 		return new SyntaxNode(branch.term, out, out.length);
 	} else {
 		console.log('  FAIL', branch.term);
-		return new SyntaxError(new Reference(0, 0), input);
+		return new SyntaxError(new Reference(0, 0), input, branch);
 	}
 }
 
@@ -170,7 +173,7 @@ function Process (input, tree, term, stack = [], level = 0) {
 	branch.term = term;
 
 	if (stack.indexOf(term) != -1) {
-		return new SyntaxError(new Reference(0,0), input);
+		return new SyntaxError(new Reference(0,0), input, branch);
 	}
 	stack.push(term);
 
@@ -197,7 +200,7 @@ function Process (input, tree, term, stack = [], level = 0) {
 // data = `<program> ::= <stmt>+
 // <stmt> ::= ( <a> | <b> )`;
 data = `<a> | <b>`;
-let res = Process(data, tree, "expr_p2");
+let res = Process(data, tree, "expr");
 console.log('END', data.length, res);
 console.log(data.length == res.consumed ? "Success" : "Partcial completion");
 fs.writeFileSync('temp.json', JSON.stringify(res, null, 2));
