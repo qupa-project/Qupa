@@ -89,19 +89,16 @@ function Process_Sequence(input, tree, branch, stack = [], level = 0) {
 	}
 
 
-	console.log('SEQ');
 	let consumed = 0;
 	let out = [];
 	for (let target of branch.match) {
 		if (!target.count) { target.count = "1"; } // lazy load
-		console.log(65, branch.term, target, input);
 
 		let sub = [];
 
 		// Match tokens
 		if (target.count == "?" || target.count == "1") {
 			let res = MatchOne(target, input);
-			console.log(92, res);
 			if (res instanceof SyntaxNode) {
 				sub = [res];
 			} else {
@@ -113,8 +110,7 @@ function Process_Sequence(input, tree, branch, stack = [], level = 0) {
 
 		// Check number of tokens
 		if (sub.length == 0 && ( target.count == "+" || target.count == "1" )) {
-			console.log(110, 'FAIL', branch.term, target, sub);
-			return new SyntaxError(new Reference(0, 0), input, branch);
+			return new SyntaxError(new Reference(0, 0), input, {...branch, stage: target,});
 		}
 
 		// Shift the search point forwards to not search consumed tokens
@@ -130,13 +126,9 @@ function Process_Sequence(input, tree, branch, stack = [], level = 0) {
 		input = input.slice(shift);
 		consumed += shift;
 
-		console.log(119, sub);
-		console.log(120, shift, input);
-
 		out.push(sub);
 	}
 
-	console.log(148, 'END', branch.term);
 	return new SyntaxNode(branch.term, out, consumed);
 }
 function Process_Not(input, tree, branch, stack = [], level = 0) {
@@ -170,14 +162,28 @@ function Process_Not(input, tree, branch, stack = [], level = 0) {
 let tree = JSON.parse(fs.readFileSync('./bnf.json', 'utf8'));
 function Process (input, tree, term, stack = [], level = 0) {
 	let branch = tree.terms[term];
+	if (!branch) {
+		throw new Error(`Malformed Tree: Unknown branch name ${term} of tree`);
+	}
+
 	branch.term = term;
 
-	if (stack.indexOf(term) != -1) {
-		return new SyntaxError(new Reference(0,0), input, branch);
+	// Infinite loop detection
+	// Is if the execution order from this call to the previous has been repeated directly before
+	let temp = stack.reverse(); // Check from the latest backwards
+	let i = temp.indexOf(term);
+	if (i != -1) {
+		i++;
+		let j = temp.slice(i).indexOf(term);
+		if (j !== -1) {
+			j += i+1;
+
+			if (temp.slice(i, j), temp.slice(i+j, j+j)) {
+				return new SyntaxError(new Reference(0,0), input, branch);
+			}
+		}
 	}
 	stack.push(term);
-
-	console.log(20, level, stack);
 
 	if (branch === undefined) {
 		throw new Error(`Invalid tree term "${term}"`);
@@ -197,10 +203,8 @@ function Process (input, tree, term, stack = [], level = 0) {
 }
 
 
-// data = `<program> ::= <stmt>+
-// <stmt> ::= ( <a> | <b> )`;
-data = `<a> | <b>`;
-let res = Process(data, tree, "expr");
+data = `( <def> | <comment> )+`;
+let res = Process(data, tree, "expr_p2");
 console.log('END', data.length, res);
 console.log(data.length == res.consumed ? "Success" : "Partcial completion");
 fs.writeFileSync('temp.json', JSON.stringify(res, null, 2));
