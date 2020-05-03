@@ -71,11 +71,6 @@
 			"type": "sequence",
 			"match": [
 				{
-					"type": "literal",
-					"val": "<",
-					"count": "1"
-				},
-				{
 					"type": "ref",
 					"val": "letter",
 					"count": "1"
@@ -84,11 +79,6 @@
 					"type": "ref",
 					"val": "#t3",
 					"count": "*"
-				},
-				{
-					"type": "literal",
-					"val": ">",
-					"count": "1"
 				}
 			]
 		},
@@ -112,10 +102,46 @@
 
 		"constant": {
 			"type": "sequence",
-			"match": [{"type":"literal", "val": "\""}, {"type": "ref", "val": "#t4", "count":"*"}, {"type":"literal", "val": "\""}]
+			"match": [
+				{
+					"type": "literal",
+					"val": "\"",
+					"count": 1
+				},
+				{
+					"type": "ref",
+					"val": "#t4",
+					"count": "+"
+				},
+				{
+					"type": "literal",
+					"val": "\"",
+					"count": 1
+				}
+			]
 		}, "#t4": {
 			"type":"select",
-			"match": [{"type": "ref", "val": "#t5"}, {"type": "literal", "val": "\\\""}]
+			"match": [
+				{
+					"type": "literal",
+					"val": "\\\""
+				}, {
+					"type": "literal",
+					"val": "\\n"
+				}, {
+					"type": "literal",
+					"val": "\\t"
+				}, {
+					"type": "literal",
+					"val": "\\r"
+				}, {
+					"type": "literal",
+					"val": "\\\\"
+				}, {
+					"type": "ref",
+					"val": "#t5"
+				}
+			]
 		},"#t5": {
 			"type": "not",
 			"match": "#t6"
@@ -231,7 +257,7 @@
 			"match": [{"type": "ref", "val": "expr_p1_not"}, {"type": "ref", "val": "expr_p1_opt"}, {"type": "ref", "val": "expr_p1_orm"}, {"type": "ref", "val": "expr_p1_zrm"}, {"type": "ref", "val": "expr_opperand"}]
 		}, "expr_p1_not": {
 			"type": "sequence",
-			"match": [{"type": "literal", "val": "!"}, {"type": "ref", "val": "expr_constant"}]
+			"match": [{"type": "literal", "val": "!"}, {"type": "ref", "val": "expr_opperand"}]
 		}, "expr_p1_opt": {
 			"type": "sequence",
 			"match": [{"type": "ref", "val": "expr_opperand"}, {"type": "literal", "val": "?"}]
@@ -259,7 +285,7 @@
 			"match": [
 				{
 					"type": "ref",
-					"val": "expr_p2"
+					"val": "expr_p1"
 				},
 				{
 					"type": "literal",
@@ -279,7 +305,7 @@
 				},
 				{
 					"type": "ref",
-					"val": "expr_p1"
+					"val": "expr_p2"
 				}
 			]
 		}
