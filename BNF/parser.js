@@ -28,7 +28,7 @@ function Process_Select   (input, tree, branch, stack = [], level = 0){
 	for (let target of branch.match) {
 		if (target.type == "literal") {
 			if (input.slice(0, target.val.length) == target.val) {
-				return new SyntaxNode ([branch.term], target.val, target.val.length);
+				return new SyntaxNode (branch.term, target.val, target.val.length);
 			}
 		} else if (target.type == "ref") {
 			let res = Process(input, tree, target.val, [...stack], level+1);
