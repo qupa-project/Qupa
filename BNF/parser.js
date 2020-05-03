@@ -1,12 +1,3 @@
-const fs = require('fs');
-let data = fs.readFileSync('./bnf-next.bnf', 'utf8');
-
-let expressions = {
-	declareStmt: new RegExp(/^<([A-z0-9_]+)> +::= (.+)(\n|$)/imu),
-	dclrSplit: new RegExp(/^\s*\| /mu)
-}
-
-
 class Reference {
 	constructor(line, col, internal) {
 		this.line = line;
@@ -156,7 +147,6 @@ function Process_Not(input, tree, branch, stack = [], level = 0) {
 }
 
 
-let tree = JSON.parse(fs.readFileSync('./bnf.json', 'utf8'));
 function Process (input, tree, term, stack = [], level = 0) {
 	let branch = tree.terms[term];
 	if (!branch) {
@@ -193,10 +183,17 @@ function Process (input, tree, term, stack = [], level = 0) {
 }
 
 
-// data = `"\\"" ( "\\"" | "\\n" | "\\\\" | "\\t" | s!( "\\"" | "\\\\" ) )+ "\\""`
-let res = Process(data, tree, "program");
-console.log('END', data.length, res);
-console.log(data.length == res.consumed ? "Success" : "Partcial completion");
-fs.writeFileSync('temp.json', JSON.stringify(res, null, 2));
 
-console.log('REMAINING', data.slice(res.consumed));
+class BNF_Parse {
+	constructor(res, dataLen) {
+		this.hasError  = res instanceof SyntaxError;
+		this.isPartial = res.consumed != dataLen;
+		this.tree      = res;
+	}
+}
+function Parse(data, tree, entry="program") {
+	let res = Process(data, tree, entry);
+	return new BNF_Parse(res, data.length);
+}
+
+module.exports = Parse;
