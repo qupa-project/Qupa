@@ -45,7 +45,6 @@ function SimplifyExpr (node) {
 	let out = [SimplifyExprP2(node.tokens[0][0])]
 
 	for (let token of node.tokens[1]) {
-		console.log(48, token.tokens);
 		out.push( SimplifyExprP2(token.tokens[2][0]) );
 	}
 
@@ -74,23 +73,33 @@ function SimplifyExprOr(node) {
 		SimplifyExprP2(node.tokens[5][0]),
 	];
 
+	if (node.tokens[1].type == "expr_p2_or") {
+		node.tokens = [node.tokens[0]].concat(node.tokens[1].tokens);
+	}
+
 	return node;
 }
 function SimplifyExprP1(node) {
 	switch (node.tokens[0].type) {
 		case "expr_p1_not":
-			return null;
+			return SimplifyP1Not(node.tokens[0]);
 		case "expr_p1_opt":
-			return null;
 		case "expr_p1_orm":
-			return null;
 		case "expr_p1_zrm":
-			return null;
+			return SimplifyP1(node.tokens[0]);
 		case "expr_opperand":
 			return SimplifyExprOpperand(node.tokens[0]);
 	}
 
 	throw new Error(`BNF Compile Error: Unknown expr_p2 expression ${node.tokens[0].type}`);
+}
+function SimplifyP1Not (node) {
+	node.tokens = SimplifyExprOpperand(node.tokens[1][0]);
+	return node;
+}
+function SimplifyP1 (node) {
+	node.tokens = SimplifyExprOpperand(node.tokens[0][0]);
+	return node;
 }
 function SimplifyExprOpperand(node){
 	switch (node.tokens[0].type) {
@@ -127,6 +136,11 @@ function Compile(tree) {
 
 	console.log('SIMP');
 	console.log(tree);
+	let out = {};
+
+	for (let term in tree) {
+		console.log(143, term);
+	}
 
 	return tree;
 };
