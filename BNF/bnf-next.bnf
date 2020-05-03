@@ -1,5 +1,5 @@
-<program> ::= <stmt> ( " " <w> <stmt> )* <w>
-<stmt> ::= <def> | <comment>
+<program> ::= <stmt>+
+<stmt> ::= ( <def> | <comment> ) <w>
 
 
 <comment> ::= ";" ( <any> | " " )+ "\n"
@@ -18,7 +18,7 @@
 <name> ::= "<" ( <letter> | "_" ) ( <letter> | <digit> | "_" )* ">"
 
 
-<constant> ::= "\"" ( !( "\"" | "\\" ) | "\\"" )+ "\""
+<constant> ::= "\"" ( "\\"" | "\\n" | "\\\\" | "\\t" | !( "\"" | "\\" ) )+ "\""
 
 
 <def> ::= ( <name> ) " " <w> "::= " <expr>
@@ -30,4 +30,4 @@
 <expr_p1_zrm> ::= <expr_opperand> "*"
 <expr_p1_orm> ::= <expr_opperand> "+"
 <expr_p2>     ::= <expr_p2_or> | <expr_p1>
-<expr_p2_or>  ::= <expr_p2> " " <w> "| " <w> <expr_p1>
+<expr_p2_or>  ::= <expr_p1> " " <w> "| " <w> <expr_p2>
