@@ -1,5 +1,5 @@
 const fs = require('fs');
-let data = fs.readFileSync('./bnf.bnf', 'utf8');
+let data = fs.readFileSync('./bnf-next.bnf', 'utf8');
 
 let expressions = {
 	declareStmt: new RegExp(/^<([A-z0-9_]+)> +::= (.+)(\n|$)/imu),
@@ -16,10 +16,11 @@ class Reference {
 };
 
 class SyntaxError {
-	constructor(ref, remaining, branch){
+	constructor(ref, remaining, branch, code=null){
 		this.ref = ref;
 		this.remaining = remaining;
 		this.branch = branch;
+		this.code = code;
 	}
 }
 class SyntaxNode {
@@ -32,6 +33,7 @@ class SyntaxNode {
 
 
 function Process_Select   (input, tree, branch, stack = [], level = 0){
+
 	for (let target of branch.match) {
 		if (target.type == "literal") {
 			if (input.slice(0, target.val.length) == target.val) {
@@ -47,8 +49,7 @@ function Process_Select   (input, tree, branch, stack = [], level = 0){
 		}
 	}
 
-
-	return new SyntaxError(new Reference(0,0), input, branch);
+	return new SyntaxError(new Reference(0,0), input, branch, "PSL_1");
 }
 function Process_Sequence(input, tree, branch, stack = [], level = 0) {
 
@@ -57,7 +58,7 @@ function Process_Sequence(input, tree, branch, stack = [], level = 0) {
 			if (string.slice(0, target.val.length) == target.val) {
 				return new SyntaxNode("literal", [target.val], target.val.length);
 			} else {
-				return new SyntaxError(new Reference(0, 0), string, branch);
+				return new SyntaxError(new Reference(0, 0), string, branch, "PSQ_O_1");
 			}
 		} else if (target.type == "ref") {
 			return Process(string, tree, target.val, [...stack], level + 1);
@@ -88,12 +89,10 @@ function Process_Sequence(input, tree, branch, stack = [], level = 0) {
 		return sub;
 	}
 
-
 	let consumed = 0;
 	let out = [];
 	for (let target of branch.match) {
 		if (!target.count) { target.count = "1"; } // lazy load
-
 		let sub = [];
 
 		// Match tokens
@@ -110,7 +109,7 @@ function Process_Sequence(input, tree, branch, stack = [], level = 0) {
 
 		// Check number of tokens
 		if (sub.length == 0 && ( target.count == "+" || target.count == "1" )) {
-			return new SyntaxError(new Reference(0, 0), input, {...branch, stage: target,});
+			return new SyntaxError(new Reference(0, 0), input, {...branch, stage: target}, "PSQ_1");
 		}
 
 		// Shift the search point forwards to not search consumed tokens
@@ -127,6 +126,7 @@ function Process_Sequence(input, tree, branch, stack = [], level = 0) {
 		consumed += shift;
 
 		out.push(sub);
+		stack = [];
 	}
 
 	return new SyntaxNode(branch.term, out, consumed);
@@ -135,9 +135,10 @@ function Process_Not(input, tree, branch, stack = [], level = 0) {
 	let ran = false;
 	let res = false;
 	let out = "";
-	while (res === false) {
+
+	while (!(res instanceof SyntaxNode)) {
 		if (input.length == 0) {
-			return new SyntaxError(new Reference(0, 0), input, branch);
+			break;
 		}
 
 		res = Process(input, tree, branch.match, [...stack], level + 1);
@@ -148,14 +149,10 @@ function Process_Not(input, tree, branch, stack = [], level = 0) {
 			input = input.slice(1);
 			stack = [];
 		}
+
 	}
 
-	if (ran instanceof SyntaxNode) {
-		return new SyntaxNode(branch.term, out, out.length);
-	} else {
-		console.log('  FAIL', branch.term);
-		return new SyntaxError(new Reference(0, 0), input, branch);
-	}
+	return new SyntaxNode(branch.term, out, out.length);
 }
 
 
@@ -169,18 +166,11 @@ function Process (input, tree, term, stack = [], level = 0) {
 	branch.term = term;
 
 	// Infinite loop detection
-	// Is if the execution order from this call to the previous has been repeated directly before
-	let temp = stack.reverse(); // Check from the latest backwards
-	let i = temp.indexOf(term);
+	let i = stack.indexOf(term);
 	if (i != -1) {
-		i++;
-		let j = temp.slice(i).indexOf(term);
-		if (j !== -1) {
-			j += i+1;
-
-			if (temp.slice(i, j), temp.slice(i+j, j+j)) {
-				return new SyntaxError(new Reference(0,0), input, branch);
-			}
+		// Allow one layer of recursion
+		if (stack.slice(i+1).indexOf(term) != -1) {
+			throw new Error("Malformed BNF: BNF is not deterministic")
 		}
 	}
 	stack.push(term);
@@ -203,8 +193,8 @@ function Process (input, tree, term, stack = [], level = 0) {
 }
 
 
-data = `( <def> | <comment> )+`;
-let res = Process(data, tree, "expr_p2");
+// data = `"\\"" ( "\\"" | "\\n" | "\\\\" | "\\t" | s!( "\\"" | "\\\\" ) )+ "\\""`
+let res = Process(data, tree, "program");
 console.log('END', data.length, res);
 console.log(data.length == res.consumed ? "Success" : "Partcial completion");
 fs.writeFileSync('temp.json', JSON.stringify(res, null, 2));
