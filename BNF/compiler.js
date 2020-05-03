@@ -49,7 +49,10 @@ function SimplifyExpr (node) {
 	}
 
 	// Simplify recusion
-	if (out.length == 1 && out[0].type == "expr") {
+	if (
+		out.length == 1 &&
+		(out[0].type == "expr" || out[0].type == "expr_p2_or")
+	) {
 		return out[0];
 	}
 
@@ -131,18 +134,104 @@ function SimplifyBrackets(node) {
 }
 
 
+
 function Compile(tree) {
 	tree = Simplify(tree);
 
-	console.log('SIMP');
-	console.log(tree);
+	let tempNo = 0;
 	let out = {};
 
-	for (let term in tree) {
-		console.log(143, term);
+	function GenerateTerminal(name, expr) {
+		if (out[name]) {
+			throw new Error(`BNF Compilation: Multiple occurances of term name ${name}`);
+		}
+
+		if (expr.type == "expr_p2_or") { // Select
+			out[name] = {
+				type: "select",
+				match: []
+			};
+
+			for (let opt of expr.tokens){
+				if (opt.type == "constant") {
+					out[name].match.push({
+						type: "literal",
+						val: opt.tokens
+					});
+				} else if (opt.type == "name") {
+					out[name].match.push({
+						type: "ref",
+						val: opt.tokens
+					});
+				} else {
+					let temp = `#t${tempNo++}`;
+					GenerateTerminal(temp, opt);
+					out[name].match.push({
+						type: "ref",
+						val: temp,
+						count: "1"
+					});
+				}
+			}
+		} else if (expr.type == "expr_p1_not") {
+			let temp = `#t${tempNo++}`;
+			GenerateTerminal(temp, expr.tokens);
+			out[name] = {
+				type: "not",
+				match: temp
+			};
+		} else {                         // Sequence
+			out[name] = {
+				type: "sequence",
+				match: []
+			};
+
+			for (let opt of expr.tokens) {
+				let term = opt;
+				let count = "1";
+				if        (opt.type == "expr_p1_opt") {
+					term = term.tokens;
+					count = "?"
+				} else if (opt.type == "expr_p1_zrm") {
+					term = term.tokens;
+					count = "*"
+				} else if (opt.type == "expr_p1_orm") {
+					term = term.tokens;
+					count = "+"
+				}
+
+				if (term.type == "name") {
+					out[name].match.push({
+						type: "ref",
+						val: opt.tokens,
+						count: count
+					});
+				} else if (term.type == "constant") {
+					out[name].match.push({
+						type: "literal",
+						val: opt.tokens,
+						count: count
+					});
+				} else {
+					let temp = `#t${tempNo++}`;
+					GenerateTerminal(temp, term);
+					out[name].match.push({
+						type: "ref",
+						val: temp,
+						count: count
+					});
+				}
+			}
+		}
 	}
 
-	return tree;
+	for (let term of tree.tokens) {
+		GenerateTerminal(term.tokens[0].tokens, term.tokens[1]);
+	}
+
+	// console.log(167, out);
+
+	return out;
 };
 
 
