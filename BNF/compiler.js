@@ -1,4 +1,4 @@
-const {Reference, SyntaxNode, SyntaxError} = require('./types.js');
+const {BNF_SyntaxNode, BNF_SyntaxError, BNF_Reference, BNF_Tree, BNF_Parse} = require('./types.js');
 
 function Simplify (node) {
 	switch (node.type) {
@@ -142,6 +142,11 @@ function SimplifyBrackets(node) {
 
 
 
+/**
+ * Compiles a parsed BNF into a BNF tree
+ * @param {BNF_SyntaxNode} tree 
+ * @returns {BNF_Tree} BNF tree
+ */
 function Compile(tree) {
 	tree = Simplify(tree);
 
@@ -244,9 +249,7 @@ function Compile(tree) {
 		GenerateTerminal(term.tokens[0].tokens, term.tokens[1]);
 	}
 
-	return {
-		"terms": out
-	};
+	return new BNF_Tree(out);
 };
 
 

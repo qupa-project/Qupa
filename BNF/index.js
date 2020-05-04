@@ -1,5 +1,5 @@
 const fs = require('fs');
-let data = fs.readFileSync('./test.bnf', 'utf8');
+let data = fs.readFileSync('./bnf.bnf', 'utf8');
 let tree = JSON.parse(fs.readFileSync('./bnf.json', 'utf8'));
 
 let Compile = require('./compiler.js');
@@ -12,7 +12,6 @@ if (res.hasError || res.isPartial) {
 	console.error("BNF didn't parse correctly");
 	process.exit(1);
 }
-// process.exit(0);
 
 
 let syntax = Compile(res.tree);
