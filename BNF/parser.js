@@ -1,34 +1,20 @@
-class Reference {
-	constructor(line, col, internal) {
-		this.line = line;
-		this.col = col
-		this.internal = internal;
-	}
-};
+const {Reference, SyntaxNode, SyntaxError} = require('./types.js');
 
-class SyntaxError {
-	constructor(ref, remaining, branch, code=null){
-		this.ref = ref;
-		this.remaining = remaining;
-		this.branch = branch;
-		this.code = code;
-	}
-}
-class SyntaxNode {
-	constructor(type, tokens, consumed) {
-		this.type     = type;
-		this.tokens   = tokens;
-		this.consumed = consumed;
-	}
-}
 
+function Process_Literal_String (string) {
+	return string.replace(/\\t/g, "\t")
+	.replace(/\\r/g, "\r")
+	.replace(/\\n/g, "\n")
+	.replace(/\\"/g, "\"")
+	.replace(/\\\\/g, "\\");
+}
 
 function Process_Select   (input, tree, branch, stack = [], level = 0){
 
 	for (let target of branch.match) {
 		if (target.type == "literal") {
 			if (input.slice(0, target.val.length) == target.val) {
-				return new SyntaxNode (branch.term, target.val, target.val.length);
+				return new SyntaxNode (branch.term, Process_Literal_String(target.val), target.val.length);
 			}
 		} else if (target.type == "ref") {
 			let res = Process(input, tree, target.val, [...stack], level+1);
@@ -47,7 +33,7 @@ function Process_Sequence(input, tree, branch, stack = [], level = 0) {
 	function MatchOne(target, string) {
 		if (target.type == "literal") {
 			if (string.slice(0, target.val.length) == target.val) {
-				return new SyntaxNode("literal", [target.val], target.val.length);
+				return new SyntaxNode("literal", [Process_Literal_String(target.val)], target.val.length);
 			} else {
 				return new SyntaxError(new Reference(0, 0), string, branch, "PSQ_O_1");
 			}
@@ -150,6 +136,7 @@ function Process_Not(input, tree, branch, stack = [], level = 0) {
 function Process (input, tree, term, stack = [], level = 0) {
 	let branch = tree.terms[term];
 	if (!branch) {
+		console.error(term);
 		throw new Error(`Malformed Tree: Unknown branch name ${term} of tree`);
 	}
 
