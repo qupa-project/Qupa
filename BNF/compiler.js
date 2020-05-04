@@ -1,3 +1,5 @@
+const {Reference, SyntaxNode, SyntaxError} = require('./types.js');
+
 function Simplify (node) {
 	switch (node.type) {
 		case 'program':
@@ -9,10 +11,11 @@ function Simplify (node) {
 function SimplifyProgram(node) {
 	let out = [];
 
-	for (let token of node.tokens[0]){
-		if (token.tokens[0][0].type == "def") {
-			out.push(SimplifyDef(token.tokens[0][0]));
-		} else if (token.tokens[0][0].type == "comment") {
+	for (let token of node.tokens[1]){
+		token = token.tokens[0][0].tokens[0];
+		if (token.type == "def") {
+			out.push(SimplifyDef(token));
+		} else if (token.type == "comment") {
 			continue;
 		} else {
 			throw new Error("BNF Compile Error: Unknown top level data type");
@@ -33,9 +36,13 @@ function SimplifyDef (node) {
 }
 function SimplifyName (node) {
 	let arr = node.tokens[0].concat(node.tokens[1]);
-	let out = arr[0].tokens;
-	for (let i=1; i<arr.length; i++){
-		out += arr[i].tokens[0].tokens
+	let out = "";
+	for (let i=0; i<arr.length; i++){
+		if (typeof(arr[i].tokens) == "string") {
+			out += arr[i].tokens;
+		} else {
+			out += arr[i].tokens[0].tokens;
+		}
 	}
 
 	node.tokens = out;
@@ -97,7 +104,7 @@ function SimplifyExprP1(node) {
 	throw new Error(`BNF Compile Error: Unknown expr_p2 expression ${node.tokens[0].type}`);
 }
 function SimplifyP1Not (node) {
-	node.tokens = SimplifyExprOpperand(node.tokens[1][0]);
+	node.tokens = [SimplifyExprOpperand(node.tokens[1][0])];
 	return node;
 }
 function SimplifyP1 (node) {
@@ -165,21 +172,29 @@ function Compile(tree) {
 					});
 				} else {
 					let temp = `#t${tempNo++}`;
-					GenerateTerminal(temp, opt);
 					out[name].match.push({
 						type: "ref",
 						val: temp,
 						count: "1"
 					});
+					GenerateTerminal(temp, opt);
 				}
 			}
 		} else if (expr.type == "expr_p1_not") {
+			let inner = expr.tokens[0];
+			if (expr.tokens[0].type != "brackets" && expr.tokens[0].type != "expr_p2_or") {
+				inner = {
+					type: "brackets",
+					tokens: expr.tokens
+				};
+			}
+
 			let temp = `#t${tempNo++}`;
-			GenerateTerminal(temp, expr.tokens);
 			out[name] = {
 				type: "not",
 				match: temp
 			};
+			GenerateTerminal(temp, inner);
 		} else {                         // Sequence
 			out[name] = {
 				type: "sequence",
@@ -203,23 +218,23 @@ function Compile(tree) {
 				if (term.type == "name") {
 					out[name].match.push({
 						type: "ref",
-						val: opt.tokens,
+						val: term.tokens,
 						count: count
 					});
 				} else if (term.type == "constant") {
 					out[name].match.push({
 						type: "literal",
-						val: opt.tokens,
+						val: term.tokens,
 						count: count
 					});
 				} else {
 					let temp = `#t${tempNo++}`;
-					GenerateTerminal(temp, term);
 					out[name].match.push({
 						type: "ref",
 						val: temp,
 						count: count
 					});
+					GenerateTerminal(temp, term);
 				}
 			}
 		}
@@ -229,9 +244,9 @@ function Compile(tree) {
 		GenerateTerminal(term.tokens[0].tokens, term.tokens[1]);
 	}
 
-	// console.log(167, out);
-
-	return out;
+	return {
+		"terms": out
+	};
 };
 
 
