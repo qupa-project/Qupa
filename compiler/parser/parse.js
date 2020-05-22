@@ -4,7 +4,6 @@ const fs = require('fs');
 const syntax = BNF.types.BNF_Tree.fromJSON(
 	JSON.parse(fs.readFileSync(__dirname+"/qupa.json", 'utf8'))
 );
-console.log(syntax);
 
 
 function Parse (data, filename){
