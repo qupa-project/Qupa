@@ -1,0 +1,25 @@
+{
+  "name": "qupa",
+  "version": "1.0.0",
+  "description": "Queued Parallelism Language",
+  "main": "index.js",
+  "dependencies": {
+    "bnf-parser": "^2.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test-parser": "node compiler/parser/test.js",
+    "build-syntax": "node compiler/parser/build.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qupa-lang/Qupa.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/qupa-lang/Qupa/issues"
+  },
+  "homepage": "https://github.com/qupa-lang/Qupa#readme"
+}
