@@ -10,7 +10,7 @@ files = ['qupa.qp'];
 
 for (let file of files) {
 	let filename = "./std/"+file;
-	let data = fs.readFileSync(filename);
+	let data = fs.readFileSync(filename, 'utf8');
 
 	console.log(`Parsing ${filename}`);
 	Parser(data, filename);
