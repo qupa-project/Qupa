@@ -4,7 +4,7 @@
   "description": "Queued Parallelism Language",
   "main": "index.js",
   "dependencies": {
-    "bnf-parser": "^2.0.0"
+    "bnf-parser": "^2.0.1"
   },
   "devDependencies": {},
   "scripts": {
