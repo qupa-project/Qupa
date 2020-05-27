@@ -1,5 +1,5 @@
 program ::= w* ( stmt_top w* )*
-	stmt_top ::= library
+	stmt_top ::= library | function
 
 #=============================
 #  Helper patterns
@@ -25,15 +25,15 @@ comment ::= comment_single | comment_multi
 #=============================
 #  Constants
 #=============================
-	constant ::= string | hexidecimal | octal | binary | integer | float
+	constant ::= boolean | string | hexidecimal | octal | binary | float | integer
 
 	string ::= string_unicode | string_text | string_multiline
-		string_unicode   ::= "`" ( "\\\"" | !( "\"" )+ )* "`"
-		string_text      ::= "'" ( "\\`"  | !( "'"  )+ )* "'"
+		string_unicode   ::= "\"" ( "\\\"" | !( "\"" )+ )* "\""
+		string_text      ::= "'" ( "\\'"  | !( "'"  )+ )* "'"
 		string_multiline ::= "`" ( "\\`"  | !( "`"  )+ )* "`"
 
 	hexidecimal ::= "0x" hex_char+
-		hex_char ::= digit | "a" | "b" | "c" | "d" | "e" | "f"
+		hex_char ::= digit | "a" | "b" | "c" | "d" | "e" | "f" | "A" | "B" | "C" | "D" | "E" | "F"
 
 	octal ::= "0o" octal_char+
 		octal_char ::= "0" | "1" | "2" | "3"
@@ -42,7 +42,7 @@ comment ::= comment_single | comment_multi
 
 	boolean ::= "true" | "false"
 
-	integer ::= digit_nz ( digit )*
+	integer ::= digit+
 	float   ::= integer "." integer ( "e" "-"? integer )?
 
 
@@ -62,7 +62,35 @@ comment ::= comment_single | comment_multi
 #  Variables
 #=============================
 	name ::= letter ( letter | digit | "_" )*
-	variable ::= name ( accessor name )*
-		accessor ::= accessor_arrow | accessor_dot
-			accessor_arrow ::= "->"
-			accessor_dot   ::= "."
+	variable ::= name accessor?
+		accessor ::= ( accessor_arrow | accessor_dot | accessor_dynamic ) accessor?
+			accessor_arrow ::= "->" name
+			accessor_dot   ::= "." name
+			accessor_dynamic ::= "[" w* expr w* "]"
+
+	data_type ::= pointer | variable
+		pointer ::= "@" variable
+
+	declare ::= data_type w+ name w* ";"
+
+
+#=============================
+#  Function
+#=============================
+function ::= data_type w+ name w* function_template? w* function_arguments w* function_modifier? w* function_body
+	function_template ::= "[" w* ( func_template_arg w* )? ( "," w* func_template_arg w* )* "]"
+		func_template_arg ::= "^" data_type w+ name
+	function_modifier ::= ":" w* ( func_mod w* )+
+		func_mod ::= "inline" | "async"
+	function_arguments ::= "(" w* ( func_arg w* )? ( "," w* func_arg w* )* ")"
+		func_arg ::= "^"? data_type w+ name ( w* "=" w* constant )?
+	function_body ::= "{" w* ( func_stmt w* )* "}"
+	func_stmt ::= return | declare
+
+	return ::= "return" w+ expr w* ";"
+
+#=============================
+#  Expression
+#=============================
+expr ::= expr_opperand
+	expr_opperand ::= variable | constant
