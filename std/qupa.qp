@@ -1,6 +1,10 @@
 import './primatives.qp';
-import './cast.qp' as Cast;
-import './array';
+
+
+flag signature  [ signed, unsigned ];
+flag order      [ unsorted, sorted_BE, sorted_LE ];
+flag execution  [ inline, sync, generator, async ];
+flag assignment [ move, copy ];
 
 
 expose *;

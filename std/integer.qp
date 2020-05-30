@@ -1,0 +1,101 @@
+import "llvm_types.qp" as llvm;
+
+
+class Number: [ copy ] {
+	template [ ^Number Type ]
+	Number add(Type other);
+}
+
+class SignedInteger extends Number {}
+
+class UnsignedInteger extends Number {}
+
+
+class i8: [ signed ] extends SignedInteger {
+	private:
+		llvm.i8 data;
+
+	public:
+		i8 add(i8 other): [ inline ] {
+			asm "add i8 nsw nsw" this ", " other;
+		}
+		i8 add(u8 other): [ inline ] {
+			asm "add i8 nsw nuw" this ", " other;
+		}
+
+		i8 sub(i8 other): [ inline ] {
+			asm "sub i8 nsw nsw" this ", " other;
+		}
+		i8 sub(u8 other): [ inline ] {
+			asm "sub i8 nsw nuw" this ", " other;
+		}
+
+		i8 mul(i8 other): [ inline ] {
+			asm "mul i8 nsw nsw" this ", " other;
+		}
+		i8 mul(u8 other): [ inline ] {
+			asm "mul i8 nsw nuw" this ", " other;
+		}
+
+		i8 div(i8 other): [ inline ] {
+			asm "sdiv i8 nsw nsw" this ", " other;
+		}
+		i8 div(u8 other): [ inline ] {
+			asm "sdiv i8 nsw nuw" this ", " other;
+		}
+
+		i8 rem(i8 other): [ inline ] {
+			asm "srem i8 " this ", " other;
+		}
+		i8 rem(u8 other): [ inline ] {
+			asm "srem i8 " this ", " other;
+		}
+
+		template (u8 Type)
+		Type convert(): [ inline ] {
+
+		}
+}
+expose i8;
+
+class u8: [ unsigned ] extends SignedInteger {
+	private:
+		llvm.u8 data;
+
+	public:
+		i8 add(i8 other): [ inline ] {
+			asm "add i8 nuw nsw" this ", " other;
+		}
+		i8 add(u8 other): [ inline ] {
+			asm "add i8 nuw nuw" this ", " other;
+		}
+
+		i8 sub(i8 other): [ inline ] {
+			asm "sub i8 nuw nsw" this ", " other;
+		}
+		i8 sub(u8 other): [ inline ] {
+			asm "sub i8 nuw nuw" this ", " other;
+		}
+
+		i8 mul(i8 other): [ inline ] {
+			asm "mul i8 nuw nsw" this ", " other;
+		}
+		i8 mul(u8 other): [ inline ] {
+			asm "mul i8 nuw nuw" this ", " other;
+		}
+
+		i8 div(i8 other): [ inline ] {
+			asm "udiv i8 nuw nsw" this ", " other;
+		}
+		i8 div(u8 other): [ inline ] {
+			asm "udiv i8 nuw nuw" this ", " other;
+		}
+
+		i8 rem(i8 other): [ inline ] {
+			asm "urem i8 " this ", " other;
+		}
+		i8 rem(u8 other): [ inline ] {
+			asm "urem i8 " this ", " other;
+		}
+}
+expose u8;
