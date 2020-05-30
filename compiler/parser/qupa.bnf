@@ -1,5 +1,5 @@
 program ::= w* ( stmt_top w* )*
-	stmt_top ::= library | function
+	stmt_top ::= library | function | flag_definition | external
 
 #=============================
 #  Helper patterns
@@ -47,18 +47,6 @@ comment ::= comment_single | comment_multi
 
 
 #=============================
-#  Library Management
-#=============================
-	library ::= import | expose
-
-	import ::= import_as | import_direct
-		import_as ::= "import" w* string w* ";"
-		import_direct ::= "import" w* string w+ "as" w+ name w* ";"
-
-	expose ::= "expose" w+ ( "*" | name ) w* ";"
-
-
-#=============================
 #  Variables
 #=============================
 	name ::= letter ( letter | digit | "_" )*
@@ -77,20 +65,65 @@ comment ::= comment_single | comment_multi
 #=============================
 #  Function
 #=============================
-function ::= data_type w+ name w* function_template? w* function_arguments w* function_modifier? w* function_body
-	function_template ::= "[" w* ( func_template_arg w* )? ( "," w* func_template_arg w* )* "]"
-		func_template_arg ::= "^" data_type w+ name
-	function_modifier ::= ":" w* ( func_mod w* )+
+function ::= func_head w* function_body w* ";"
+	func_head ::= data_type w+ name w+ func_arguments w* func_modifier?
+	func_modifier ::= ":" w* ( func_mod w* )+
 		func_mod ::= "inline" | "async"
-	function_arguments ::= "(" w* ( func_arg w* )? ( "," w* func_arg w* )* ")"
+	func_arguments ::= "(" w* ( func_arg w* )? ( "," w* func_arg w* )* ")"
 		func_arg ::= "^"? data_type w+ name ( w* "=" w* constant )?
 	function_body ::= "{" w* ( func_stmt w* )* "}"
 	func_stmt ::= return | declare
+function_outline ::= func_head w* ";"
+
+
 
 	return ::= "return" w+ expr w* ";"
+
+
+#=============================
+#  Template
+#=============================
+template ::= "template" w*  w* template_opperand
+	template_arguments ::= "(" w* ( template_arg w* )? ( "," w* template_arg w* )* ")"
+		template_arg ::= "^"? data_type w+ name flags?
+	template_opperand ::= function | function_head
+
 
 #=============================
 #  Expression
 #=============================
 expr ::= expr_opperand
 	expr_opperand ::= variable | constant
+
+
+#=============================
+#  Library Management
+#=============================
+	library ::= import | expose
+
+	import ::= import_as | import_direct
+		import_as ::= "import" w* string w* ";"
+		import_direct ::= "import" w* string w+ "as" w+ name w* ";"
+
+	expose ::= "expose" w+ ( "*" | name ) w* ";"
+
+
+#=============================
+#  Flags
+#=============================
+flags ::= ":" w* "[" variable? ( w* "," w* variable )* w* "]" w* ";"
+flag_definition ::= "flag" w+ name w+ "[" w* name ( w* "," w* name )* w* "]" w* ";"
+
+
+#=============================
+#  External
+#=============================
+external ::= "external" w+ external_mode w* "{" w* external_body w* "}"
+	external_mode ::= "assume" | "assume"
+	external_body ::= ( external_term w* )*
+	external_term ::= type_def | structure | function_outline | declare
+
+type_def ::= "type" w+ name w+ "size" w+ integer w* ";"
+
+structure ::= "struct" w* "{" stuct_body w* "}" w* ";"
+	struct_body ::= ( declare )*
