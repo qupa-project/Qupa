@@ -1,0 +1,89 @@
+import "container.qp";
+import "memory.qp";
+import "math.qp";
+
+template (^Wild type)
+class Vector: [ safety.off ] extends Container {
+	protected:
+		@Type first;
+		size_t available;
+		size_t used;
+
+	public:
+/*
+		void constructor(){
+			this->first = reinterpret[@Type](0);
+			this->available = 0;
+			this->used = 0;
+		}
+
+		void reserve (size_t elements) {
+			// If this retraction will remove initilised elements
+			// Safely destruct them
+			if (elements < this->used) {
+				this->resize(elements);
+			}
+
+			// Create a location for the new container
+			@Type future = Memory.Alloc( Type.size() * elements );
+
+			// Copy the previous elements to the new location
+			if (this->available != 0) {
+				size_t len = Math.Min(elements, this->used);
+				Memory.Move(this->first, future, Type.size()*len);
+			}
+
+			// Free the old block
+			Memory.Unalloc(this->first);
+
+			// Update internal state
+			this->available = elements;
+			this->first = future;
+		}
+
+		void resize (size_t elements, Type default = Type()) {
+			bool increase = this->used < elements;
+			size_t start = Math.min(this->used, elements);
+			size_t end   = Math.max(this->used, elements);
+
+			if (increase) {
+				for (size_t i=start; i<end; i++) {
+					this[i] = default;
+				}
+			} else {
+				for (size_t i=start; i<end; i++) {
+					delete this[i];
+				}
+			}
+		}
+
+		void swap(Vector[Type] other) {
+			// Temporary storage state of self
+			@Type  t_first = this->first;
+			size_t t_available = this->available;
+			size_t t_used = this->used;
+
+			// Duplicate the state of the other vector to self
+			this->first     = other->first;
+			this->available = other->available;
+			this->used      = other->used;
+
+			// Replace other's state with what was self
+			other->first     = t_first;
+			other->available = t_available;
+			other->used      = t_used;
+		}
+
+		size_t capacity() {
+			return this->available;
+		}
+		size_t size() {
+			return this->used;
+		}
+
+		@Type: [ location.volitile ] get (size_t index) {
+			return this->first + index;
+		}
+*/
+}
+expose Vector;
