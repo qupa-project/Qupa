@@ -1,10 +1,15 @@
 import './primatives.qp';
+import './integer.qp';
+import './number.qp';
 
 
-flag signed [ true, false ];
-flag order  [ none, BE, LE ];
-flag exec   [ inline, sync, generator, async ];
-flag assign [ move, copy ];
+flag state   [ undefined, initilized ];
+flag signed  [ false, true ];
+flag order   [ none, BE, LE ];
+flag exec    [ sync, inline, generator, async ];
+flag assign  [ move, copy ];
+flag safety  [ on, off ];
+flag address [ stable, volitile ];
 
 
 expose *;
