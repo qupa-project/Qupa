@@ -82,7 +82,10 @@ program ::= w* ( stmt_top w* )*
 
 	function_outline ::= func_head w* ";"
 
-	return ::= "return" w+ expr w* ";"
+	call ::= variable w* "(" w* call_args? w* ")"
+		call_args ::= expr ( w* "," w* expr )*
+
+	return ::= "return" ( w+ expr )? w* ";"
 
 
 #=============================
@@ -101,7 +104,7 @@ program ::= w* ( stmt_top w* )*
 	template ::= "template" w* template_arguments w* template_opperand
 		template_arguments ::= "(" w* ( template_arg w* )? ( "," w* template_arg w* )* ")"
 			template_arg ::= "^"? data_type w+ name flags?
-		template_opperand ::= function_outline | function
+		template_opperand ::= function_outline | function | class
 
 
 #=============================
