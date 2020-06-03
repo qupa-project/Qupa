@@ -1,0 +1,21 @@
+import "./llvm/memory.qp" as llvm;
+
+
+template (^Wild Type)
+@Type Alloc(Size bytes) {
+	// return reinterpret[Type](llvm.malloc(bytes));
+}
+expose alloc;
+
+template (^Wild Type)
+@Type Realloc(@Type ptr, Size bytes) {
+	// return reinterpret[Type]( llvm.realloc( reinterpret[@Void](ptr), bytes) );
+}
+expose realloc;
+
+template (^@Wild Type)
+void Free(Type block) {
+	// llvm.free( reinterpret[@Void](block) );
+	return;
+}
+expose Free;
