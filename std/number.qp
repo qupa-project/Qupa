@@ -1,0 +1,24 @@
+import "string.qp";
+
+class Number: [ assign.copy ] {
+	template ( ^Number Type )
+	Number add(Type other);
+
+	template ( ^Number Type )
+	Number sub(Type other);
+
+	template ( ^Number Type )
+	Number div(Type other);
+
+	template ( ^Number Type )
+	Number mul(Type other);
+
+	template ( ^Number Type )
+	Number rem(Type other);
+
+	template ( ^Number Type )
+	Number convertTo();
+
+	String toString();
+};
+expose Number;
