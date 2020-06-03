@@ -1,10 +1,5 @@
-import "llvm_types.qp" as llvm;
-
-
-class Number: [ assign.copy ] {
-	template ( ^Number Type )
-	Number add(Type other);
-};
+import "./llvm/types.qp" as llvm;
+import "number.qp";
 
 class Integer extends Number {};
 
