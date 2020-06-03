@@ -1,1 +1,3 @@
 import "integer.qp";
+
+expose *;
