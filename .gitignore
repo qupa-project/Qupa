@@ -19,6 +19,8 @@
 *.qp
 !std/*.qp
 !std/*/*.qp
+!test/*.qp
+!test/*/*.qp
 
 # Node Modules
 node_modules/*
