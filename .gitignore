@@ -18,6 +18,7 @@
 # Test qupa files
 *.qp
 !std/*.qp
+!std/*/*.qp
 
 # Node Modules
 node_modules/*
