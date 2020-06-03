@@ -61,6 +61,8 @@ program ::= w* ( stmt_top w* )*
 
 	declare ::= data_type w+ name w* ";"
 
+	assign ::= variable w* "=" w* expr w* ";"
+
 
 #=============================
 #  Flags
@@ -78,7 +80,7 @@ program ::= w* ( stmt_top w* )*
 			func_arguments ::= "(" w* ( func_arg w* )? ( "," w* func_arg w* )* ")"
 				func_arg ::= "^"? data_type w+ name ( w* "=" w* constant )?
 		function_body ::= "{" w* ( func_stmt w* )* "}"
-		func_stmt ::= comment | asm | return | declare
+		func_stmt ::= comment | asm | return | call | declare | assign
 
 	function_outline ::= func_head w* ";"
 
@@ -110,8 +112,25 @@ program ::= w* ( stmt_top w* )*
 #=============================
 #  Expression
 #=============================
-	expr ::= expr_opperand
-		expr_opperand ::= variable | constant
+	expr ::= expr_p5
+
+	expr_p5       ::= expr_p5_and | expr_p5_or | expr_p4
+		expr_p5_and      ::= w* expr_p4 w* "&&" w* expr_p5
+		expr_p5_or       ::= w* expr_p4 w* "||" w* expr_p5
+	expr_p4       ::= expr_p4_modulus | expr_p3
+		expr_p4_modulus  ::= w* expr_p3 w* "%" w*  expr_p4
+	expr_p3       ::= expr_p3_multiply | expr_p3_divide | expr_p2
+		expr_p3_multiply ::= w* expr_p2 w* "*" w* expr_p3
+		expr_p3_divide   ::= w* expr_p2 w* "/" w* expr_p3
+	expr_p2       ::= expr_p2_add | expr_p2_sub | expr_p1
+		expr_p2_add      ::= w* expr_p1 w* "+" w* expr_p2
+		expr_p2_sub      ::= w* expr_p1 w* "-" w* expr_p2
+	expr_p1       ::= expr_p1_invert | expr_p1_address | expr_p1_value | expr_opperand
+		expr_p1_invert   ::= w* "!" w* expr_opperand
+		expr_p1_address  ::= w* "@" w* expr_opperand
+		expr_p1_value    ::= w* "$" w* expr_opperand
+	expr_opperand ::= call | expr_brackets | constant | variable
+		expr_brackets    ::= "(" w* expr w* ")"
 
 
 #=============================
