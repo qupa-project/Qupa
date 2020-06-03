@@ -1,5 +1,5 @@
 program ::= w* ( stmt_top w* )*
-	stmt_top ::= library | function | flag_definition | external
+	stmt_top ::= library | class | template | flag_definition | external | function
 
 #=============================
 #  Helper patterns
@@ -15,7 +15,7 @@ program ::= w* ( stmt_top w* )*
 
 
 #=============================
-#  Constants
+#  Comments
 #=============================
 	comment ::= comment_single | comment_multi
 		comment_single ::= "//" !( nl )* nl
@@ -63,30 +63,45 @@ program ::= w* ( stmt_top w* )*
 
 
 #=============================
+#  Flags
+#=============================
+	flags ::= ":" w* "[" w* flag_args w* "]"
+		flag_args ::= variable ( w* "," w* variable )*
+	flag_definition ::= "flag" w+ name w+ "[" w* name ( w* "," w* name )* w* "]" w* ";"
+
+
+#=============================
 #  Function
 #=============================
-	function ::= func_head w* function_body w* ";"
-		func_head ::= data_type w+ name w+ func_arguments w* func_modifier?
-		func_modifier ::= ":" w* ( func_mod w* )+
-			func_mod ::= "inline" | "async"
-		func_arguments ::= "(" w* ( func_arg w* )? ( "," w* func_arg w* )* ")"
-			func_arg ::= "^"? data_type w+ name ( w* "=" w* constant )?
+	function ::= func_head w* function_body w* ";"?
+		func_head ::= data_type w+ name w* func_arguments w* flags? w*
+			func_arguments ::= "(" w* ( func_arg w* )? ( "," w* func_arg w* )* ")"
+				func_arg ::= "^"? data_type w+ name ( w* "=" w* constant )?
 		function_body ::= "{" w* ( func_stmt w* )* "}"
-		func_stmt ::= return | declare
+		func_stmt ::= comment | asm | return | declare
+
 	function_outline ::= func_head w* ";"
-
-
 
 	return ::= "return" w+ expr w* ";"
 
 
 #=============================
+#  Class
+#=============================
+	class ::= "class" w+ name w* flags? w* class_inherit? w* "{" class_body "}" w* ";"?
+		class_inherit ::= "extends" w+ variable
+		class_body ::= ( w* class_stmt )* w*
+		class_stmt ::= comment | template | class_access | function | declare | function_outline
+		class_access ::= "public:" | "private:" | "protected:" | "static:"
+
+
+#=============================
 #  Template
 #=============================
-	template ::= "template" w*  w* template_opperand
+	template ::= "template" w* template_arguments w* template_opperand
 		template_arguments ::= "(" w* ( template_arg w* )? ( "," w* template_arg w* )* ")"
 			template_arg ::= "^"? data_type w+ name flags?
-		template_opperand ::= function | function_head
+		template_opperand ::= function_outline | function
 
 
 #=============================
@@ -109,16 +124,9 @@ program ::= w* ( stmt_top w* )*
 
 
 #=============================
-#  Flags
-#=============================
-	flags ::= ":" w* "[" variable? ( w* "," w* variable )* w* "]" w* ";"
-	flag_definition ::= "flag" w+ name w+ "[" w* name ( w* "," w* name )* w* "]" w* ";"
-
-
-#=============================
 #  External
 #=============================
-	external ::= "external" w+ external_mode w* "{" w* external_body w* "}"
+	external ::= "external" w+ external_mode w* "{" w* external_body w* "}" ";"?
 		external_mode ::= "assume" | "assume"
 		external_body ::= ( external_term w* )*
 		external_term ::= type_def | structure | function_outline | declare
@@ -127,3 +135,11 @@ program ::= w* ( stmt_top w* )*
 
 	structure ::= "struct" w* "{" stuct_body w* "}" w* ";"
 		struct_body ::= ( declare )*
+
+
+#=============================
+#  LLVM IR manipulation
+#=============================
+  asm ::= "asm" w+ asm_param+ w* ";"
+		asm_param ::= w* asm_opperand
+		asm_opperand ::= string | variable

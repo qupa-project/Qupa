@@ -8,26 +8,22 @@ const syntax = BNF.types.BNF_Tree.fromJSON(
 
 function Parse (data, filename){
   // Parse the file and check for errors
-  let tree = BNF.Parse(data, syntax, "program");
+  let result = BNF.Parse(data, syntax, "program");
 
-  if (tree.hasError || tree.isPartial) {	
-    let ref = null;
-    if (tree.tree instanceof BNF.types.BNF_SyntaxError) {
-      ref = tree.tree.ref;
-    } else {
-      ref = tree.tree.ref.reached || tree.tree.ref.end;
-    }
+  if (result.hasError || result.isPartial) {	
+    let ref = result.tree.ref.reached.getReach();
 
     let msg = filename ? `${filename}: ` : "";
     msg += `Syntax error at ${ref.toString()}\n`;
-    msg += "  " + BNF.Message.HighlightArea(data, ref).split('\n').join('\n  ');
+    msg += `  ${BNF.Message.HighlightArea(data, ref).split('\n').join('\n  ')}\n\n`;
+    msg += `  Interpreted: ${result.tree.reached.getCausation()}`;
     console.error(msg);
     process.exit(1);
 	}
 	
 	// TODO: Simplfy tree output
 
-  return tree;
+  return result.tree;
 }
 
 module.exports = Parse;
