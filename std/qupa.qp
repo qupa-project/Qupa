@@ -1,10 +1,10 @@
 import './primatives.qp';
 
 
-flag signature  [ signed, unsigned ];
-flag order      [ unsorted, sorted_BE, sorted_LE ];
-flag execution  [ inline, sync, generator, async ];
-flag assignment [ move, copy ];
+flag signed [ true, false ];
+flag order  [ none, BE, LE ];
+flag exec   [ inline, sync, generator, async ];
+flag assign [ move, copy ];
 
 
 expose *;
