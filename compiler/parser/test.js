@@ -5,17 +5,16 @@ const Parser = require('./parse.js');
 const fs = require('fs');
 
 
-let files = fs.readdirSync("./std/").reverse();
-// files = ['integer.qp'];
+let files = fs.readdirSync("./std/").reverse().map(x => `./std/${x}`)
+	.concat( fs.readdirSync("./test/").reverse().map(x => `./test/${x}`) );
 
 for (let file of files) {
 	if (file.slice(-3) != ".qp") {
 		continue;
 	}
 
-	let filename = "./std/"+file;
-	console.log(`Parsing ${filename}`);
-	let data = fs.readFileSync(filename, 'utf8');
-	Parser(data, filename);
+	console.log(`Parsing ${file}`);
+	let data = fs.readFileSync(file, 'utf8');
+	Parser(data, file);
 	console.log("  Done");
 }
