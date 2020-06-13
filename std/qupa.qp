@@ -7,6 +7,7 @@ flag state   [ undefined, initilized ];
 flag signed  [ false, true ];
 flag order   [ none, BE, LE ];
 flag exec    [ sync, inline, generator, async ];
+flag execThread [ ignorant, caller, fixed ];
 flag assign  [ move, copy ];
 flag safety  [ on, off ];
 flag address [ stable, volitile ];
