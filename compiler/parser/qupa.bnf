@@ -80,7 +80,7 @@ program ::= w* ( stmt_top w* )*
 			func_arguments ::= "(" w* ( func_arg w* )? ( "," w* func_arg w* )* ")"
 				func_arg ::= "^"? data_type w+ name ( w* "=" w* constant )?
 		function_body ::= "{" w* ( func_stmt w* )* "}"
-		func_stmt ::= comment | asm | return | call | declare | assign
+			func_stmt ::= comment | if | for | while | return | asm | call | declare | assign
 
 	function_outline ::= func_head w* ";"
 
@@ -165,3 +165,24 @@ program ::= w* ( stmt_top w* )*
   asm ::= "asm" w+ asm_param+ w* ";"
 		asm_param ::= w* asm_opperand
 		asm_opperand ::= string | variable
+
+
+#=============================
+#  If statement
+#=============================
+	if ::= if_stmt ( w* elif_stmt )* w* else_stmt?
+		if_stmt   ::= "if"   w* "(" w* expr w* ")" w* "{" w* if_body w* "}"
+		elif_stmt ::= "elif" w* "(" w* expr w* ")" w* "{" w* if_body w* "}"
+		else_stmt ::= "else" w* "{" w* if_body w* "}"
+		if_body ::= func_stmt*
+
+
+#=============================
+#  Loops
+#=============================
+	for ::= "for" w* "(" w* for_condition w* ")" w* "{" w* for_body w* "}"
+		for_condition ::= expr w* ";" w* expr w* ";" expr
+		for_body ::= func_stmt*
+
+	while ::= "while" w* "(" w* expr w* ")" w* "{" w* while_body w* "}"
+		while_body ::= func_stmt*
