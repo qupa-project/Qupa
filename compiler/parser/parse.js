@@ -142,7 +142,6 @@ function Simplify_Type_Def(node) {
 
 	node.tokens = out;
 	node.reached = null;
-	console.log(143, node);
 	return node;
 }
 
@@ -152,7 +151,11 @@ function Simplify_Name(node) {
 	let out = node.tokens[0][0].tokens[0].tokens;
 	for (let inner of node.tokens[1]) {
 		if (Array.isArray(inner.tokens)) {
-			out += inner.tokens[0].tokens;
+			if (inner.tokens[0].type == "letter") {
+				out += inner.tokens[0].tokens[0].tokens;
+			} else {
+				out += inner.tokens[0].tokens;
+			}
 		} else {
 			out += inner.tokens;
 		}
@@ -162,14 +165,79 @@ function Simplify_Name(node) {
 	node.reached = null;
 	return node;
 }
+function Simplify_Data_Type(node) {
+	let inner;
+	switch (node.tokens[0].type) {
+		case "variable":
+			inner = Simplify_Variable(node.tokens[0]);
+			break;
+		case "pointer":
+			inner = Simplify_Pointer(node.tokens[0]);
+			break;
+		case "deref":
+			inner = Simplify_Deref(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected data type ${node.tokens[0].type}`);
+	}
+
+	node.reached = null;
+	node.tokes = inner;
+	return node;
+}
 function Simplify_Integer(node) {
-	console.log(166, node);
 	let out = "";
 	for (let inner of node.tokens[0]) {
 		out += inner.tokens;
 	}
 
 	node.tokens  = out;
+	node.reached = null;
+	return node;
+}
+
+
+
+function Simplify_Variable (node) {
+	let out = [];
+	out.push(Simplify_Name( node.tokens[0][0] )); // root
+
+	for (let access of node.tokens[1]) {
+		access = access.tokens[0];
+		switch (access.type) {
+			case "accessor_dynamic":
+				out.push([ "[]", Simplify_Call_Args(access.tokens[2][0]) ]);
+				break;
+			case "accessor_static":
+				out.push( [".", Simplify_Name(access.tokens[1][0])] );
+				break;
+			case "accessor_refer":
+				out.push( ["->", Simplify_Name(access.tokens[1][0])] );
+				break;
+			default:
+				throw new TypeError(`Unexpected accessor type ${access.type}`);
+		}
+	}
+	
+	node.tokens = out;
+	node.reached = null;
+	return node;
+}
+
+function Simplify_Pointer (node) {
+	let out = ["@"];
+	out.push( Simplify_Variable(node.tokens[1][0]) );
+	
+	node.tokens = out;
+	node.reached = null;
+	return node;
+}
+
+function Simplify_Deref (node) {
+	let out = ["$"];
+	out.push( Simplify_Variable(node.tokens[1][0]) );
+
+	node.tokens = out;
 	node.reached = null;
 	return node;
 }
@@ -187,6 +255,30 @@ function Simplify_Function(node) {
 	return node;
 }
 function Simplify_Function_Outline(node) {
+	node.tokens = Simplify_Function_Head(node.tokens[0][0]).tokens;
+	node.reached = null;
+	return node;
+}
+function Simplify_Function_Head (node) {
+	out = [];
+	out.push(Simplify_Data_Type  (node.tokens[0][0])); // Return type
+	out.push(Simplify_Name       (node.tokens[2][0])); // Name
+	out.push(Simplify_Func_Args  (node.tokens[4][0])); // arguments
+	out.push(Simplify_Func_Flags (node.tokens[6][0])); // flags
+
+	node.tokens = out;
+	node.reached = null;
+	return node;
+}
+function Simplify_Func_Args (node) {
+	// TODO
+	return node;
+}
+function Simplify_Func_Flags (node) {
+	// TODO
+	return node;
+}
+function Simplify_Call_Args (node) {
 	// TODO
 	return node;
 }
