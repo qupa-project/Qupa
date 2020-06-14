@@ -15,4 +15,4 @@ let origin = path.resolve(root, process.argv[2]);
 let project = new Project(root);
 project.import(origin);
 
-console.log(project);
+// console.log(project);
