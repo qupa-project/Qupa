@@ -1,0 +1,26 @@
+/*
+	Description: First executable version of Qupa
+	Goals: Compiles to LLVM-IR
+	  Able to do integer addition
+		Print result
+		Exit code 0
+*/
+
+external assume {
+	type i64 size 8;
+
+	int add(int a, int b);
+	void print(int val);
+}
+
+int main () {
+	int a;
+	int b;
+	int c;
+
+	a = 1;
+	b = 2;
+	c = add(a, b);
+
+	return 0;
+}
