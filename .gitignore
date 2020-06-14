@@ -38,5 +38,7 @@ temp/*
 # Test files
 *.qp
 
+node_modules/*
+
 # Include standard libraries
 !standard-library/*
