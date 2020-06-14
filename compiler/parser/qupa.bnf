@@ -50,14 +50,15 @@ program ::= w* ( stmt_top w* )*
 #  Variables
 #=============================
 	name ::= letter ( letter | digit | "_" )*
-	variable ::= name accessor?
-		accessor ::= ( accessor_arrow | accessor_dot | accessor_dynamic ) accessor?
-			accessor_arrow ::= "->" name
-			accessor_dot   ::= "." name
-			accessor_dynamic ::= "[" w* expr w* "]"
+	variable ::= name accessor*
+		accessor ::= accessor_dynamic | accessor_refer | accessor_static
+			accessor_dynamic ::= "[" w* call_args w* "]"
+			accessor_refer   ::= "->" name
+			accessor_static  ::= "." name
 
-	data_type ::= pointer | variable
+	data_type ::= pointer | deref | variable
 		pointer ::= "@" variable
+		deref   ::= "$" variable
 
 	declare ::= data_type w+ name w* ";"
 
