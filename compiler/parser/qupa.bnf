@@ -1,5 +1,5 @@
 program ::= w* ( stmt_top w* )*
-	stmt_top ::= library | class | template | flag_definition | external | function
+	stmt_top ::= comment | library | class | template | flag_definition | external | function
 
 #=============================
 #  Helper patterns
