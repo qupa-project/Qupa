@@ -342,7 +342,13 @@ function Simplify_Return (node) {
 
 
 function Simplify_Declare (node) {
-	// TODO
+	let out = [
+		Simplify_Data_Type(node.tokens[0][0]),
+		Simplify_Name(node.tokens[2][0])
+	];
+
+	node.tokens = out;
+	node.reach = null;
 	return node;
 }
 
