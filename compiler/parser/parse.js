@@ -81,21 +81,16 @@ function Simplify_Flag_Definition(node) {
 
 
 
-function Simplify_External(node) {
-	let out = [];
-
-	out.push(node.tokens[2][0]);                         // mode
-	out.push(                                            // body
-		Simplify_External_Body(node.tokens[6][0]).tokens
-	); 
-	
-	node.tokens = out;
+function Simplify_External(node) {	
+	node.tokens = [
+		node.tokens[2][0],                               // mode
+		Simplify_External_Body(node.tokens[6][0]).tokens // internal
+	];
 	node.reached = null;
 	return node;
 }
 function Simplify_External_Body(node) {
 	let out = [];
-
 	for (let inner of node.tokens[0]) {
 		out.push(Simplify_External_Term(inner.tokens[0][0]));
 	}
@@ -132,15 +127,10 @@ function Simplify_Structure(node) {
 }
 
 function Simplify_Type_Def(node) {
-	let out = [];
-	out.push(                          // name
-		Simplify_Name(node.tokens[2][0])
-	);
-	out.push(                          // size
-		Simplify_Integer(node.tokens[6][0])
-	);
-
-	node.tokens = out;
+	node.tokens = [
+		Simplify_Name(node.tokens[2][0]),   // name
+		Simplify_Integer(node.tokens[6][0]) // size
+	];
 	node.reached = null;
 	return node;
 }
@@ -224,20 +214,18 @@ function Simplify_Variable (node) {
 	return node;
 }
 
-function Simplify_Pointer (node) {
-	let out = ["@"];
-	out.push( Simplify_Variable(node.tokens[1][0]) );
-	
-	node.tokens = out;
+function Simplify_Pointer (node) {	
+	node.tokens = [
+		"@", Simplify_Variable(node.tokens[1][0])
+	];
 	node.reached = null;
 	return node;
 }
 
 function Simplify_Deref (node) {
-	let out = ["$"];
-	out.push( Simplify_Variable(node.tokens[1][0]) );
-
-	node.tokens = out;
+	node.tokens = [
+		"$", Simplify_Variable(node.tokens[1][0])
+	];
 	node.reached = null;
 	return node;
 }
@@ -251,12 +239,10 @@ function Simplify_Declare(node) {
 
 
 function Simplify_Function(node) {
-	let out = [];
-
-	out.push( Simplify_Function_Head(node.tokens[0][0]) );
-	out.push( Simplify_Function_Body(node.tokens[2][0]) );
-
-	node.reached = null;
+	node.reached = [
+		Simplify_Function_Head(node.tokens[0][0]), // head
+		Simplify_Function_Body(node.tokens[2][0])  // body
+	];
 	node.tokes = out;
 	return node;
 }
@@ -266,19 +252,17 @@ function Simplify_Function_Outline(node) {
 	return node;
 }
 function Simplify_Function_Head (node) {
-	out = [];
-	out.push(Simplify_Data_Type  (node.tokens[0][0])); // Return type
-	out.push(Simplify_Name       (node.tokens[2][0])); // Name
-	out.push(Simplify_Func_Args  (node.tokens[4][0])); // arguments
-	out.push(Simplify_Func_Flags (node.tokens[6][0])); // flags
-
-	node.tokens = out;
+	node.tokens = [
+		Simplify_Data_Type  (node.tokens[0][0]), // Return type
+		Simplify_Name       (node.tokens[2][0]), // Name
+		Simplify_Func_Args  (node.tokens[4][0]), // Arguments
+		Simplify_Func_Flags (node.tokens[6][0])  // Flags
+	];
 	node.reached = null;
 	return node;
 }
 function Simplify_Function_Body (node) {
 	let out = [];
-
 	for (let inner of node.tokens[2]) {
 		out.push( Simplify_Function_Stmt(inner.tokens[0][0]).tokens );
 	}
