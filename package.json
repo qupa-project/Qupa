@@ -8,10 +8,11 @@
   },
   "devDependencies": {},
   "scripts": {
-    "compile" : "node compiler/compile.js",
-    "test": "npm test-parser",
-    "test-parser": "node compiler/parser/test.js",
-    "build-syntax": "node compiler/parser/build.js"
+    "compile"      : "node compiler/compile.js",
+    "test"         : "npm test-parser",
+    "test-parser"  : "node compiler/parser/test.js",
+    "build"        : "npm run build-syntax",
+    "build-syntax" : "node compiler/parser/build.js"
   },
   "repository": {
     "type": "git",
