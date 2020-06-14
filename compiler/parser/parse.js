@@ -218,7 +218,7 @@ function Simplify_Variable (node) {
 				throw new TypeError(`Unexpected accessor type ${access.type}`);
 		}
 	}
-	
+
 	node.tokens = out;
 	node.reached = null;
 	return node;
@@ -251,7 +251,13 @@ function Simplify_Declare(node) {
 
 
 function Simplify_Function(node) {
-	// TODO
+	let out = [];
+
+	out.push( Simplify_Function_Head(node.tokens[0][0]) );
+	out.push( Simplify_Function_Body(node.tokens[2][0]) );
+
+	node.reached = null;
+	node.tokes = out;
 	return node;
 }
 function Simplify_Function_Outline(node) {
@@ -270,6 +276,43 @@ function Simplify_Function_Head (node) {
 	node.reached = null;
 	return node;
 }
+function Simplify_Function_Body (node) {
+	let out = [];
+
+	for (let inner of node.tokens[2]) {
+		out.push( Simplify_Function_Stmt(inner.tokens[0][0]).tokens );
+	}
+
+	node.tokens = [];
+	node.reached = null;
+	return node;
+}
+function Simplify_Function_Stmt (node) {
+	let inner;
+	switch (node.tokens[0].type) {
+		case "comment":
+			break;
+		case "declare":
+			inner = Simplify_Declare(node.tokens[0]);
+			break;
+		case "assign":
+			inner = Simplify_Assign(node.tokens[0]);
+			break;
+		case "return":
+			inner = Simplify_Return(node.tokens[0]);
+			break;
+		case "if":
+		case "for":
+		case "while":
+		case "asm":
+		default:
+			throw new TypeError(`Unexpected function statement ${node.tokens[0].type}`);
+	}
+	
+	node.out = [inner];
+	node.reach = null;
+	return node;
+}
 function Simplify_Func_Args (node) {
 	// TODO
 	return node;
@@ -282,6 +325,41 @@ function Simplify_Call_Args (node) {
 	// TODO
 	return node;
 }
+
+
+
+function Simplify_Return (node) {
+	let inner = [];
+	if (node.tokens[1].length == 1) {
+		inner = [ Simplify_Expr(node.tokens[1][0].tokens[1][0]) ];
+	}
+
+	node.tokens = [];
+	node.reach = null;
+	return node;
+}
+
+
+
+function Simplify_Declare (node) {
+	// TODO
+	return node;
+}
+
+
+
+function Simplify_Assign  (node) {
+	// TODO
+	return node;
+}
+
+
+
+function Simplify_Expr (node) {
+	// TODO
+	return node;
+}
+
 
 
 function Parse (data, filename){
