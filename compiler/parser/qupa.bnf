@@ -149,7 +149,7 @@ program ::= w* ( stmt_top w* )*
 #  External
 #=============================
 	external ::= "external" w+ external_mode w* "{" w* external_body w* "}" ";"?
-		external_mode ::= "assume" | "assume"
+		external_mode ::= "assume" | "export"
 		external_body ::= ( external_term w* )*
 		external_term ::= type_def | structure | function_outline | declare
 
