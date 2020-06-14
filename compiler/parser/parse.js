@@ -54,7 +54,65 @@ function Simplify_Stmt_Top(node) {
 
 
 function Simplify_Library(node) {
-	// TODO
+	switch (node.tokens[0].type) {
+		case "import":
+			node.tokens = Simplify_Library_Import(node.tokens[0]);
+			break;
+		case "expose":
+			node.tokens = Simplify_Library_Expose(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected library statement ${node.tokens[0].type}`);
+	}
+	node.reach = null;
+	return node;
+}
+function Simplify_Library_Import (node) {
+	let out = [null, null];
+	switch (node.tokens[0].type) {
+		case "import_direct":
+			out[1] = Simplify_Name(node.tokens[0].tokens[6][0]);
+		case "import_as":
+			out[0] = Simplify_String(node.tokens[0].tokens[2][0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected library statement ${node.tokens[0].type}`);
+	}
+
+	node.tokens = out;
+	node.reach = null;
+	return node;
+}
+function Simplify_Library_Expose (node) {
+	let match = "";
+	if (typeof(node.tokens[2][0].tokens) == "string") {
+		match = "*";
+	} else {
+		match = Simplify_Name(node.tokens[2][0].tokens[0]).tokens;
+	}
+
+	node.tokens = match;
+	node.reach = null;
+	return node;
+}
+
+
+
+function Simplify_String (node) {
+	let data = "";
+	for (let seg of node.tokens[0].tokens[1]) {
+		if (typeof(seg.tokens) == "string") {
+			data += seg.tokens;
+		} else {
+			data += seg.tokens[0].tokens;
+		}
+	}
+
+	node.tokens = [
+		node.tokens[0].tokens[0][0].tokens[0],
+		data
+	];
+	node.reach = null;
 	return node;
 }
 
@@ -239,11 +297,11 @@ function Simplify_Declare(node) {
 
 
 function Simplify_Function(node) {
-	node.reached = [
+	node.tokens = [
 		Simplify_Function_Head(node.tokens[0][0]), // head
 		Simplify_Function_Body(node.tokens[2][0])  // body
 	];
-	node.tokes = out;
+	node.reached = null;
 	return node;
 }
 function Simplify_Function_Outline(node) {
@@ -293,7 +351,7 @@ function Simplify_Function_Stmt (node) {
 			throw new TypeError(`Unexpected function statement ${node.tokens[0].type}`);
 	}
 	
-	node.out = [inner];
+	node.tokens = [inner];
 	node.reach = null;
 	return node;
 }
@@ -339,7 +397,11 @@ function Simplify_Declare (node) {
 
 
 function Simplify_Assign  (node) {
-	// TODO
+	node.tokens = [
+		Simplify_Variable (node.tokens[0][0]), // target variable
+		Simplify_Expr     (node.tokens[4][0])  // value
+	]
+	node.reached = null;
 	return node;
 }
 
