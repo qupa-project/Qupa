@@ -139,9 +139,9 @@ function Simplify_Flag_Definition(node) {
 
 
 
-function Simplify_External(node) {	
+function Simplify_External(node) {
 	node.tokens = [
-		node.tokens[2][0],                               // mode
+		node.tokens[2][0].tokens,                        // mode
 		Simplify_External_Body(node.tokens[6][0]).tokens // internal
 	];
 	node.reached = null;
@@ -150,7 +150,10 @@ function Simplify_External(node) {
 function Simplify_External_Body(node) {
 	let out = [];
 	for (let inner of node.tokens[0]) {
-		out.push(Simplify_External_Term(inner.tokens[0][0]));
+		let next = Simplify_External_Term(inner.tokens[0][0]);
+		if (next) {
+			out.push(next);
+		}
 	}
 	
 	node.tokens = out;
@@ -158,7 +161,7 @@ function Simplify_External_Body(node) {
 	return node;
 }
 function Simplify_External_Term(node) {
-	let inner;
+	let inner = null;
 	switch (node.tokens[0].type) {
 		case "function_outline":
 			inner = Simplify_Function_Outline(node.tokens[0]);
@@ -171,6 +174,8 @@ function Simplify_External_Term(node) {
 			break;
 		case "declare":
 			inner = Simplify_Declare(node.tokens[0]);
+			break;
+		case "comment":
 			break;
 		default:
 			throw new TypeError(`Unexpected external statement ${node.tokens[0].type}`);
@@ -289,13 +294,6 @@ function Simplify_Deref (node) {
 }
 
 
-
-function Simplify_Declare(node) {
-	// TODO
-	return node;
-}
-
-
 function Simplify_Function(node) {
 	node.tokens = [
 		Simplify_Function_Head(node.tokens[0][0]), // head
@@ -305,7 +303,9 @@ function Simplify_Function(node) {
 	return node;
 }
 function Simplify_Function_Outline(node) {
-	node.tokens = Simplify_Function_Head(node.tokens[0][0]).tokens;
+	node.tokens = [
+		Simplify_Function_Head(node.tokens[0][0])  // head
+	];
 	node.reached = null;
 	return node;
 }
