@@ -6,6 +6,8 @@ class Project {
 		this.rootPath = rootPath;
 		this.files  = [];
 		this.idGen = new Generator_ID();
+
+		this.error = false;
 	}
 
 	import(path) {
@@ -19,6 +21,26 @@ class Project {
 		this.files.push(temp);
 
 		return temp;
+	}
+
+	link(){
+		for (let file of this.files) {
+			file.link();
+		}
+	}
+
+	markError() {
+		this.error = true;
+	};
+
+
+	compile() {
+		let fragment = [];
+		for (let file of this.files) {
+			fragment.push(file.compile());
+		}
+
+		return fragment.join("\n");
 	}
 }
 
