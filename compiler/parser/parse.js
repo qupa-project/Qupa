@@ -356,7 +356,7 @@ function Simplify_Function_Stmt (node) {
 	return node;
 }
 function Simplify_Func_Args (node) {
-	node.tokens = node.tokens[2].length > 0 ? Simplify_Func_Args_List(node.tokens[2][0]) : [];
+	node.tokens = node.tokens[2].length > 0 ? Simplify_Func_Args_List(node.tokens[2][0]).tokens : [];
 	node.reached = null;
 	return node;
 }
@@ -365,11 +365,16 @@ function Simplify_Func_Args_List (node) {
 
 	node.tokens = ittr.map((arg) => {
 		return [
-			arg.tokens[0][0], // type
+			Simplify_Data_Type(arg.tokens[0][0]), // type
 			arg.tokens[2][0], // name
 			arg.tokens[3].length > 0 ? arg.tokens[3].tokens[3][0] : null // default
 		]
-	})
+	});
+	
+	// Remove internal value
+	for (let i in node.tokes) {
+		node.tokes[i].reached = null;
+	}
 
 	node.reached = null;
 	return node;
