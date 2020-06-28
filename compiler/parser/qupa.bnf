@@ -78,8 +78,9 @@ program ::= w* ( stmt_top w* )*
 #=============================
 	function ::= func_head w* function_body w* ";"?
 		func_head ::= data_type w+ name w* func_arguments w* flags? w*
-			func_arguments ::= "(" w* ( func_arg w* )? ( "," w* func_arg w* )* ")"
-				func_arg ::= "^"? data_type w+ name ( w* "=" w* constant )?
+			func_arguments ::= "(" w* func_arg_list? ")"
+				func_arg_list ::= func_arg w* ( "," w* func_arg w* )*
+				func_arg      ::= data_type w+ name ( w* "=" w* constant )?
 		function_body ::= "{" w* ( func_stmt w* )* "}"
 			func_stmt ::= comment | if | for | while | return | asm | call | declare | assign
 
@@ -152,7 +153,7 @@ program ::= w* ( stmt_top w* )*
 	external ::= "external" w+ external_mode w* "{" w* external_body w* "}" ";"?
 		external_mode ::= "assume" | "export"
 		external_body ::= ( external_term w* )*
-		external_term ::= type_def | structure | function_outline | declare
+		external_term ::= type_def | structure | function_outline | declare | comment
 
 	type_def ::= "type" w+ name w+ "size" w+ integer w* ";"
 
