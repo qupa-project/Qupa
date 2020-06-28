@@ -1,4 +1,5 @@
 import "string.qp";
+import "flags.qp";
 
 class Number: [ assign.copy ] {
 	template ( ^Number Type )

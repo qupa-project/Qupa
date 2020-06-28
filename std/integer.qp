@@ -1,5 +1,6 @@
 import "./llvm/types.qp" as llvm;
 import "number.qp";
+import "flags.qp";
 
 class Integer extends Number {};
 

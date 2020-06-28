@@ -1,4 +1,5 @@
-flag mut_state = [ unknown, locked ];
+flag mutex_state = [ unknown, locked ];
+expose mutex_state;
 
 class Mutex {
 	private:
