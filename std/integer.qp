@@ -3,7 +3,7 @@ import "number.qp";
 
 class Integer extends Number {};
 
-class i8: [ signed ] extends Integer {
+class i8: [ signed.true ] extends Integer {
 	private:
 		llvm.i8 data;
 
@@ -50,7 +50,7 @@ class i8: [ signed ] extends Integer {
 }
 expose i8;
 
-class u8: [ unsigned ] extends SignedInteger {
+class u8: [ signed.false ] extends SignedInteger {
 	private:
 		llvm.u8 data;
 
