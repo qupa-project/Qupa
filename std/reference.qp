@@ -1,0 +1,41 @@
+template (Wild T)
+class Ref_Node {
+	Mutex lock;
+	T data;
+}
+
+
+
+template (Wild T)
+class Ref {
+	private:
+		@Ref_Node[T] real;
+
+	public:
+		void open_sync () {
+			prereq flag this mut_state == unknown;
+			affect flag this mut_state = locked;
+			unsafe {
+				this->real->lock.lock_sync();
+			}
+		}
+
+		void close_sync () {
+			prereq flag this mut_state == locked;
+			affect flag this mut_state = unknown;
+			unsafe {
+				this->real->lock.unlock_sync();
+			}
+		}
+
+		@T dereference() {
+			prereq flag this.mut_state == locked;
+			return @this->real->data;
+		}
+
+		void assign(T other) {
+			prereq flag mut_state of this == locked;
+			this->real->data = other;
+		}
+}
+expose Ref;
