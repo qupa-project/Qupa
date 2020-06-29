@@ -11,6 +11,8 @@ class File {
 		this.path = filepath;
 		this.id = id;
 
+		this.data = null;
+
 		this.names = {};
 
 		this.parse();
@@ -62,17 +64,34 @@ class File {
 
 		if (!this.names[space.name]) {
 			this.names[space.name] = space;
-		} else if (!this.names[space.name].merge(space)) {
-			throw "Multiple definitions of same namespace";
+		} else if (
+			!this.names[space.name].merge ||
+			!this.names[space.name].merge(space)
+		) {
+			console.error("Multiple definitions of same namespace");
+			console.error("  name :", space.name);
+			console.error("   1st :", this.names[space.name].ref.toString());
+			console.error("   2nd :", space.ref.toString());
+			process.exit(1);
 		}
 	}
 
-	getNamespace(term) {
-		return null;
+	getType(term) {
+		let target = term[0];
+		let res = this.names[target];
+		
+		if (term.length > 1 && res) {
+			return res.getNameSpace( [ term[1][0], ...term.slice(2) ] );
+		} else {
+			return res;
+		}
 	}
 
 	getID () {
 		return this.id;
+	}
+	getFileID () {
+		return this.getID();
 	}
 	getPath() {
 		return this.path;

@@ -20,6 +20,7 @@ if (project.error) {
 	console.error("\nLinker error");
 	process.exit(1);
 }
-// let asm = project.compile();
+// console.log(project.files[0].names['add'].instances[0].signature);
+let asm = project.compile();
 
 // console.log(project);

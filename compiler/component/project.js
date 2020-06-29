@@ -13,7 +13,7 @@ class Project {
 	import(path) {
 		for (let file of this.files) {
 			if (file.getPath() == path) {
-				return file.getID();
+				return file.getFileID();
 			}
 		}
 

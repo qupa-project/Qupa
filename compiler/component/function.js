@@ -1,18 +1,29 @@
+const { Generator_ID } = require('./generate.js');
+
 const Flattern = require('./../parser/flattern.js');
 const TypeDef = require('./typedef.js');
+
+
+let funcIDGen = new Generator_ID();
 
 
 class Function {
 	constructor (ctx, ast, external = false, abstract = false) {
 		this.name = ast.tokens[0].tokens[1].tokens;
 		this.ctx = ctx;
+
+		this.ref = ast.ref.start;
 		
 		this.instances = [];
 		this.register(ast, external, abstract);
 	}
 
-	register(ast) {
-		this.instances.push(new Function_Instance( this, ast ));
+	getFileID() {
+		return this.ctx.getFileID();
+	}
+
+	register(ast, external = false, abstract = false) {
+		this.instances.push(new Function_Instance( this, ast, external, abstract ));
 	}
 
 	merge(){
@@ -36,12 +47,16 @@ class Function_Instance {
 	constructor (ctx, ast, external = false, abstract = false) {
 		this.ctx = ctx;
 		this.ast = ast;
+		this.ref = ast.ref.start;
 		this.external = external;
 		this.abstract = abstract;
 
 		this.signature = [];
 
+		this.id = funcIDGen.next();
+
 		this.name = ast.tokens[0].tokens[1].tokens;
+		this.represent = external ? this.name : `${this.name}@${this.ctx.getFileID()}.${this.id}`;
 	}
 
 	link () {
@@ -69,13 +84,13 @@ class Function_Instance {
 				}
 			}
 
-			let ref = file.getNamespace(name);
+			let ref = file.getType(Flattern.VariableList(name));
 			if (ref instanceof TypeDef) {
 				this.signature.push([ptr, ref]);
 			} else {
 				if (ref == null) {
 					file.throw(
-						`Invalid type name "${Flattern.Variable(name)}"`,
+						`Invalid type name "${Flattern.VariableStr(name)}"`,
 						name.ref.start, name.ref.end
 					);
 				}
