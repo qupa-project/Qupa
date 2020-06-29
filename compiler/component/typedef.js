@@ -12,15 +12,20 @@ class TypeDef {
 
 		this.name = ast.tokens[0].tokens;
 
-		this.represent = external ? this.name : `${this.name}@${this.ctx.getFileID()}.${this.id}`;
+		this.represent = external ? this.name : `${this.name}@${this.ctx.getFileID().toString(36)}.${this.id.toString(36)}`;
 	}
 
 	link() {
 		return;
 	}
 
+	getSize() {
+		return Number(this.ast.tokens[1].tokens);
+	}
+
 	compile() {
-		throw "TODO";
+		return `; Assume Typedef: ${this.represent}, ${this.getSize()}`;
+		// throw "TODO";
 	}
 }
 module.exports = TypeDef;

@@ -1,13 +1,13 @@
-function* IDGenerator() {
-	let state = 0;
+function* IDGenerator(seed) {
+	let state = seed;
 	while (true) {
 		yield state++;
 	}
 }
 
 class Generator_ID {
-	constructor() {
-		this.internal = IDGenerator();
+	constructor(seed = 0) {
+		this.internal = IDGenerator(seed);
 	}
 
 	next() {

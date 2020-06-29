@@ -1,6 +1,7 @@
 const Project = require('./component/project');
 
 const path = require('path');
+const fs = require('fs');
 
 const version = "0.0.0";
 const root = path.resolve("./");
@@ -20,7 +21,6 @@ if (project.error) {
 	console.error("\nLinker error");
 	process.exit(1);
 }
-// console.log(project.files[0].names['add'].instances[0].signature);
 let asm = project.compile();
 
-// console.log(project);
+fs.writeFileSync('out.ll', asm, 'utf8');

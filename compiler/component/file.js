@@ -1,3 +1,5 @@
+const path = require('path');
+
 const Function = require('./function.js');
 const TypeDef  = require('./typedef.js');
 
@@ -96,6 +98,9 @@ class File {
 	getPath() {
 		return this.path;
 	}
+	getRelative() {
+		return path.relative(this.project.rootPath, this.path);
+	}
 
 	throw (msg, refStart, refEnd) {
 		console.error(`${msg} ${refStart.toString()} -> ${refEnd.toString()}`);
@@ -111,9 +116,9 @@ class File {
 
 
 	compile() {
-		let fragment = [];
+		let fragment = [`; ModuleID = '${this.getRelative()}'`];
 
-		for (let key of this.names) {
+		for (let key in this.names) {
 			fragment.push(this.names[key].compile());
 		}
 

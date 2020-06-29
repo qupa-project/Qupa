@@ -39,7 +39,13 @@ class Function {
 	}
 
 	compile() {
-		throw "TODO";
+		let fragment = [`\n; Function Group "${this.name}":`];
+
+		for (let instance of this.instances) {
+			fragment.push(instance.compile());
+		}
+
+		return fragment.join('\n');
 	}
 }
 
@@ -56,7 +62,7 @@ class Function_Instance {
 		this.id = funcIDGen.next();
 
 		this.name = ast.tokens[0].tokens[1].tokens;
-		this.represent = external ? this.name : `${this.name}@${this.ctx.getFileID()}.${this.id}`;
+		this.represent = external ? this.name : `${this.name}@${this.ctx.getFileID().toString(36)}.${this.id.toString(36)}`;
 	}
 
 	link () {
@@ -96,6 +102,32 @@ class Function_Instance {
 				}
 			}
 		}
+	}
+
+	compile() {
+		let rtrnType = ( this.signature[0][0] ? "@" : "" ) + this.signature[0][1].represent;
+		let out = `define dso_local ${rtrnType} "${this.represent}"`;
+
+		out += "(";
+		for (let i=1; i<this.signature.length; i++) {
+			if (i != 1) {
+				out += ", ";
+			}
+			out += ( this.signature[i][0] ? "@" : "" ) + this.signature[i][1].represent;
+		}
+		out += ") #1"
+
+		if (!this.abstract && !this.external) {
+			out += " {\n";
+			out += this.compileInner();
+			out += "\n}";
+		}
+
+		return out;
+	}
+
+	compileInner() {
+		return "  ; TODO";
 	}
 }
 
