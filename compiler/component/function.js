@@ -189,11 +189,8 @@ class Function_Instance {
 
 		let ir = "";
 
-		console.log(132, this.represent);
 		let stack = this.ast.tokens[1].tokens;
 		for (let token of stack) {
-			// console.log(139, token.tokens);
-
 			switch (token.type) {
 				case "declare":
 					let typeRef = this.getTypeFrom_DataType(token.tokens[0]);
@@ -233,8 +230,6 @@ class Function_Instance {
 						);
 						return "";
 					}
-
-					console.log(166, target.type);
 
 					ir += `  store i32 0, ${target.type.represent}* %${target.register}, align ${target.type.size}\n`;
 

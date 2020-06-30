@@ -235,19 +235,77 @@ function Simplify_Data_Type(node) {
 	}
 
 	node.reached = null;
-	node.tokes = inner;
+	node.tokens = [inner];
+	return node;
+}
+
+
+
+
+
+function Simplify_Constant (node) {
+	switch (node.tokens[0].type) {
+		case "boolean":
+			node = Simplify_Boolean(node.tokens[0]);
+			break;
+		case "integer":
+			node = Simplify_Integer(node.tokens[0]);
+			break;
+		case "float":
+			node = Simplify_Float(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected constant expression ${node.tokens[0].type}`);
+	}
+
 	return node;
 }
 function Simplify_Integer(node) {
 	let out = "";
-	for (let inner of node.tokens[0]) {
-		out += inner.tokens;
+	if (node.tokens[0].length != 0) {
+		out += "-";
 	}
 
-	node.tokens  = out;
-	node.reached = null;
+	node.tokens = ( node.tokens[0].length != 0 ? "-" : "" ) + ( Simplify_Integer_U( node.tokens[1][0] ).tokens );
+	node.reach = null;
 	return node;
 }
+function Simplify_Integer_U (node) {
+	if (node.tokens[0].type == "zero") {
+		node.tokens = "0";
+	} else {
+		let out = node.tokens[0].tokens[0][0].tokens;
+		for (let val of node.tokens[0].tokens[1]) {
+			out += val.tokens;
+		};
+
+		node.tokens = out;
+	}
+
+	node.reach = null;
+	return node;
+}
+function Simplify_Float (node) {
+	let out = Simplify_Integer(node.tokens[0][0]).tokens;  // base
+	out += ".";
+	out += Simplify_Integer_U(node.tokens[2][0]).tokens;   // remainder
+
+	// Scientific notation
+	if (node.tokens[3].length > 0) {
+		out += "e";
+		out += Simplify_Integer(node.tokens[3][0].tokens[1][0]).tokens;
+	}
+
+	node.tokens = out;
+	node.reach = null;
+	return node;
+}
+function Simplify_Boolean (node) {
+	node.reach = null;
+	return node;
+}
+
+
 
 
 
@@ -372,8 +430,8 @@ function Simplify_Func_Args_List (node) {
 	});
 	
 	// Remove internal value
-	for (let i in node.tokes) {
-		node.tokes[i].reached = null;
+	for (let i in node.tokens) {
+		node.tokens[i].reached = null;
 	}
 
 	node.reached = null;
@@ -381,6 +439,9 @@ function Simplify_Func_Args_List (node) {
 }
 function Simplify_Func_Flags (node) {
 	// TODO
+	return node;
+}
+function Simplify_Call (node) {
 	return node;
 }
 function Simplify_Call_Args (node) {
@@ -428,8 +489,91 @@ function Simplify_Assign  (node) {
 
 
 function Simplify_Expr (node) {
-	// TODO
+	return Simplify_Expr_p5 (node.tokens[0][0]);
+}
+function Simplify_Expr_p5 (node) {
+	switch (node.tokens[0].type) {
+		case "expr_p4":
+			node = Simplify_Expr_p4(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected expr_p5 statement ${node.tokens[0].type}`);
+	}
+
+	node.reached = null;
 	return node;
+}
+function Simplify_Expr_p4 (node) {
+	switch (node.tokens[0].type) {
+		case "expr_p3":
+			node = Simplify_Expr_p3(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected expr_p4 statement ${node.tokens[0].type}`);
+	}
+
+	node.reached = null;
+	return node;
+}
+function Simplify_Expr_p3 (node) {
+	switch (node.tokens[0].type) {
+		case "expr_p2":
+			node = Simplify_Expr_p2(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected expr_p3 statement ${node.tokens[0].type}`);
+	}
+
+	node.reached = null;
+	return node;
+}
+function Simplify_Expr_p2 (node) {
+	switch (node.tokens[0].type) {
+		case "expr_p1":
+			node = Simplify_Expr_p1(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected expr_p2 statement ${node.tokens[0].type}`);
+	}
+
+	node.reached = null;
+	return node;
+}
+function Simplify_Expr_p1 (node) {
+	switch (node.tokens[0].type) {
+		case "expr_opperand":
+			node = Simplify_Expr_opperand(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected expr_p1 statement ${node.tokens[0].type}`);
+	}
+
+	node.reached = null;
+	return node;
+}
+function Simplify_Expr_opperand (node) {
+	switch (node.tokens[0].type) {
+		case "call":
+			node = Simplify_Call(node.tokens[0]);
+			break;
+		case "expr_brackets":
+			node = Simplify_Expr_Brackets(node.tokens[0]);
+			break;
+		case "constant":
+			node = Simplify_Constant(node.tokens[0]);
+			break;
+		case "variable":
+			node = Simplify_Variable(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected expr_p1 statement ${node.tokens[0].type}`);
+	}
+
+	node.reached = null;
+	return node;
+};
+function Simplify_Expr_Brackets (node) {
+	return Simplify_Expr ( node.tokens[2][0] );
 }
 
 

@@ -42,8 +42,10 @@ program ::= w* ( stmt_top w* )*
 
 	boolean ::= "true" | "false"
 
-	integer ::= digit+
-	float   ::= integer "." integer ( "e" "-"? integer )?
+	integer ::= "-"? integer_u
+		integer_u ::= ( digit_nz digit* ) | zero
+		zero ::= "0"
+	float   ::= integer "." integer_u ( "e" integer )?	
 
 
 #=============================

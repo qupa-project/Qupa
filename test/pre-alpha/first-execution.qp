@@ -25,10 +25,9 @@ i32 startup () {
 
 	b = 2;
 
-	a = a + b;
 	a = add(a, b);
 
 	c = sub(d, c);
 
-	return 0;
+	return true;
 }
