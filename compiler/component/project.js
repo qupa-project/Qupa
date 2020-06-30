@@ -48,7 +48,7 @@ class Project {
 			fragment.push(file.compile());
 		}
 
-		return fragment.join("\n")+"\n\n"+base;
+		return fragment.join("\n\n\n")+"\n\n"+base;
 	}
 }
 
