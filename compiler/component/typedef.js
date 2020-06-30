@@ -11,20 +11,17 @@ class TypeDef {
 		this.id = typeIDGen.next();
 
 		this.name = ast.tokens[0].tokens;
+		this.size = Number(this.ast.tokens[1].tokens);
 
-		this.represent = external ? this.name : `${this.name}@${this.ctx.getFileID().toString(36)}.${this.id.toString(36)}`;
+		this.represent = external ? this.name : `"${this.name}@${this.ctx.getFileID().toString(36)}.${this.id.toString(36)}"`;
 	}
 
 	link() {
 		return;
 	}
 
-	getSize() {
-		return Number(this.ast.tokens[1].tokens);
-	}
-
 	compile() {
-		return `; Assume Typedef: ${this.represent}, ${this.getSize()}`;
+		return `; Assume Typedef: ${this.represent}, ${this.size}`;
 		// throw "TODO";
 	}
 }
