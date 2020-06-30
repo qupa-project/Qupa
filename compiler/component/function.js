@@ -184,17 +184,20 @@ class Function_Instance {
 	}
 
 	compileBody() {
+		let file = this.ctx.ctx;
 		let regCounter = new Generator_ID(1);
 		let variable = {};
+		let register = {};
 
 		let ir = "";
 
 		let stack = this.ast.tokens[1].tokens;
+		let name;
 		for (let token of stack) {
 			switch (token.type) {
 				case "declare":
 					let typeRef = this.getTypeFrom_DataType(token.tokens[0]);
-					let name = token.tokens[1].tokens;
+					name = token.tokens[1].tokens;
 
 					if (variable[name]) {
 						file.throw(
@@ -222,7 +225,8 @@ class Function_Instance {
 
 					break;
 				case "assign":
-					let target = variable[Flattern.VariableStr(token.tokens[0])];
+					name = Flattern.VariableStr(token.tokens[0]);
+					let target = variable[name];
 					if (!target) {
 						file.throw(
 							`Undefined variable "${Flattern.VariableStr(token.tokens[0])}"`,
@@ -231,7 +235,31 @@ class Function_Instance {
 						return "";
 					}
 
-					ir += `  store i32 0, ${target.type.represent}* %${target.register}, align ${target.type.size}\n`;
+					switch (token.tokens[1].type) {
+						case "constant":
+							let type = "i32";
+							let val = token.tokens[1].tokens[0].tokens;
+							if (token.tokens[1].tokens[0].type == "float") {
+								type = "double";
+							} else if (token.tokens[1].tokens[0].type == "boolean") {
+								type = "i1";
+								val = val == "true" ? 1 : 0;
+							}
+							ir += `  store ${type} ${val}, ${target.type.represent}* %${target.register}, align ${target.type.size}\n`;
+							if (register[name]) {
+								register[name].modified = true;
+							}
+							break;
+						case "call":
+							ir += `  ; TODO call\n`;
+							break;
+						default:
+							file.throw(
+								`Unexpected assignment type "${token.tokens[1].type}"`,
+								token.ref.start, token.ref.end
+							);
+							return "";
+					}
 
 					break;
 				case "return":
