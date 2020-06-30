@@ -8,9 +8,13 @@
 
 external assume {
 	type i32 size 4;
+	type float size 4;
+	type double size 4;
 	type void size 0;
 
 	i32 add(i32 a, i32 b);
+	float add(float a, float b);
+
 	void print(i32 val);
 }
 
@@ -19,9 +23,12 @@ i32 startup () {
 	i32 b;
 	i32 c;
 
-	a = 1;
 	b = 2;
-	c = add(a, b);
+
+	a = a + b;
+	a = add(a, b);
+
+	c = sub(d, c);
 
 	return 0;
 }

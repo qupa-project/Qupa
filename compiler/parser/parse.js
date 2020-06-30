@@ -322,7 +322,7 @@ function Simplify_Function_Head (node) {
 function Simplify_Function_Body (node) {
 	let out = [];
 	for (let inner of node.tokens[2]) {
-		out.push( Simplify_Function_Stmt(inner.tokens[0][0]).tokens );
+		out.push( Simplify_Function_Stmt(inner.tokens[0][0]).tokens[0] );
 	}
 
 	node.tokens  = out;
