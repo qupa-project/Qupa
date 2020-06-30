@@ -23,11 +23,10 @@ i32 startup () {
 	i32 b;
 	i32 c;
 
+	a = false;
 	b = 2;
 
-	a = add(a, b);
-
-	c = sub(d, c);
+	c = add(a, b);
 
 	return true;
 }

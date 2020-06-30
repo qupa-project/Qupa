@@ -246,18 +246,19 @@ function Simplify_Data_Type(node) {
 function Simplify_Constant (node) {
 	switch (node.tokens[0].type) {
 		case "boolean":
-			node = Simplify_Boolean(node.tokens[0]);
+			node.tokens = [ Simplify_Boolean(node.tokens[0]) ];
 			break;
 		case "integer":
-			node = Simplify_Integer(node.tokens[0]);
+			node.tokens = [ Simplify_Integer(node.tokens[0]) ];
 			break;
 		case "float":
-			node = Simplify_Float(node.tokens[0]);
+			node.tokens = [ Simplify_Float(node.tokens[0]) ];
 			break;
 		default:
 			throw new TypeError(`Unexpected constant expression ${node.tokens[0].type}`);
 	}
 
+	node.reach = null;
 	return node;
 }
 function Simplify_Integer(node) {
