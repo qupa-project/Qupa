@@ -325,7 +325,7 @@ function Simplify_Function_Body (node) {
 		out.push( Simplify_Function_Stmt(inner.tokens[0][0]).tokens );
 	}
 
-	node.tokens = [];
+	node.tokens  = out;
 	node.reached = null;
 	return node;
 }
