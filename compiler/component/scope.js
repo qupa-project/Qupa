@@ -128,16 +128,7 @@ class Scope {
 
 		switch (ast.tokens[1].type) {
 			case "constant":
-				// let type = "i32";
-				// let val = ast.tokens[1].tokens[0].tokens;
-				// if (ast.tokens[1].tokens[0].type == "float") {
-				// 	type = "double";
-				// } else if (ast.tokens[1].tokens[0].type == "boolean") {
-				// 	type = "i1";
-				// 	val = val == "true" ? 1 : 0;
-				// }
 				let cnst = this.compile_constant(ast.tokens[1]);
-
 				frag.append(new LLVM.Store(
 					new LLVM.Type(target.type.represent, false),
 					new LLVM.Name(target.register, false),
@@ -166,8 +157,6 @@ class Scope {
 	}
 	compile_return(ast){
 		let frag = new LLVM.Fragment();
-		console.log(ast);
-
 		let inner = null;
 		switch (ast.tokens[0].type) {
 			case "constant":
