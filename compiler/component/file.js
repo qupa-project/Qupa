@@ -1,4 +1,5 @@
 const path = require('path');
+const BNF = require('BNF-parser');
 
 const LLVM = require('./../middle/llvm.js');
 const Function = require('./function.js');
@@ -14,7 +15,7 @@ class File {
 		this.path = filepath;
 		this.id = id;
 
-		this.data = null;
+		this.data = "";
 
 		this.names = {};
 
@@ -24,8 +25,8 @@ class File {
 	
 
 	parse() {
-		let data = fs.readFileSync(this.path, 'utf8');
-		let syntax = Parse(data, this.path);
+		this.data = fs.readFileSync(this.path, 'utf8').replace(/\n\r/g, '\n');
+		let syntax = Parse(this.data, this.path);
 
 		// read in imports, templates, functions
 		for (let element of syntax.tokens) {
@@ -103,8 +104,19 @@ class File {
 		return path.relative(this.project.rootPath, this.path);
 	}
 
+	getFile() {
+		return this;
+	}
+
 	throw (msg, refStart, refEnd) {
-		console.error(`${msg} ${refStart.toString()} -> ${refEnd.toString()}`);
+		let area = BNF.Message.HighlightArea(this.data, refStart, refEnd, 2);
+
+		if (refEnd) {
+			console.error(`${msg} ${refStart.toString()} -> ${refEnd.toString()}`);
+		} else {
+			console.error(`${msg} ${refStart.toString()}`);
+		}
+		console.error(area);
 		this.project.markError();
 	}
 

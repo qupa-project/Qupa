@@ -3,6 +3,7 @@ const { Generator_ID } = require('./generate.js');
 const Flattern = require('./../parser/flattern.js');
 const TypeDef = require('./typedef.js');
 const LLVM = require('../middle/llvm.js');
+const Scope = require('./scope.js');
 
 
 let funcIDGen = new Generator_ID();
@@ -21,6 +22,10 @@ class Function {
 
 	getFileID() {
 		return this.ctx.getFileID();
+	}
+
+	getFile() {
+		return this.ctx.getFile();
 	}
 
 	register(ast, external = false, abstract = false) {
@@ -78,6 +83,37 @@ class Function_Instance {
 		this.represent = external ? `"${this.name}"` : `"${this.name}@${this.ctx.getFileID().toString(36)}.${this.id.toString(36)}"`;
 	}
 
+	getFileID() {
+		return this.ctx.getFileID();
+	}
+
+	getFile() {
+		return this.ctx.getFile();
+	}
+
+	getTypeFrom_DataType(type) {
+		let file = this.ctx.ctx;
+		let name = null;
+		let ptr = false;
+		if (type.tokens[0].type == "variable") {
+			name = type.tokens[0];
+		} else {
+			name = type.tokens[0].tokens[1];
+			if (type.tokens[0].type == "pointer") {
+				ptr = true;
+			}
+		}
+
+		let ref = file.getType(Flattern.VariableList(name));
+		if (ref instanceof TypeDef) {
+			return [ptr, ref];
+		} else {
+			return null;
+		}
+	}
+
+
+
 	link () {
 		let file = this.ctx.ctx;
 		let head = this.ast.tokens[0];
@@ -122,6 +158,8 @@ class Function_Instance {
 		}
 	}
 
+
+
 	match (other) {
 		let a = this.ast.tokens[0].tokens[2].tokens;
 		let b = other.ast.tokens[0].tokens[2].tokens;
@@ -144,34 +182,25 @@ class Function_Instance {
 
 		return true;
 	}
+	
 
-	getTypeFrom_DataType(type) {
-		let file = this.ctx.ctx;
-		let name = null;
-		let ptr = false;
-		if (type.tokens[0].type == "variable") {
-			name = type.tokens[0];
-		} else {
-			name = type.tokens[0].tokens[1];
-			if (type.tokens[0].type == "pointer") {
-				ptr = true;
-			}
-		}
-
-		let ref = file.getType(Flattern.VariableList(name));
-		if (ref instanceof TypeDef) {
-			return [ptr, ref];
-		} else {
-			return null;
-		}
-	}
 
 	compile() {
 		let rtrnType = ( this.signature[0][0] ? "*" : "" ) + this.signature[0][1].represent;
 		let name = this.represent;
 		let args = [];
 
+		let scope = new Scope(this);
+
 		for (let i=1; i<this.signature.length; i++) {
+			let id = scope.register_Var(
+				this.signature[i][1],                                  // type
+				this.signature[i][0],                                  // isPointer
+				this.ast.tokens[0].tokens[2].tokens[i-1][1].tokens,    // name
+				this.ast.tokens[0].tokens[2].tokens[i-1][0].ref.start, // ln ref
+				false                                                  // allocation needed
+			);
+
 			args.push(new LLVM.Argument(
 				new LLVM.Type(
 					this.signature[i][1].represent,
@@ -179,7 +208,7 @@ class Function_Instance {
 					this.ast.tokens[0].tokens[2].tokens[i-1][0].ref.start
 				),
 				new LLVM.Name(
-					`${i}`,
+					id,
 					false,
 					this.ast.tokens[0].tokens[2].tokens[i-1][1].ref.start
 				),
@@ -190,7 +219,7 @@ class Function_Instance {
 
 		let frag = new LLVM.Procedure(rtrnType, name, args, "#1", this.ref);
 		if (!this.abstract && !this.external) {
-			this.compileBody(frag, this.ast.tokens[1].tokens);
+			frag.merge(scope.compile(this.ast.tokens[1]));
 		}
 
 		return frag;
@@ -205,87 +234,7 @@ class Function_Instance {
 		let name;
 		for (let token of stack) {
 			switch (token.type) {
-				case "declare":
-					let typeRef = this.getTypeFrom_DataType(token.tokens[0]);
-					name = token.tokens[1].tokens;
-
-					if (variable[name]) {
-						file.throw(
-							`Redefinition of local variable "${name}"`,
-							variable[name].declared, token.ref.end
-						);
-						return "";
-					} else {
-						variable[name] = {
-							pointer: typeRef[0],
-							type: typeRef[1],
-							register: regCounter.next(),
-							declared: token.ref.start
-						};
-
-						fragment.append(new LLVM.Alloc(
-							new LLVM.Name(variable[name].register, false, token.tokens[1].ref.start),
-							new LLVM.Type(variable[name].type.represent, false, token.tokens[0].ref.start),
-							token.tokens[0].ref.start
-						));
-						if (variable[name].pointer) {
-							file.throw(
-								`Unhandled register type @${variable[name].type.represent}`,
-								variable[name].declared, token.ref.end
-							);
-							return false;
-						}
-					}					
-
-					break;
 				case "assign":
-					name = Flattern.VariableStr(token.tokens[0]);
-					let target = variable[name];
-					if (!target) {
-						file.throw(
-							`Undefined variable "${Flattern.VariableStr(token.tokens[0])}"`,
-							token.ref.start, token.ref.end
-						);
-						return false;
-					}
-
-					switch (token.tokens[1].type) {
-						case "constant":
-							let type = "i32";
-							let val = token.tokens[1].tokens[0].tokens;
-							if (token.tokens[1].tokens[0].type == "float") {
-								type = "double";
-							} else if (token.tokens[1].tokens[0].type == "boolean") {
-								type = "i1";
-								val = val == "true" ? 1 : 0;
-							}
-							fragment.append(new LLVM.Store(
-								new LLVM.Type(target.type.represent, false),
-								new LLVM.Name(target.register, false),
-								new LLVM.Type(type, false),
-								val,
-								target.type.size,
-								token.ref.start
-							));
-							if (register[name]) {
-								register[name].modified = true;
-							}
-							break;
-						case "call":
-							fragment.append(new LLVM.Comment(`TODO call`));
-							break;
-						default:
-							file.throw(
-								`Unexpected assignment type "${token.tokens[1].type}"`,
-								token.ref.start, token.ref.end
-							);
-							return "";
-					}
-
-					break;
-				case "return":
-					fragment.append(new LLVM.Comment(`TODO Return`));
-					break;
 					break;
 				default:
 					console.error(`Error: Unknown function statement "${token.type}"`);

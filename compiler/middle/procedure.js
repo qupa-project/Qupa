@@ -14,6 +14,10 @@ class Procedure extends Instruction {
 		this.stmts.push(instruction);
 	}
 
+	merge (other) {
+		this.stmts = this.stmts.concat(other.stmts);
+	}
+
 	toLLVM () {
 		let out = `\ndefine dso_local ${this.rtrnType} ${this.name}(${this.args.map(x => x.toLLVM()).join(', ')}) ${this.attributes}`;
 		if (this.stmts.length > 0) {

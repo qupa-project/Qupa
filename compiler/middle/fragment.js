@@ -9,6 +9,10 @@ class Fragment {
 		this.stmts.push(instruction);
 	}
 
+	merge (other) {
+		this.stmts = this.stmts.concat(other.stmts);
+	}
+
 	toLLVM () {
 		return this.stmts.map(x => x.toLLVM()).join("\n");
 	}
