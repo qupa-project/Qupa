@@ -441,10 +441,22 @@ function Simplify_Func_Flags (node) {
 	return node;
 }
 function Simplify_Call (node) {
+	let out = [
+		Simplify_Variable(node.tokens[0][0]),
+		node.tokens[4].length > 0 ? Simplify_Call_Args(node.tokens[4][0]) : [],
+	];
+
+	node.tokens = out;
+	node.reach = null;
 	return node;
 }
 function Simplify_Call_Args (node) {
-	// TODO
+	node.tokens = [
+		Simplify_Expr(node.tokens[0][0]) ]
+			.concat( node.tokens[1].map(arg => {
+				Simplify_Expr(arg.tokens[3][0])
+			}) )
+	node.reach = null;
 	return node;
 }
 
