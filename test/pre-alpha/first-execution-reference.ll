@@ -17,6 +17,9 @@ define dso_local i32 @main() #1 {
   ; load a, b into registers
   %4 = load i32, i32* %2, align 4
   %5 = load i32, i32* %1, align 4
+
+  call void @print(i32 %4)
+  call void @print(i32 %5)
   
   ; call the add function
   %6 = call i32 @add(i32 %5, i32 %4)

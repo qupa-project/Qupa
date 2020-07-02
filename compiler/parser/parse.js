@@ -64,7 +64,7 @@ function Simplify_Library(node) {
 		default:
 			throw new TypeError(`Unexpected library statement ${node.tokens[0].type}`);
 	}
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 function Simplify_Library_Import (node) {
@@ -80,7 +80,7 @@ function Simplify_Library_Import (node) {
 	}
 
 	node.tokens = out;
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 function Simplify_Library_Expose (node) {
@@ -92,7 +92,7 @@ function Simplify_Library_Expose (node) {
 	}
 
 	node.tokens = match;
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 
@@ -112,7 +112,7 @@ function Simplify_String (node) {
 		node.tokens[0].tokens[0][0].tokens[0],
 		data
 	];
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 
@@ -258,7 +258,7 @@ function Simplify_Constant (node) {
 			throw new TypeError(`Unexpected constant expression ${node.tokens[0].type}`);
 	}
 
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 function Simplify_Integer(node) {
@@ -268,7 +268,7 @@ function Simplify_Integer(node) {
 	}
 
 	node.tokens = ( node.tokens[0].length != 0 ? "-" : "" ) + ( Simplify_Integer_U( node.tokens[1][0] ).tokens );
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 function Simplify_Integer_U (node) {
@@ -283,7 +283,7 @@ function Simplify_Integer_U (node) {
 		node.tokens = out;
 	}
 
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 function Simplify_Float (node) {
@@ -298,11 +298,11 @@ function Simplify_Float (node) {
 	}
 
 	node.tokens = out;
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 function Simplify_Boolean (node) {
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 
@@ -414,7 +414,7 @@ function Simplify_Function_Stmt (node) {
 	}
 	
 	node.tokens = [inner];
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 function Simplify_Func_Args (node) {
@@ -447,16 +447,16 @@ function Simplify_Call (node) {
 	];
 
 	node.tokens = out;
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 function Simplify_Call_Args (node) {
 	node.tokens = [
 		Simplify_Expr(node.tokens[0][0]) ]
 			.concat( node.tokens[1].map(arg => {
-				Simplify_Expr(arg.tokens[3][0])
+				return Simplify_Expr(arg.tokens[3][0])
 			}) )
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 
@@ -469,7 +469,7 @@ function Simplify_Return (node) {
 	}
 
 	node.tokens = [];
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 
@@ -482,7 +482,7 @@ function Simplify_Declare (node) {
 	];
 
 	node.tokens = out;
-	node.reach = null;
+	node.reached = null;
 	return node;
 }
 

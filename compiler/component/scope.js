@@ -6,7 +6,7 @@ class Scope {
 	constructor(ctx, id_generator = new Generator_ID()) {
 		this.ctx       = ctx;
 		this.variables = {};
-		this.registers = {};
+		this.caches    = {};
 		this.generator = id_generator;
 	}
 
@@ -27,6 +27,36 @@ class Scope {
 		};
 
 		return regID;
+	}
+
+	getVarCache(name) {
+		let instructions = new LLVM.Fragment();
+
+		// Define the cache if it doesn't already exist
+		if (!this.caches[name]) {
+			this.caches[name] = {
+				register: this.generator.next(),
+				modified: true
+			};
+		}
+
+		// If the original value has been changed
+		// Run the instructions to refresh the cache
+		if (this.caches[name].modified) {
+			instructions.append(new LLVM.Load(
+				new LLVM.Name(this.caches[name].register, false),
+				new LLVM.Type(this.variables[name].type.represent, this.variables[name].pointer, this.variables[name].declared),
+				new LLVM.Name(this.variables[name].register),
+				this.variables[name].type.size
+			));
+
+			this.caches[name].modified = false;
+		}
+
+		return {
+			instructions: instructions,
+			register: this.caches[name].register
+		};
 	}
 
 	compile_declare(ast){
@@ -95,12 +125,13 @@ class Scope {
 					target.type.size,
 					ast.ref.start
 				));
-				if (this.registers[name]) {
-					this.registers[name].modified = true;
+				if (this.caches[name]) {
+					this.caches[name].modified = true;
 				}
 				break;
 			case "call":
-				frag.append(new LLVM.Comment(`TODO var = call()`));
+				let call = this.compile_call(ast.tokens[1], new LLVM.Name(target.register, false));
+				frag.merge(call);
 				break;
 			default:
 				file.throw(
@@ -116,9 +147,58 @@ class Scope {
 		frag.append(new LLVM.Comment(`TODO Return`));
 		return frag;
 	}
-	compile_call(ast) {
+	compile_call(ast, store_reg = null) {
 		let frag = new LLVM.Fragment();
-		frag.append(new LLVM.Comment(`TODO Call`));
+
+		let signature = [];
+		for (let arg of ast.tokens[1].tokens) {
+			let name = Flattern.VariableStr(arg);
+			let target = this.variables[name];
+			if (!target) {
+				this.ctx.getFile().throw(
+					`Undefined variable name ${name}`,
+					arg.ref.start, arg.ref.end
+				);
+				return frag;
+			}
+
+			signature.push([target.pointer, target.type]);
+		}
+
+		let target = this.ctx.getFile().getFunction(ast.tokens[0], signature);
+		if (target) {
+			let args = [];
+			for (let arg of ast.tokens[1].tokens) {
+				let name = Flattern.VariableStr(arg);
+				let term = this.variables[ name ];
+
+				let cache = this.getVarCache(name);
+				frag.merge(cache.instructions);
+
+				args.push(new LLVM.Argument(
+					new LLVM.Type(
+						term.type.represent, term.pointer, arg.ref
+					), new LLVM.Name(
+						cache.register, false, arg.ref
+					), arg.ref, name
+				));
+			}
+
+			frag.append(new LLVM.Call(
+				store_reg,
+				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),
+				new LLVM.Name(target.represent, true, ast.tokens[0].ref),
+				args,
+				ast.ref.start
+			));
+		} else {
+			let funcName = Flattern.VariableStr(ast.tokens[0]);
+			this.ctx.getFile().throw(
+				`Unable to find function "${funcName}" with signature ${signature.map(x => x[1].name)}`,
+				ast.ref.start, ast.ref.end
+			);
+		}
+
 		return frag;
 	}
 

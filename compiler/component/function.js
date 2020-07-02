@@ -32,6 +32,16 @@ class Function {
 		this.instances.push(new Function_Instance( this, ast, external, abstract ));
 	}
 
+	matchSignature(sig) {
+		for (let instance of this.instances) {
+			if (instance.matchSignature(sig)) {
+				return instance;
+			}
+		}
+
+		return null;
+	}
+
 	merge(other){
 		for (let instance of this.instances) {
 			if (instance.match(other.instances[0])) {
@@ -75,6 +85,7 @@ class Function_Instance {
 		this.external = external;
 		this.abstract = abstract;
 
+		this.returnType = null;
 		this.signature = [];
 		this.calls = [];
 
@@ -157,6 +168,8 @@ class Function_Instance {
 				}
 			}
 		}
+
+		this.returnType = this.signature.splice(0, 1)[0];
 	}
 
 
@@ -165,8 +178,8 @@ class Function_Instance {
 		let a = this.ast.tokens[0].tokens[2].tokens;
 		let b = other.ast.tokens[0].tokens[2].tokens;
 		if (this.signature.length > 0 && other.signature.length > 0) {
-			a = this.signature.slice(1);  // ignore output
-			b = other.signature.slice(1); // ignore output
+			a = this.signature;
+			b = other.signature;
 		}
 
 
@@ -175,7 +188,7 @@ class Function_Instance {
 		}
 
 		for (let i=0; i<a.length; i++) {
-			if (a[i] != b[i]) {
+			if (a[i][0] != b[i][0] || a[i][1] != b[i][1]) {
 				return false;
 			}
 		}
@@ -183,42 +196,60 @@ class Function_Instance {
 
 		return true;
 	}
+	matchSignature (sig) {
+		if (this.signature.length != sig.length) {
+			return false;
+		}
+
+		for (let i=0; i<sig.length; i++) {
+			if (this.signature[i][0] != sig[i][0] || this.signature[i][1] != sig[i][1]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 	
 
 
 	compile() {
-		let rtrnType = ( this.signature[0][0] ? "*" : "" ) + this.signature[0][1].represent;
-		let name = this.represent;
+		let scope = new Scope(this);
 		let args = [];
 
-		let scope = new Scope(this);
+		let head = this.ast.tokens[0]
 
-		for (let i=1; i<this.signature.length; i++) {
+		for (let i=0; i<this.signature.length; i++) {
 			let id = scope.register_Var(
-				this.signature[i][1],                                  // type
-				this.signature[i][0],                                  // isPointer
-				this.ast.tokens[0].tokens[2].tokens[i-1][1].tokens,    // name
-				this.ast.tokens[0].tokens[2].tokens[i-1][0].ref.start, // ln ref
-				false                                                  // allocation needed
+				this.signature[i][1],                                // type
+				this.signature[i][0],                                // isPointer
+				head.tokens[2].tokens[i][1].tokens,    // name
+				head.tokens[2].tokens[i][0].ref.start, // ln ref
+				false                                                // allocation needed
 			);
 
 			args.push(new LLVM.Argument(
 				new LLVM.Type(
 					this.signature[i][1].represent,
 					this.signature[i][0],
-					this.ast.tokens[0].tokens[2].tokens[i-1][0].ref.start
+					head.tokens[2].tokens[i][0].ref.start
 				),
 				new LLVM.Name(
 					id,
 					false,
-					this.ast.tokens[0].tokens[2].tokens[i-1][1].ref.start
+					head.tokens[2].tokens[i][1].ref.start
 				),
-				this.ast.tokens[0].tokens[2].tokens[i-1][0].ref.start,
-				this.ast.tokens[0].tokens[2].tokens[i-1][1].tokens
+				head.tokens[2].tokens[i][0].ref.start,
+				head.tokens[2].tokens[i][1].tokens
 			));
 		}
 
-		let frag = new LLVM.Procedure(rtrnType, name, args, "#1", this.ref);
+		let frag = new LLVM.Procedure(
+			new LLVM.Type(this.returnType[1].represent, this.returnType[0], head.tokens[0].ref),
+			new LLVM.Name(this.represent, true, head.tokens[1].ref),
+			args,
+			"#1",
+			this.ref
+		);
 		if (!this.abstract && !this.external) {
 			frag.merge(scope.compile(this.ast.tokens[1]));
 		}

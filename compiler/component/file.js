@@ -91,6 +91,17 @@ class File {
 		}
 	}
 
+	getFunction(variable, signature) {
+		let first = variable.tokens[0].tokens;
+		if (this.names[first]) {
+			if (this.names[first] instanceof Function && variable.tokens.length == 1) {
+				return this.names[first].matchSignature(signature);
+			}	
+		}
+
+		return null;
+	}
+
 	getID () {
 		return this.id;
 	}
