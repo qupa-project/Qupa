@@ -1,5 +1,6 @@
 const path = require('path');
 
+const LLVM = require('./../middle/llvm.js');
 const Function = require('./function.js');
 const TypeDef  = require('./typedef.js');
 
@@ -116,13 +117,14 @@ class File {
 
 
 	compile() {
-		let fragment = [`; ModuleID = '${this.getRelative()}'`];
+		let fragment = new LLVM.Fragment();
+		fragment.append(new LLVM.Comment(`ModuleID = '${this.getRelative()}'`));
 
 		for (let key in this.names) {
-			fragment.push(this.names[key].compile());
+			fragment.append(this.names[key].compile());
 		}
 
-		return fragment.join('\n');
+		return fragment;
 	}
 }
 

@@ -2,6 +2,7 @@ const { Generator_ID } = require('./generate.js');
 
 const Flattern = require('./../parser/flattern.js');
 const TypeDef = require('./typedef.js');
+const LLVM = require('../middle/llvm.js');
 
 
 let funcIDGen = new Generator_ID();
@@ -47,13 +48,16 @@ class Function {
 	}
 
 	compile() {
-		let fragment = [`\n; Function Group "${this.name}":`];
+		// let fragment = [`\n; Function Group "${this.name}":`];
+
+		let fragment = new LLVM.Fragment();
+		fragment.append(new LLVM.Comment(`Function Group "${this.name}":`));
 
 		for (let instance of this.instances) {
-			fragment.push(instance.compile());
+			fragment.append(instance.compile());
 		}
 
-		return fragment.join('\n');
+		return fragment;
 	}
 }
 
@@ -66,6 +70,7 @@ class Function_Instance {
 		this.abstract = abstract;
 
 		this.signature = [];
+		this.calls = [];
 
 		this.id = funcIDGen.next();
 
@@ -162,36 +167,41 @@ class Function_Instance {
 	}
 
 	compile() {
-		let rtrnType = ( this.signature[0][0] ? "@" : "" ) + this.signature[0][1].represent;
-		let out = `define dso_local ${rtrnType} ${this.represent}`;
+		let rtrnType = ( this.signature[0][0] ? "*" : "" ) + this.signature[0][1].represent;
+		let name = this.represent;
+		let args = [];
 
-		out += "(";
 		for (let i=1; i<this.signature.length; i++) {
-			if (i != 1) {
-				out += ", ";
-			}
-			out += ( this.signature[i][0] ? "@" : "" ) + this.signature[i][1].represent;
+			args.push(new LLVM.Argument(
+				new LLVM.Type(
+					this.signature[i][1].represent,
+					this.signature[i][0],
+					this.ast.tokens[0].tokens[2].tokens[i-1][0].ref.start
+				),
+				new LLVM.Name(
+					`${i}`,
+					false,
+					this.ast.tokens[0].tokens[2].tokens[i-1][1].ref.start
+				),
+				this.ast.tokens[0].tokens[2].tokens[i-1][0].ref.start,
+				this.ast.tokens[0].tokens[2].tokens[i-1][1].tokens
+			));
 		}
-		out += ") #1"
 
+		let frag = new LLVM.Procedure(rtrnType, name, args, "#1", this.ref);
 		if (!this.abstract && !this.external) {
-			out += " {\n";
-			out += this.compileBody();
-			out += "\n}";
+			this.compileBody(frag, this.ast.tokens[1].tokens);
 		}
 
-		return out;
+		return frag;
 	}
 
-	compileBody() {
+	compileBody(fragment, stack) {
 		let file = this.ctx.ctx;
-		let regCounter = new Generator_ID(1);
+		let regCounter = new Generator_ID(fragment.args.length+1);
 		let variable = {};
 		let register = {};
 
-		let ir = "";
-
-		let stack = this.ast.tokens[1].tokens;
 		let name;
 		for (let token of stack) {
 			switch (token.type) {
@@ -213,15 +223,19 @@ class Function_Instance {
 							declared: token.ref.start
 						};
 
-						ir += `  %${variable[name].register} = alloca ${variable[name].type.represent} ; ${name}\n`;
+						fragment.append(new LLVM.Alloc(
+							new LLVM.Name(variable[name].register, false, token.tokens[1].ref.start),
+							new LLVM.Type(variable[name].type.represent, false, token.tokens[0].ref.start),
+							token.tokens[0].ref.start
+						));
 						if (variable[name].pointer) {
 							file.throw(
 								`Unhandled register type @${variable[name].type.represent}`,
 								variable[name].declared, token.ref.end
 							);
-							return "";
+							return false;
 						}
-					}
+					}					
 
 					break;
 				case "assign":
@@ -232,7 +246,7 @@ class Function_Instance {
 							`Undefined variable "${Flattern.VariableStr(token.tokens[0])}"`,
 							token.ref.start, token.ref.end
 						);
-						return "";
+						return false;
 					}
 
 					switch (token.tokens[1].type) {
@@ -245,13 +259,20 @@ class Function_Instance {
 								type = "i1";
 								val = val == "true" ? 1 : 0;
 							}
-							ir += `  store ${type} ${val}, ${target.type.represent}* %${target.register}, align ${target.type.size}\n`;
+							fragment.append(new LLVM.Store(
+								new LLVM.Type(target.type.represent, false),
+								new LLVM.Name(target.register, false),
+								new LLVM.Type(type, false),
+								val,
+								target.type.size,
+								token.ref.start
+							));
 							if (register[name]) {
 								register[name].modified = true;
 							}
 							break;
 						case "call":
-							ir += `  ; TODO call\n`;
+							fragment.append(new LLVM.Comment(`TODO call`));
 							break;
 						default:
 							file.throw(
@@ -263,14 +284,15 @@ class Function_Instance {
 
 					break;
 				case "return":
-					ir += "  ; TODO return";
+					fragment.append(new LLVM.Comment(`TODO Return`));
+					break;
 					break;
 				default:
 					console.error(`Error: Unknown function statement "${token.type}"`);
 			}
 		}
 
-		return ir;
+		return true;
 	}
 }
 

@@ -1,4 +1,5 @@
 const { Generator_ID } = require('./generate.js');
+const LLVM = require('./../middle/llvm.js');
 let typeIDGen = new Generator_ID();
 
 class TypeDef {
@@ -21,8 +22,7 @@ class TypeDef {
 	}
 
 	compile() {
-		return `; Assume Typedef: ${this.represent}, ${this.size}`;
-		// throw "TODO";
+		return new LLVM.Comment(`Assume Typedef: ${this.represent}, ${this.size}`, this.ref);
 	}
 }
 module.exports = TypeDef;

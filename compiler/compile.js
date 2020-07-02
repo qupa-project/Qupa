@@ -23,4 +23,4 @@ if (project.error) {
 }
 let asm = project.compile();
 
-fs.writeFileSync('out.ll', asm, 'utf8');
+fs.writeFileSync('out.ll', asm.toLLVM(), 'utf8');
