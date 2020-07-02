@@ -78,9 +78,12 @@ class Scope {
 			ast.ref.start
 		);
 
-		frag.append(new LLVM.Alloc(
+		frag.append(new LLVM.Set(
 			new LLVM.Name(this.variables[name].register, false, ast.tokens[1].ref.start),
-			new LLVM.Type(this.variables[name].type.represent, false, ast.tokens[0].ref.start),
+			new LLVM.Alloc(
+				new LLVM.Type(this.variables[name].type.represent, false, ast.tokens[0].ref.start),
+				ast.ref.start
+			),
 			ast.ref.start
 		));
 
@@ -130,8 +133,10 @@ class Scope {
 				}
 				break;
 			case "call":
-				let call = this.compile_call(ast.tokens[1], new LLVM.Name(target.register, false));
-				frag.merge(call);
+				let inner_frag = this.compile_call(ast.tokens[1]);
+				let call = inner_frag.stmts.splice(-1, 1)[0];
+				frag.merge(inner_frag);
+				frag.append(new LLVM.Set(new LLVM.Name(target.register, false), call));
 				break;
 			default:
 				file.throw(
@@ -185,7 +190,6 @@ class Scope {
 			}
 
 			frag.append(new LLVM.Call(
-				store_reg,
 				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),
 				new LLVM.Name(target.represent, true, ast.tokens[0].ref),
 				args,

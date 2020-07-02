@@ -7,14 +7,13 @@ class Alloc extends Instruction {
 	 * @param {Type} type 
 	 * @param {BNF_Reference} ref 
 	 */
-	constructor(name, type, ref) {
+	constructor(type, ref) {
 		super (ref);
-		this.register = name;
 		this.type = type;
 	}
 
 	toLLVM(indent) {
-		return super.toLLVM(`${this.register.toLLVM()} = alloca ${this.type.toLLVM()}`, indent)
+		return super.toLLVM(`alloca ${this.type.toLLVM()}`, indent)
 	}
 }
 

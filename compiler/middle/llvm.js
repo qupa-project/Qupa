@@ -6,9 +6,10 @@ const Fragment = require('./fragment.js');
 const Load = require('./load.js');
 const Name = require('./name.js');
 const Procedure = require('./procedure.js');
-const Raw = require('./raw');
+const Raw = require('./raw.js');
+const Set = require('./set.js');
 const Store = require('./store.js');
 const Type = require('./type.js');
 const WPad = require('./wpad');
 
-module.exports = { Alloc, Argument, Call, Comment, Fragment, Load, Name, Procedure, Raw, Store, Type, WPad };
+module.exports = { Alloc, Argument, Call, Comment, Fragment, Load, Name, Procedure, Raw, Set, Store, Type, WPad };
