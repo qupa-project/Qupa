@@ -1,5 +1,5 @@
 const { Generator_ID } = require('./generate.js');
-const LLVM = require("../middle/llvm");
+const LLVM = require("../middle/llvm.js");
 const Flattern = require('../parser/flattern.js');
 
 class Scope {

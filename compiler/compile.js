@@ -1,4 +1,4 @@
-const Project = require('./component/project');
+const Project = require('./component/project.js');
 
 const path = require('path');
 const os = require('os');
