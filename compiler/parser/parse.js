@@ -425,15 +425,10 @@ function Simplify_Func_Args_List (node) {
 	node.tokens = ittr.map((arg) => {
 		return [
 			Simplify_Data_Type(arg.tokens[0][0]), // type
-			arg.tokens[2][0], // name
+			Simplify_Name(arg.tokens[2][0]),      // name
 			arg.tokens[3].length > 0 ? arg.tokens[3].tokens[3][0] : null // default
 		]
 	});
-	
-	// Remove internal value
-	for (let i in node.tokens) {
-		node.tokens[i].reached = null;
-	}
 
 	node.reached = null;
 	return node;
