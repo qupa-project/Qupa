@@ -1,4 +1,4 @@
-const Instruction = require("./Instruction");
+const Instruction = require("./Instruction.js");
 
 class Store extends Instruction {
 	/**
