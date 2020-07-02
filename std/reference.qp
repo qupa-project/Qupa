@@ -1,0 +1,44 @@
+import "mutex.qp";
+import "flags.qp";
+
+template (Wild T)
+class Ref_Node {
+	Mutex lock;
+	T data;
+}
+
+
+
+template (Wild T)
+class Ref {
+	private:
+		@Ref_Node[T] real;
+
+	public:
+		void open_sync () {
+			prereq flag this mutex_state is unknown;
+			affect flag this mutex_state = locked;
+			unsafe {
+				this->real->lock.lock_sync();
+			}
+		}
+
+		void close_sync () {
+			prereq flag this mutex_state is locked;
+			affect flag this mutex_state = unknown;
+			unsafe {
+				this->real->lock.unlock_sync();
+			}
+		}
+
+		@T dereference() {
+			prereq flag this mutex_state is locked;
+			return @this->real->data;
+		}
+
+		void assign(T other) {
+			prereq flag this mutex_state is locked;
+			this->real->data = other;
+		}
+}
+expose Ref;

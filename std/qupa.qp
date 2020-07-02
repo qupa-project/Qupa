@@ -1,6 +1,5 @@
-import "./primatives.qp";
-import "./cast.qp" as Cast;
-import "./array";
-
+import './primatives.qp';
+import './integer.qp';
+import './number.qp';
 
 expose *;

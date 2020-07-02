@@ -1,71 +1,21 @@
-/**
- * Describes a chunk of memory by location and length
- */
-class Heap{
-	final:
-		size_t length;
-		@uint8 start;
+import "./llvm/memory.qp" as llvm;
 
-	public:
-		__constructor__(^@void start, size_t bytes){
-			this.start  = start;
-			this.length = bytes;
-		}
 
-		@uint8 __get__(size_t index){
-			return @this.start + index;
-		}
-
-		size_t size(){
-			return this.length;
-		}
+template (^Wild Type)
+@Type Alloc(Size bytes) {
+	// return reinterpret[Type](llvm.malloc(bytes));
 }
-expose Heap;
+expose alloc;
 
-
-
-class Claim{
-	private:
-		Heap ref;
-		bool active = true;
-	public:
-		__constructor__(Heap chunk){
-			this.ref = chunk;
-		}
-		__destructor__(){
-			if (this.active){
-				Free(this.ref.start);
-			}
-		}
-
-		deactivate(){
-			this.active = false;
-		}
+template (^Wild Type)
+@Type Realloc(@Type ptr, Size bytes) {
+	// return reinterpret[Type]( llvm.realloc( reinterpret[@Void](ptr), bytes) );
 }
-expose Claim;
+expose realloc;
 
-
-/**
- * Allocates a heap of a specific size
- * @param The the size in bytes of desired space
- * @returns The address of a void at the beginning of the new heap
- */
-@void Allocate (size_t bytes) primative Memory::Allocate;
-expose Allocate;
-
-/**
- * Frees a specific heap from memory
- * @param The starting address of the heap to be deallocated
-*/
-@void Free (^@wild Address) primative Memory::UnAllocate;
+template (^@Wild Type)
+void Free(Type block) {
+	// llvm.free( reinterpret[@Void](block) );
+	return;
+}
 expose Free;
-
-
-/**
- * Duplicate a specified number of bytes from one location to another
- * @param Where the target data is
- * @param Where the data should duplicate to
- * @param How many bytes to duplicate
- */
-@void Duplicate(^@wild from, ^@to, size_t bytes) primative Memory::Duplicate;
-expose Duplicate;
