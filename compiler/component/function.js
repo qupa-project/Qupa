@@ -32,6 +32,14 @@ class Function {
 		this.instances.push(new Function_Instance( this, ast, external, abstract ));
 	}
 
+	registerExport() {
+		if (this.instances.length > 1) {
+			this.getFile().throw(`Link Error: Cannot export function ${this.name} with more than once instances`, this.ref);
+			console.error(this.instances);
+		}
+		this.instances[0].markExport();
+	}
+
 	matchSignature(sig) {
 		for (let instance of this.instances) {
 			if (instance.matchSignature(sig)) {
@@ -96,6 +104,10 @@ class Function_Instance {
 
 		this.name = ast.tokens[0].tokens[1].tokens;
 		this.represent = external ? `"${this.name}"` : `"${this.name}@${this.ctx.getFileID().toString(36)}.${this.id.toString(36)}"`;
+	}
+
+	markExport() {
+		this.represent = this.name;
 	}
 
 	getFileID() {

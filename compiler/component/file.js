@@ -19,6 +19,8 @@ class File {
 
 		this.names = {};
 
+		this.exports = [];
+
 		this.parse();
 	}
 
@@ -34,11 +36,14 @@ class File {
 			if (element.type == "comment") {
 				continue;
 			}else if (element.type == "external") {
-				if (element.tokens[0] == "assume"){
+				if (element.tokens[0] == "assume") {
 					for (let inner of element.tokens[1]){
 						this.register(inner, true);
 					}
-
+				} else if (element.tokens[0] == "export") {
+					for (let inner of element.tokens[1]){
+						this.exports.push(inner);
+					}
 				} else {
 					console.error(`Error: Unknown external type "${element.tokens[0]}"`);
 					process.exit(1);
@@ -77,6 +82,33 @@ class File {
 			console.error("   1st :", this.names[space.name].ref.toString());
 			console.error("   2nd :", space.ref.toString());
 			process.exit(1);
+		}
+	}
+
+	/**
+	 * Must be ran after main linking
+	 * @param {BNF_SyntaxNode} element 
+	 */
+	registerExport(element) {
+		if (element.type != "function_outline") {
+			this.getFile().throw(`Link Error: Unable to export non-functions in current version`, element.ref.start);
+			return;
+		}
+
+		let space = new Function(this, element, true, false);
+		space.link();
+
+		if (!this.project.registerExport(space.name)) {
+			this.getFile().throw(
+				`Link Error: Unable to export "${space.name}" as name is already in use`,
+				space.ref
+			);
+		}
+
+		if (this.names[space.name]) {
+			this.names[space.name].registerExport(space.instances[0]);
+		} else {
+			this.getFile().throw(`Link Error: Unable to export function "${space.name}"`, element.ref.start);
 		}
 	}
 
@@ -135,6 +167,10 @@ class File {
 	link () {
 		for (let key in this.names) {
 			this.names[key].link();
+		}
+
+		for (let external of this.exports) {
+			this.registerExport(external);
 		}
 	}
 
