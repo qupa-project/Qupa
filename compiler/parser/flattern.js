@@ -16,7 +16,23 @@ function VariableStr (node) {
 	return str;
 }
 
+function DataTypeStr (node) {
+	if (node.tokens[0].type == "variable") {
+		return VariableStr(node.tokens[0]);
+	}
+
+	let target = node.tokens[0];
+	let out = "";
+	while (target.type == "pointer" || target.type == "deref") {
+		out += target.type == "pointer" ? "@" : "$";
+		target = target.tokes[0];
+	}
+	out += VariableStr(target);
+
+	return out;
+}
+
 
 module.exports = {
-	VariableList, VariableStr
+	VariableList, VariableStr, DataTypeStr
 }
