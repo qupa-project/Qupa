@@ -19,7 +19,7 @@ class Procedure extends Instruction {
 	}
 
 	toLLVM () {
-		let out = `\ndefine dso_local ${this.rtrnType} ${this.name}(${this.args.map(x => x.toLLVM()).join(', ')}) ${this.attributes}`;
+		let out = `define dso_local ${this.rtrnType} ${this.name}(${this.args.map(x => x.toLLVM()).join(', ')}) ${this.attributes}`;
 		if (this.stmts.length > 0) {
 			out += ` {\n${this.stmts.map(x => x.toLLVM(2)).join("\n")}\n}`;
 		}

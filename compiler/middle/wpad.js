@@ -5,7 +5,7 @@ class WPad {
 
 	toLLVM() {
 		let out = "";
-		for (let i=0; i<this.lines; i++) {
+		for (let i=0; i<this.lines-1; i++) {
 			out += "\n";
 		}
 
