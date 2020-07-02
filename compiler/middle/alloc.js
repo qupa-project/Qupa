@@ -3,7 +3,6 @@ const Instruction = require("./Instruction");
 class Alloc extends Instruction {
 	/**
 	 * 
-	 * @param {Name} register 
 	 * @param {Type} type 
 	 * @param {BNF_Reference} ref 
 	 */

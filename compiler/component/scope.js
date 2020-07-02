@@ -59,6 +59,22 @@ class Scope {
 		};
 	}
 
+
+	compile_constant(ast) {
+		let type = "i32";
+		let val = ast.tokens[0].tokens;
+		if (ast.tokens[0].type == "float") {
+			type = "double";
+		} else if (ast.tokens[0].type == "boolean") {
+			type = "i1";
+			val = val == "true" ? 1 : 0;
+		}
+
+		return new LLVM.Constant(type, val, ast.ref.start);
+	}
+
+
+
 	compile_declare(ast){
 		let typeRef = this.ctx.getTypeFrom_DataType(ast.tokens[0]);
 		let	name = ast.tokens[1].tokens;
@@ -112,19 +128,20 @@ class Scope {
 
 		switch (ast.tokens[1].type) {
 			case "constant":
-				let type = "i32";
-				let val = ast.tokens[1].tokens[0].tokens;
-				if (ast.tokens[1].tokens[0].type == "float") {
-					type = "double";
-				} else if (ast.tokens[1].tokens[0].type == "boolean") {
-					type = "i1";
-					val = val == "true" ? 1 : 0;
-				}
+				// let type = "i32";
+				// let val = ast.tokens[1].tokens[0].tokens;
+				// if (ast.tokens[1].tokens[0].type == "float") {
+				// 	type = "double";
+				// } else if (ast.tokens[1].tokens[0].type == "boolean") {
+				// 	type = "i1";
+				// 	val = val == "true" ? 1 : 0;
+				// }
+				let cnst = this.compile_constant(ast.tokens[1]);
+
 				frag.append(new LLVM.Store(
 					new LLVM.Type(target.type.represent, false),
 					new LLVM.Name(target.register, false),
-					new LLVM.Type(type, false),
-					val,
+					cnst,
 					target.type.size,
 					ast.ref.start
 				));
@@ -149,10 +166,25 @@ class Scope {
 	}
 	compile_return(ast){
 		let frag = new LLVM.Fragment();
-		frag.append(new LLVM.Comment(`TODO Return`));
+		console.log(ast);
+
+		let inner = null;
+		switch (ast.tokens[0].type) {
+			case "constant":
+				inner = this.compile_constant(ast.tokens[0]);
+				break;
+			default:
+				file.throw(
+					`Unexpected return expression type "${ast.tokens[1].type}"`,
+					ast.ref.start, ast.ref.end
+				);
+		}
+
+		frag.append(new LLVM.Return(inner, ast.ref.start));
+
 		return frag;
 	}
-	compile_call(ast, store_reg = null) {
+	compile_call(ast) {
 		let frag = new LLVM.Fragment();
 
 		let signature = [];

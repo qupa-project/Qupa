@@ -468,7 +468,7 @@ function Simplify_Return (node) {
 		inner = [ Simplify_Expr(node.tokens[1][0].tokens[1][0]) ];
 	}
 
-	node.tokens = [];
+	node.tokens = inner;
 	node.reached = null;
 	return node;
 }

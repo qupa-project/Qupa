@@ -10,18 +10,17 @@ class Store extends Instruction {
 	 * @param {Number} width 
 	 * @param {BNF_Reference} ref 
 	 */
-	constructor(regType, reg, dataType, data, width, ref) {
+	constructor(regType, reg, data, width, ref) {
 		super (ref);
 		this.registerType = regType;
 		this.register     = reg;
-		this.dataType     = dataType;
 		this.data         = data;
 		this.width        = width;
 	}
 
 	toLLVM(indent) {
 		return super.toLLVM(
-			`store ${this.dataType.toLLVM()} ${this.data}, ${this.registerType.toLLVM()}* ${this.register.toLLVM()}, align ${this.width}`,
+			`store ${this.dataType.toLLVM()} ${this.data.toLLVM()}, ${this.registerType.toLLVM()}* ${this.register.toLLVM()}, align ${this.width}`,
 			indent
 		);
 	}
