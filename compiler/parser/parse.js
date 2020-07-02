@@ -402,6 +402,9 @@ function Simplify_Function_Stmt (node) {
 		case "return":
 			inner = Simplify_Return(node.tokens[0]);
 			break;
+		case "call_procedure":
+			inner = Simplify_Call(node.tokens[0]);
+			break;
 		case "if":
 		case "for":
 		case "while":
