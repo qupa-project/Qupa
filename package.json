@@ -8,11 +8,12 @@
   },
   "devDependencies": {},
   "scripts": {
-    "compile"      : "node compiler/compile.js",
-    "test"         : "npm run test-parser",
-    "test-parser"  : "node compiler/parser/test.js",
-    "build"        : "npm run build-syntax",
-    "build-syntax" : "node compiler/parser/build.js"
+    "compile"       : "node compiler/compile.js",
+    "test"          : "npm run test-parser",
+    "test-parser"   : "node compiler/parser/test.js",
+    "build"         : "npm run build-syntax && npm run build-runtime",
+    "build-syntax"  : "node compiler/parser/build.js",
+    "build-runtime" : "clang++ runtime/runtime.cpp -S -emit-llvm -o runtime/runtime.ll"
   },
   "repository": {
     "type": "git",
