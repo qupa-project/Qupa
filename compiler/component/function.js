@@ -70,7 +70,10 @@ class Function {
 		fragment.append(new LLVM.Comment(`Function Group "${this.name}":`));
 
 		for (let instance of this.instances) {
-			fragment.append(instance.compile());
+			let ir = instance.compile();
+			if (ir) {
+				fragment.append(ir);
+			}
 		}
 
 		return fragment;
@@ -213,7 +216,11 @@ class Function_Instance {
 
 
 	compile() {
-		let scope = new Scope(this);
+		if (this.abstract) {
+			return null;
+		}
+
+		let scope = new Scope(this, new Generator_ID( this.signature.length > 0 ? 0 : 1 ));
 		let args = [];
 
 		let head = this.ast.tokens[0]
@@ -248,6 +255,7 @@ class Function_Instance {
 			new LLVM.Name(this.represent, true, head.tokens[1].ref),
 			args,
 			"#1",
+			this.external,
 			this.ref
 		);
 		if (!this.abstract && !this.external) {
@@ -255,25 +263,6 @@ class Function_Instance {
 		}
 
 		return frag;
-	}
-
-	compileBody(fragment, stack) {
-		let file = this.ctx.ctx;
-		let regCounter = new Generator_ID(fragment.args.length+1);
-		let variable = {};
-		let register = {};
-
-		let name;
-		for (let token of stack) {
-			switch (token.type) {
-				case "assign":
-					break;
-				default:
-					console.error(`Error: Unknown function statement "${token.type}"`);
-			}
-		}
-
-		return true;
 	}
 }
 

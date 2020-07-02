@@ -3,7 +3,7 @@ const LLVM = require("../middle/llvm");
 const Flattern = require('../parser/flattern.js');
 
 class Scope {
-	constructor(ctx, id_generator = new Generator_ID()) {
+	constructor(ctx, id_generator = new Generator_ID(1)) {
 		this.ctx       = ctx;
 		this.variables = {};
 		this.caches    = {};
@@ -29,20 +29,28 @@ class Scope {
 		return regID;
 	}
 
-	getVarCache(name) {
+	getVarCache(name, read = true) {
 		let instructions = new LLVM.Fragment();
 
+		let wasModified = false;
+
 		// Define the cache if it doesn't already exist
-		if (!this.caches[name]) {
+		if (!this.caches[name] || this.caches[name].modified) {
+			if (this.caches[name]) {
+				wasModified = this.caches[name].modified;
+			} else {
+				wasModified = true;
+			}
+
 			this.caches[name] = {
 				register: this.generator.next(),
-				modified: true
+				modified: wasModified
 			};
 		}
 
 		// If the original value has been changed
 		// Run the instructions to refresh the cache
-		if (this.caches[name].modified) {
+		if (read && wasModified) {
 			instructions.append(new LLVM.Load(
 				new LLVM.Name(this.caches[name].register, false),
 				new LLVM.Type(this.variables[name].type.represent, this.variables[name].pointer, this.variables[name].declared),
@@ -130,7 +138,7 @@ class Scope {
 			case "constant":
 				let cnst = this.compile_constant(ast.tokens[1]);
 				frag.append(new LLVM.Store(
-					new LLVM.Type(target.type.represent, false),
+					new LLVM.Type(target.type.represent, target.pointer),
 					new LLVM.Name(target.register, false),
 					cnst,
 					target.type.size,
@@ -142,9 +150,27 @@ class Scope {
 				break;
 			case "call":
 				let inner_frag = this.compile_call(ast.tokens[1]);
+				if (inner_frag === null) {
+					return null;
+				}
+
 				let call = inner_frag.stmts.splice(-1, 1)[0];
-				frag.merge(inner_frag);
-				frag.append(new LLVM.Set(new LLVM.Name(target.register, false), call));
+				frag.merge(inner_frag); // add any loads needed for call
+
+				let cache = this.getVarCache(name, false);
+				frag.merge(cache.instructions); // add any derefs needed for func store loc
+
+				frag.append(new LLVM.Set(new LLVM.Name(cache.register, false), call)); // cache the function results
+				frag.append(new LLVM.Store(
+					new LLVM.Type(target.type.represent, target.pointer),
+					new LLVM.Name(target.register, false),
+					new LLVM.Argument(
+						new LLVM.Type(target.type.represent, target.pointer),
+						new LLVM.Name(cache.register, false)
+					),
+					target.type.size,
+					ast.ref.start
+				))
 				break;
 			default:
 				file.throw(
@@ -185,7 +211,7 @@ class Scope {
 					`Undefined variable name ${name}`,
 					arg.ref.start, arg.ref.end
 				);
-				return frag;
+				return null;
 			}
 
 			signature.push([target.pointer, target.type]);
@@ -219,9 +245,10 @@ class Scope {
 		} else {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
 			this.ctx.getFile().throw(
-				`Unable to find function "${funcName}" with signature ${signature.map(x => x[1].name)}`,
+				`Unable to find function "${funcName}" with signature ${signature.map(x => x[1].name).join(',')}`,
 				ast.ref.start, ast.ref.end
 			);
+			return null;
 		}
 
 		return frag;
@@ -230,25 +257,30 @@ class Scope {
 	compile(ast) {
 		let fragment = new LLVM.Fragment();
 
+		let inner = null;
 		for (let token of ast.tokens) {
 			switch (token.type) {
 				case "declare":
-					fragment.merge(this.compile_declare(token));
+					inner = this.compile_declare(token);
 					break;
 				case "assign":
-					fragment.merge(this.compile_assign(token));
+					inner = this.compile_assign(token);
 					break;
 				case "return":
-					fragment.merge(this.compile_return(token));
+					inner = this.compile_return(token);
 					break;
 				case "call_procedure":
-					fragment.merge(this.compile_call(token));
+					inner = this.compile_call(token);
 					break;
 				default:
 					this.ctx.getFile().throw(
 						`Unexpected statment ${token.type}`,
 						token.ref.start, token.ref.end
 					);
+			}
+
+			if (inner !== null) {
+				fragment.merge(inner);
 			}
 		}
 

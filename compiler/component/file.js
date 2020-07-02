@@ -57,7 +57,7 @@ class File {
 				space = new TypeDef(this, element, external);
 				break;
 			case "function_outline":
-				abstract = true;
+				abstract = !external;
 				// continue to function case
 			case "function":
 				space = new Function(this, element, external, abstract);

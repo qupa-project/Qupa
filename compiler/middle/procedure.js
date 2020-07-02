@@ -1,12 +1,13 @@
 const Instruction = require("./Instruction");
 
 class Procedure extends Instruction {
-	constructor (rtrnType, name, args, attributes, ref) {
+	constructor (rtrnType, name, args, attributes, external, ref) {
 		super(ref);
 		this.rtrnType = rtrnType;
 		this.name = name;
 		this.args = args;
 		this.attributes = attributes;
+		this.external = external;
 		this.stmts = [];
 	}
 
@@ -19,7 +20,7 @@ class Procedure extends Instruction {
 	}
 
 	toLLVM () {
-		let out = `define dso_local ${this.rtrnType.toLLVM()} ${this.name.toLLVM()}(${this.args.map(x => x.toLLVM()).join(', ')}) ${this.attributes}`;
+		let out = `${this.external ? "declare" : "define"} dso_local ${this.rtrnType.toLLVM()} ${this.name.toLLVM()}(${this.args.map(x => x.toLLVM()).join(', ')}) ${this.attributes}`;
 		if (this.stmts.length > 0) {
 			out += ` {\n${this.stmts.map(x => x.toLLVM(2)).join("\n")}\n}`;
 		}
