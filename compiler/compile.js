@@ -39,7 +39,7 @@ fs.writeFileSync(output, asm.toLLVM(), 'utf8');
 
 if (process.argv.indexOf('--source') == -1) {
 	console.info("Compiling to executable...");
-	let runtime_path = path.resolve(__dirname, "./../runtime/runtime.ll");
+	let runtime_path = path.resolve(__dirname, "./../runtime/runtime.cpp");
 
 	let exec_out = output.slice(0, output.indexOf("."));
 	if (os.platform() == "win32") {
