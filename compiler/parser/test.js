@@ -5,7 +5,7 @@ const Parser = require('./parse.js');
 const fs = require('fs');
 
 
-console.log("Running Parse Test")
+console.info("Running Parse Test")
 let files = fs.readdirSync("./std/").reverse().map(x => `./std/${x}`)
 	.concat( fs.readdirSync("./test/").reverse().map(x => `./test/${x}`) );
 
@@ -14,9 +14,9 @@ for (let file of files) {
 		continue;
 	}
 
-	console.log(`  Parsing ${file}`);
+	console.info(`  Parsing ${file}`);
 	let data = fs.readFileSync(file, 'utf8');
 	Parser(data, file);
 }
 
-console.log("Finished parse test");
+console.info("Finished parse test");

@@ -18,12 +18,13 @@ class Project {
 	import(path) {
 		for (let file of this.files) {
 			if (file.getPath() == path) {
-				return file.getFileID();
+				return file;
 			}
 		}
 
 		let temp = new File(this, this.idGen.next(), path);
 		this.files.push(temp);
+		temp.parse();
 
 		return temp;
 	}

@@ -1,5 +1,5 @@
 program ::= w* ( stmt_top w* )*
-	stmt_top ::= comment | library | class | template | flag_definition | external | function
+	stmt_top ::= comment | library | class | template | flag_definition | external | alias | function
 
 #=============================
 #  Helper patterns
@@ -141,13 +141,13 @@ program ::= w* ( stmt_top w* )*
 #=============================
 #  Library Management
 #=============================
-	library ::= import | expose
+	library ::= import | import
 
 	import ::= import_as | import_direct
 		import_as ::= "import" w* string w* ";"
 		import_direct ::= "import" w* string w+ "as" w+ name w* ";"
 
-	expose ::= "expose" w+ ( "*" | name ) w* ";"
+	alias ::= "alias" w+ name w+ variable w* ";"
 
 
 #=============================

@@ -42,6 +42,9 @@ function Simplify_Stmt_Top(node) {
 		case "flag_definition":
 			inner = Simplify_Flag_Definition(node.tokens[0]);
 			break;
+		case "alias":
+			inner = Simplify_Alias(node.tokens[0]);
+			break;
 		default:
 			throw new TypeError(`Unexpected top level statement ${node.tokens[0].type}`);
 	}
@@ -53,13 +56,26 @@ function Simplify_Stmt_Top(node) {
 
 
 
+function Simplify_Alias (node) {
+	let out = [
+		Simplify_Name(node.tokens[2][0]),
+		Simplify_Variable(node.tokens[4][0])
+	];
+	
+	node.reached = null;
+	node.tokens = out;
+	return node;
+}
+
+
+
 function Simplify_Library(node) {
 	switch (node.tokens[0].type) {
 		case "import":
-			node.tokens = Simplify_Library_Import(node.tokens[0]);
+			node.tokens = [ Simplify_Library_Import(node.tokens[0]) ];
 			break;
 		case "expose":
-			node.tokens = Simplify_Library_Expose(node.tokens[0]);
+			node.tokens = [ Simplify_Library_Expose(node.tokens[0]) ];
 			break;
 		default:
 			throw new TypeError(`Unexpected library statement ${node.tokens[0].type}`);
@@ -591,7 +607,7 @@ function Simplify_Expr_Brackets (node) {
 
 function Parse (data, filename){
 	// Parse the file and check for errors
-	let result = BNF.Parse(data, syntax, "program");
+	let result = BNF.Parse(data+"\n", syntax, "program");
 
 	if (result.hasError || result.isPartial) {	
 		let ref = result.tree.ref.reached.getReach();

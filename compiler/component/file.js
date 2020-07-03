@@ -1,9 +1,11 @@
 const path = require('path');
-const BNF = require('BNF-parser');
+const BNF = require('bnf-parser');
 
 const LLVM = require('./../middle/llvm.js');
 const Function = require('./function.js');
 const TypeDef  = require('./typedef.js');
+const Import  = require('./import.js');
+const Alias  = require('./alias.js');
 
 // const { Namespace, Namespace_Type } = require('./namespace.js');
 const Parse = require('./../parser/parse.js');
@@ -20,13 +22,13 @@ class File {
 		this.names = {};
 
 		this.exports = [];
-
-		this.parse();
+		this.imports = [];
 	}
 
 	
 
 	parse() {
+		console.info("Parsing:", this.path);
 		this.data = fs.readFileSync(this.path, 'utf8').replace(/\n\r/g, '\n');
 		let syntax = Parse(this.data, this.path);
 
@@ -35,7 +37,7 @@ class File {
 			// Ignore comments
 			if (element.type == "comment") {
 				continue;
-			}else if (element.type == "external") {
+			} else if (element.type == "external") {
 				if (element.tokens[0] == "assume") {
 					for (let inner of element.tokens[1]){
 						this.register(inner, true);
@@ -48,8 +50,31 @@ class File {
 					console.error(`Error: Unknown external type "${element.tokens[0]}"`);
 					process.exit(1);
 				}
+			} else if (element.type == "library") {
+				let inner = element.tokens[0];
+				if (inner.type == "import") {
+					inner.tokens = [
+						path.resolve(
+							path.dirname(this.path),
+							inner.tokens[0].tokens[1]
+						),
+						inner.tokens[1]
+					];
+					this.register(inner);
+				} else {
+					console.error(`  Parse Error: Unknown library action "${inner.type}"`);
+					process.exit(1);
+				}
 			} else {
 				this.register(element);
+			}
+		}
+
+		// After main parse
+		//   To make logging clearer
+		for (let name in this.names) {
+			if (this.names[name] instanceof Import) {
+				this.names[name].load();
 			}
 		}
 	}
@@ -66,6 +91,12 @@ class File {
 				// continue to function case
 			case "function":
 				space = new Function(this, element, external, abstract);
+				break;
+			case "import":
+				space = new Import(this, element);
+				break;
+			case "alias":
+				space = new Alias(this, element);
 				break;
 			default:
 				throw new Error(`Unexpected file scope namespace type "${element.type}"`);
@@ -112,14 +143,32 @@ class File {
 		}
 	}
 
-	getType(term) {
-		let target = term[0];
+	getType(variable) {
+		let target = variable[0];
 		let res = this.names[target];
-		
-		if (term.length > 1 && res) {
-			return res.getNameSpace( [ term[1][0], ...term.slice(2) ] );
-		} else {
+
+		if (res instanceof Alias) {
+			res = res.resolve();
+		}
+
+		if (res && variable.length > 1) {
+			if (variable[1][0] != ".") {
+				return null;
+			}
+
+			return res.getType( [ variable[1][1], ...variable.slice(2) ] );
+		}
+
+		if (res) {
 			return res;
+		} else {
+			// If the name isn't defined in this file
+			// Check other files
+			if (this.names["*"] instanceof Import) {
+				return this.names["*"].getType(variable);
+			}
+
+			return null;
 		}
 	}
 
@@ -137,7 +186,7 @@ class File {
 	getID () {
 		return this.id;
 	}
-	getFileID () {
+	getFileID () {``
 		return this.getID();
 	}
 	getPath() {
@@ -150,10 +199,14 @@ class File {
 	getFile() {
 		return this;
 	}
+	import(filename) {
+		return this.project.import(filename);
+	}
 
 	throw (msg, refStart, refEnd) {
 		let area = BNF.Message.HighlightArea(this.data, refStart, refEnd, 2);
 
+		console.error(`\n${this.path}:`);
 		if (refEnd) {
 			console.error(`${msg} ${refStart.toString()} -> ${refEnd.toString()}`);
 		} else {

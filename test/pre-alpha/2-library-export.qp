@@ -13,22 +13,21 @@ external assume {
 	void fprintln(float val);
 }
 alias int i32; // allow refering to i32 as int
-expose int;    // expose LLVM base types
-expose float;
-expose double;
-expose void;
 
 // Merge add functions into single namespace
-i32 add (i32 a, i32 b) {
-	return iadd(a, b);
+i32 add (int a, int b) {
+	int c;
+	c = iadd(a, b);
+	return c;
 }
 float add(float a, float b) {
-	return fadd(a, b);
+	float c;
+	c = fadd(a, b);
+	return c;
 }
-expose add;
 
 // Merge print functions into single namespace
-void print(i32 val) {
+void print(int val) {
 	iprint(val);
 	return;
 }
@@ -36,10 +35,9 @@ void print(float val) {
 	iprint(val);
 	return;
 }
-expose print;
 
 // Merge println functions into single namespace
-void println(i32 val) {
+void println(int val) {
 	iprintln(val);
 	return;
 }
@@ -47,4 +45,3 @@ void println(float val) {
 	iprintln(val);
 	return;
 }
-expose println;

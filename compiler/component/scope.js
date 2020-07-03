@@ -184,13 +184,15 @@ class Scope {
 	compile_return(ast){
 		let frag = new LLVM.Fragment();
 		let inner = null;
+		console.log(187, ast);
+
 		switch (ast.tokens[0].type) {
 			case "constant":
 				inner = this.compile_constant(ast.tokens[0]);
 				break;
 			default:
-				file.throw(
-					`Unexpected return expression type "${ast.tokens[1].type}"`,
+				this.ctx.getFile().throw(
+					`Unexpected return expression type "${ast.tokens[0].type}"`,
 					ast.ref.start, ast.ref.end
 				);
 		}
