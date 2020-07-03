@@ -184,17 +184,39 @@ class Scope {
 	compile_return(ast){
 		let frag = new LLVM.Fragment();
 		let inner = null;
-		console.log(187, ast);
 
-		switch (ast.tokens[0].type) {
-			case "constant":
-				inner = this.compile_constant(ast.tokens[0]);
-				break;
-			default:
-				this.ctx.getFile().throw(
-					`Unexpected return expression type "${ast.tokens[0].type}"`,
-					ast.ref.start, ast.ref.end
-				);
+		if (ast.tokens.length == 0){
+			inner = new LLVM.Type("void", false);
+		} else {
+			switch (ast.tokens[0].type) {
+				case "constant":
+					inner = this.compile_constant(ast.tokens[0]);
+					break;
+				case "variable":
+					inner = new LLVM.Fragment();
+					let name = Flattern.VariableStr(ast.tokens[0]);
+					let term = this.variables[name];
+					if (!term) {
+						this.ctx.getFile().throw(
+							`Undefined variable name ${name}`,
+							ast.tokens[0].ref.start, ast.tokens[0].ref.end
+						);
+						return null;
+					}
+
+					let cache = this.getVarCache(name);
+					frag.merge(cache.instructions);
+
+					inner = new LLVM.Name(
+						cache.register, term.pointer, ast.tokens[0].ref
+					);
+					break;
+				default:
+					this.ctx.getFile().throw(
+						`Unexpected return expression type "${ast.tokens[0].type}"`,
+						ast.ref.start, ast.ref.end
+					);
+			}
 		}
 
 		frag.append(new LLVM.Return(inner, ast.ref.start));
