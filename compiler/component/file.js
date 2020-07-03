@@ -180,6 +180,12 @@ class File {
 			}	
 		}
 
+		// If the name isn't defined in this file
+		// Check other files
+		if (this.names["*"] instanceof Import) {
+			return this.names["*"].getFunction(variable, signature);
+		}
+
 		return null;
 	}
 

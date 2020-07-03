@@ -38,7 +38,7 @@ let asm = project.compile();
 fs.writeFileSync(output, asm.toLLVM(), 'utf8');
 
 if (process.argv.indexOf('--source') == -1) {
-	console.info("Compiling to executable...");
+	console.info("\nCompiling to executable...");
 	let runtime_path = path.resolve(__dirname, "./../runtime/runtime.cpp");
 
 	let exec_out = output.slice(0, output.indexOf("."));
@@ -52,7 +52,7 @@ if (process.argv.indexOf('--source') == -1) {
 
 	exec(`clang++ ${runtime_path} ${output} -o ${exec_out}`, (err) => {
 		if (err) {
-			console.error(err);
+			console.error(err.message);
 		}
 	})
 }
