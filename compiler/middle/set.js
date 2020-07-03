@@ -1,4 +1,4 @@
-const Instruction = require("./Instruction.js");
+const Instruction = require("./instruction.js");
 
 class Set extends Instruction {
 	/**

@@ -1,4 +1,4 @@
-const Instruction = require("./Instruction.js");
+const Instruction = require("./instruction.js");
 
 class Procedure extends Instruction {
 	constructor (rtrnType, name, args, attributes, external, ref) {
