@@ -152,29 +152,29 @@ class Scope {
 				let cnst = this.compile_constant(ast.tokens[1]);
 				frag.append(new LLVM.Store(
 					new LLVM.Type(target.type.represent, target.pointer-1),
-					new LLVM.Name(target.id, false),
+					new LLVM.Name(`${target.id}`, false),
 					cnst,
 					target.type.size,
 					ast.ref.start
 				));
-				frag.merge( target.markUpdatedVar(name) ); // update any original values if using a cache
+				frag.merge( target.markUpdated(name) ); // update any original values if using a cache
 				break;
 			case "call":
-				let inner_frag = this.compile_call(ast.tokens[1]);
-				if (inner_frag === null) {
+				let inner = this.compile_call(ast.tokens[1]);
+				if (inner === null) {
 					return null;
 				}
 
-				let call = inner_frag.stmts.splice(-1, 1)[0];
-				frag.merge(inner_frag); // add any loads needed for call
+				frag.merge(inner.preamble); // add any loads needed for call
 
 				load = this.getVar(name, -1, false); // since name as an address is known, the resolved cache will be known
 				frag.merge(load.preamble);
 				target = load.register;
 
-				frag.append(new LLVM.Set(new LLVM.Name(target.id, false), call));
-				// NOT NEEDED, as we already wrote the new value to the cache
-				// frag.merge( this.markUpdatedVar(name) );
+				frag.append(new LLVM.Set(new LLVM.Name(target.id, false), inner.instruction));
+
+				frag.merge(inner.epilog); // Mark any pointers that were parsed as updated
+				                          // due to potential side effects
 				break;
 			default:
 				file.throw(
@@ -227,8 +227,11 @@ class Scope {
 
 		return frag;
 	}
+
 	compile_call(ast) {
-		let frag = new LLVM.Fragment();
+		let instruction = null;
+		let preamble    = new LLVM.Fragment();
+		let epilog      = new LLVM.Fragment();
 
 		let varArgs = [];
 		for (let arg of ast.tokens[1].tokens) {
@@ -242,7 +245,7 @@ class Scope {
 				return null;
 			}
 
-			frag.merge(target.preamble);
+			preamble.merge(target.preamble);
 			varArgs.push(target.register);
 		}
 		let signature = varArgs.map(arg => [arg.pointer, arg.type]);
@@ -255,12 +258,18 @@ class Scope {
 				null, arg.name
 			)});
 
-			frag.append(new LLVM.Call(
+			instruction = new LLVM.Call(
 				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),
 				new LLVM.Name(target.represent, true, ast.tokens[0].ref),
 				irArgs,
 				ast.ref.start
-			));
+			);
+
+			// Clear any lower caches
+			//   If this is a pointer the value may have changed
+			for (let arg of varArgs) {
+				epilog.merge(arg.markUpdated())
+			}
 		} else {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
 			this.ctx.getFile().throw(
@@ -270,6 +279,20 @@ class Scope {
 			return null;
 		}
 
+		return { preamble, instruction, epilog };
+	}
+
+	compile_call_procedure(ast) {
+		let frag = new LLVM.Fragment(ast);
+		let out = this.compile_call(ast);
+		if (out === null) {
+			return null;
+		}
+
+		// Merge the preable, execution, and epilog into one fragment
+		frag.merge(out.preamble);
+		frag.append(out.instruction);
+		frag.merge(out.epilog);
 		return frag;
 	}
 
@@ -289,7 +312,7 @@ class Scope {
 					inner = this.compile_return(token);
 					break;
 				case "call_procedure":
-					inner = this.compile_call(token);
+					inner = this.compile_call_procedure(token);
 					break;
 				default:
 					this.ctx.getFile().throw(
