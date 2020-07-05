@@ -3,7 +3,7 @@ const Project = require('./component/project.js');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 
 const version = "0.0.0";
 const root = path.resolve("./");
@@ -50,9 +50,7 @@ if (process.argv.indexOf('--source') == -1) {
 		exec_out += ".o";
 	}
 
-	exec(`clang++ ${runtime_path} ${output} -o ${exec_out}`, (err) => {
-		if (err) {
-			console.error(err.message);
-		}
-	})
+	let clang = spawn('clang++', [runtime_path, output, "-o", exec_out]);
+	clang.stderr.pipe (process.stderr);
+	clang.stdout.pipe (process.stdout);
 }
