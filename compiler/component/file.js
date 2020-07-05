@@ -29,6 +29,19 @@ class File {
 
 	parse() {
 		console.info("Parsing:", this.path);
+
+		// Check the file exists
+		if (!fs.existsSync(this.path)) {
+			let msg = "\n";
+			msg += `Error: Cannot import file, as it does not exist\n`;
+			msg += `  absolute: ${this.path}\n`;
+			msg += `  relative: ${this.getRelative()}\n`;
+
+			console.error(msg);
+			this.project.markError(msg);
+			return;
+		}
+
 		this.data = fs.readFileSync(this.path, 'utf8').replace(/\n\r/g, '\n');
 		let syntax = Parse(this.data, this.path);
 
@@ -211,7 +224,6 @@ class File {
 
 	throw (msg, refStart, refEnd) {
 		let area = BNF.Message.HighlightArea(this.data, refStart, refEnd, 2);
-
 		console.error(`\n${this.path}:`);
 		if (refEnd) {
 			console.error(`${msg} ${refStart.toString()} -> ${refEnd.toString()}`);
