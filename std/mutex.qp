@@ -1,0 +1,44 @@
+flag mutex_state = [ unknown, locked ];
+expose mutex_state;
+
+class Mutex {
+	private:
+		bool locked;
+
+	public:
+		void lock_sync() {
+			affect flag this mut_state = locked;
+
+			// TODO
+			// Unimplemented method
+		}
+		void unlock_sync() {
+			affect flag this mut_state = unknown;
+
+			// TODO
+			// Unimplemented method
+		}
+
+		bool try_lock() {
+			affect flag this mut_state = unknown;
+			affect means {
+				case true:
+					means mut_state = locked;
+				case false:
+					means mut_state = unknown;
+			}
+
+			// TODO
+			// Unimplemented method
+			bool success = false;
+
+			if (success) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+}
+
+expose Mutex;
+expose mut_state;
