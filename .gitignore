@@ -18,10 +18,9 @@
 
 # Test qupa files
 *.qp
-!std/*.qp
-!std/*/*.qp
-!test/*.qp
-!test/*/*.qp
+!std/.gitignore
+!test/.gitignore
+
 
 # Node Modules
 node_modules/*

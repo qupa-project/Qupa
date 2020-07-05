@@ -1,0 +1,47 @@
+external assume {
+	type i32 size 4;
+	type float size 4;
+	type double size 4;
+	type void size 0;
+
+	i32 iadd(i32 a, i32 b);
+	float fadd(float a, float b);
+
+	void iprint(i32 val);
+	void fprint(float val);
+	void iprintln(i32 val);
+	void fprintln(float val);
+}
+alias int i32; // allow refering to i32 as int
+
+// Merge add functions into single namespace
+i32 add (int a, int b) {
+	int c;
+	c = iadd(a, b);
+	return c;
+}
+float add(float a, float b) {
+	float c;
+	c = fadd(a, b);
+	return c;
+}
+
+// Merge print functions into single namespace
+void print(int val) {
+	iprint(val);
+	return;
+}
+void print(float val) {
+	fprint(val);
+	return;
+}
+
+// Merge println functions into single namespace
+void println(int val) {
+	iprintln(val);
+	return;
+}
+void println(float val) {
+	fprintln(val);
+	return;
+}

@@ -1,0 +1,23 @@
+import "export.qp";
+import "export.qp"; // twice to check double importation behaviour
+
+
+int main() {
+	int a;
+	int b;
+	int c;
+
+	a = 1;
+	b = 2;
+
+	println(a);
+	println(b);
+
+	c = add(a, b);
+	println(c);
+
+	return 1;
+}
+external export {
+	int main ();
+};
