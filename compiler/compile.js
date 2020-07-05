@@ -35,6 +35,11 @@ if (project.error) {
 }
 let asm = project.compile();
 
+if (project.error) {
+	console.error("\nUncompilable errors");
+	process.exit(1);
+}
+
 fs.writeFileSync(output, asm.toLLVM(), 'utf8');
 
 if (process.argv.indexOf('--source') == -1) {
