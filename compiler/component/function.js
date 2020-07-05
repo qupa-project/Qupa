@@ -239,7 +239,7 @@ class Function_Instance {
 		let head = this.ast.tokens[0]
 
 		for (let i=0; i<this.signature.length; i++) {
-			let id = scope.register_Var(
+			let reg = scope.register_Var(
 				this.signature[i][1],                                // type
 				this.signature[i][0],                                // isPointer
 				head.tokens[2].tokens[i][1].tokens,                  // name
@@ -254,7 +254,7 @@ class Function_Instance {
 					head.tokens[2].tokens[i][0].ref.start
 				),
 				new LLVM.Name(
-					id,
+					reg.id,
 					false,
 					head.tokens[2].tokens[i][1].ref.start
 				),

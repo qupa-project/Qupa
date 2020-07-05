@@ -1,6 +1,7 @@
 const { Generator_ID } = require('./generate.js');
 const LLVM = require("../middle/llvm.js");
 const Flattern = require('../parser/flattern.js');
+const Register = require('./register.js');
 
 class Scope {
 	constructor(ctx, id_generator = new Generator_ID(1)) {
@@ -10,7 +11,7 @@ class Scope {
 		this.generator = id_generator;
 	}
 
-	register_Var(type, isPointer, name, ref) {
+	register_Var(type, pointerLvl, name, ref) {
 		if (this.variables[name]) {
 			this.ctx.getFile().throw(
 				`Duplicate declaration of name ${name} in scope`,
@@ -18,53 +19,57 @@ class Scope {
 			);
 		}
 
-		let regID = this.generator.next();
-		this.variables[name] = {
-			pointer  : isPointer,
-			type     : type,
-			register : regID,
-			declared : ref
-		};
-
-		return regID;
+		this.variables[name] = new Register(this.generator.next(), type, name, pointerLvl, ref);
+		return this.variables[name];
 	}
 
-	getVarCache(name, read = true) {
-		let instructions = new LLVM.Fragment();
-
-		let wasModified = false;
-
-		// Define the cache if it doesn't already exist
-		if (!this.caches[name] || this.caches[name].modified) {
-			if (this.caches[name]) {
-				wasModified = this.caches[name].modified;
-			} else {
-				wasModified = true;
-			}
-
-			this.caches[name] = {
-				register: this.generator.next(),
-				modified: wasModified
-			};
+	getVar(name, pointerLvl = null, read = true) {
+		let mode = "exact";
+		if (pointerLvl < 0) {
+			mode = "down";
+			pointerLvl = -pointerLvl;
+		} else if (pointerLvl === null) {
+			mode = "ignorant";
 		}
 
-		// If the original value has been changed
-		// Run the instructions to refresh the cache
-		if (read && wasModified) {
-			instructions.append(new LLVM.Load(
-				new LLVM.Name(this.caches[name].register, false),
-				new LLVM.Type(this.variables[name].type.represent, this.variables[name].pointer, this.variables[name].declared),
-				new LLVM.Name(this.variables[name].register),
-				this.variables[name].type.size
-			));
+		let preamble = new LLVM.Fragment();
+		let target = this.variables[name];
 
-			this.caches[name].modified = false;
+		while ( target != null && (
+			( mode == "exact" && target.pointer > pointerLvl ) ||
+			( mode == "down" && pointerLvl > 0 )
+		)) {
+			if (!target.cache) {
+				let id = this.generator.next();
+				target.cache = new Register(id, target.type, `#t${id}`, target.pointer-1);
+				if (read) {
+					let inst = new LLVM.Load(
+						new LLVM.Name(`${target.cache.id}`, false),
+						new LLVM.Type(target.type.represent, target.pointer-1),
+						new LLVM.Name(`${target.id}`, false),
+						target.type.size
+					);
+					preamble.append(inst);
+				}
+			}
+
+			target = target.cache;
+			if (mode == "down") {
+				pointerLvl--;
+			}
 		}
 
 		return {
-			instructions: instructions,
-			register: this.caches[name].register
+			preamble,
+			register: target
 		};
+	}
+	markUpdatedVar(name) {
+		if (this.variables[name]) {
+			return this.variables[name].markUpdated();
+		}
+
+		return new LLVM.Fragment();
 	}
 
 
@@ -95,37 +100,34 @@ class Scope {
 			process.exit(1);
 		}
 
-		this.register_Var(
+		let ptrLvl = typeRef[0]  ? 2 : 1;
+		let reg = this.register_Var(
 			typeRef[1],
-			typeRef[0],
+			ptrLvl,
 			name,
 			ast.ref.start
 		);
 
 		frag.append(new LLVM.Set(
-			new LLVM.Name(this.variables[name].register, false, ast.tokens[1].ref.start),
+			new LLVM.Name(reg.id, false, ast.tokens[1].ref.start),
 			new LLVM.Alloc(
-				new LLVM.Type(this.variables[name].type.represent, false, ast.tokens[0].ref.start),
+				new LLVM.Type(reg.type.represent, ptrLvl-1, ast.tokens[0].ref.start),
 				ast.ref.start
 			),
 			ast.ref.start
 		));
-
-		if (this.variables[name].pointer) {
-			this.ctx.getFile().throw(
-				`Unhandled variable type @${variable[name].type.represent}`,
-				variable[name].declared, token.ref.end
-			);
-			return frag;
-		}
 
 		return frag;
 	}
 	compile_assign(ast){
 		let frag = new LLVM.Fragment();
 
+		// Get the variable at the right pointer depth
 		let name = Flattern.VariableStr(ast.tokens[0]);
-		let target = this.variables[name];
+		let load = this.getVar(name, null);
+		frag.merge(load.preamble);
+
+		let target = load.register;
 		if (!target) {
 			this.ctx.getFile().throw(
 				`Undefined variable "${name}"`,
@@ -138,15 +140,12 @@ class Scope {
 			case "constant":
 				let cnst = this.compile_constant(ast.tokens[1]);
 				frag.append(new LLVM.Store(
-					new LLVM.Type(target.type.represent, target.pointer),
-					new LLVM.Name(target.register, false),
+					new LLVM.Type(target.type.represent, target.pointer-1),
+					new LLVM.Name(target.id, false),
 					cnst,
 					target.type.size,
 					ast.ref.start
 				));
-				if (this.caches[name]) {
-					this.caches[name].modified = true;
-				}
 				break;
 			case "call":
 				let inner_frag = this.compile_call(ast.tokens[1]);
@@ -157,20 +156,11 @@ class Scope {
 				let call = inner_frag.stmts.splice(-1, 1)[0];
 				frag.merge(inner_frag); // add any loads needed for call
 
-				let cache = this.getVarCache(name, false);
-				frag.merge(cache.instructions); // add any derefs needed for func store loc
+				load = this.getVar(name, -1, false); // since name as an address is known, the resolved cache will be known
+				frag.merge(load.preamble);
+				target = load.register;
 
-				frag.append(new LLVM.Set(new LLVM.Name(cache.register, false), call)); // cache the function results
-				frag.append(new LLVM.Store(
-					new LLVM.Type(target.type.represent, target.pointer),
-					new LLVM.Name(target.register, false),
-					new LLVM.Argument(
-						new LLVM.Type(target.type.represent, target.pointer),
-						new LLVM.Name(cache.register, false)
-					),
-					target.type.size,
-					ast.ref.start
-				))
+				frag.append(new LLVM.Set(new LLVM.Name(target.id, false), call));
 				break;
 			default:
 				file.throw(
@@ -179,6 +169,7 @@ class Scope {
 				);
 		}
 
+		frag.merge( this.markUpdatedVar(name) ); // update any original values if using a cache
 		return frag;
 	}
 	compile_return(ast){
@@ -195,7 +186,8 @@ class Scope {
 				case "variable":
 					inner = new LLVM.Fragment();
 					let name = Flattern.VariableStr(ast.tokens[0]);
-					let term = this.variables[name];
+					let target = this.getVar(name, -1, true);
+					let term = target.register;
 					if (!term) {
 						this.ctx.getFile().throw(
 							`Undefined variable name ${name}`,
@@ -204,11 +196,10 @@ class Scope {
 						return null;
 					}
 
-					let cache = this.getVarCache(name);
-					frag.merge(cache.instructions);
-
-					inner = new LLVM.Name(
-						cache.register, term.pointer, ast.tokens[0].ref
+					frag.merge(target.preamble);
+					inner = new LLVM.Argument(
+						new LLVM.Type( term.type.represent, term.pointer, term.type.ref ),
+						new LLVM.Name( term.id, false, ast.tokens[0].ref )
 					);
 					break;
 				default:
@@ -226,11 +217,11 @@ class Scope {
 	compile_call(ast) {
 		let frag = new LLVM.Fragment();
 
-		let signature = [];
+		let varArgs = [];
 		for (let arg of ast.tokens[1].tokens) {
 			let name = Flattern.VariableStr(arg);
-			let target = this.variables[name];
-			if (!target) {
+			let target = this.getVar(name, 0);
+			if (!target.register) {
 				this.ctx.getFile().throw(
 					`Undefined variable name ${name}`,
 					arg.ref.start, arg.ref.end
@@ -238,32 +229,23 @@ class Scope {
 				return null;
 			}
 
-			signature.push([target.pointer, target.type]);
+			frag.merge(target.preamble);
+			varArgs.push(target.register);
 		}
+		let signature = varArgs.map(arg => [arg.pointer, arg.type]);
 
 		let target = this.ctx.getFile().getFunction(ast.tokens[0], signature);
 		if (target) {
-			let args = [];
-			for (let arg of ast.tokens[1].tokens) {
-				let name = Flattern.VariableStr(arg);
-				let term = this.variables[ name ];
-
-				let cache = this.getVarCache(name);
-				frag.merge(cache.instructions);
-
-				args.push(new LLVM.Argument(
-					new LLVM.Type(
-						term.type.represent, term.pointer, arg.ref
-					), new LLVM.Name(
-						cache.register, false, arg.ref
-					), arg.ref, name
-				));
-			}
+			let irArgs = varArgs.map(arg => { return new LLVM.Argument(
+				new LLVM.Type(arg.type.represent, arg.pointer),
+				new LLVM.Name(arg.id, false),
+				null, arg.name
+			)});
 
 			frag.append(new LLVM.Call(
 				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),
 				new LLVM.Name(target.represent, true, ast.tokens[0].ref),
-				args,
+				irArgs,
 				ast.ref.start
 			));
 		} else {

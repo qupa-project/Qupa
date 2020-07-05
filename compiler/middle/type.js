@@ -1,14 +1,19 @@
 const Instruction = require("./instruction.js");
 
 class Name extends Instruction {
-	constructor(term, pointer, ref) {
+	constructor(term, pointerDepth, ref) {
 		super (ref);
 		this.term = term;
-		this.isPointer = pointer;
+		this.pointer = pointerDepth;
 	}
 
 	toLLVM(indent) {
-		return super.toLLVM(`${this.term}${this.isPointer ? "*" : ""}`, indent);
+		let lvl = "";
+		for (let i=0; i<this.pointer; i++) {
+			lvl += "*";
+		}
+
+		return super.toLLVM(`${this.term}${lvl}`, indent);
 	}
 }
 module.exports = Name;
