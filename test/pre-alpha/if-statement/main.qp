@@ -1,0 +1,31 @@
+import "../std.qp";
+
+
+int main () {
+	int a;
+	int b;
+	bool d;
+	int c;
+
+	a = 2;
+	b = 3;
+
+	println(a);
+	println(b);
+
+	c = 2;
+	d = equal(a, c);
+	if (d) {
+		a = 4;
+	}
+	println(a);
+	d = equal(a, b);
+	if (d) {
+		b = add(a, b);
+	} else {
+		b = 1;
+	}
+	println(b);
+
+	return 0;
+}

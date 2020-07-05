@@ -1,23 +1,36 @@
 #include <iostream>
 
 extern "C" {
-	int iadd(int a, int b) {
+	int i32_add(int a, int b) {
 		return a + b;
 	}
-	float fadd(float a, float b) {
+	float f32_add(float a, float b) {
 		return a + b;
 	}
 
-	void iprint(int val) {
+	bool i32_equal(int a, int b) {
+		return a == b;
+	}
+	bool f32_equal(float a, float b) {
+		return a == b;
+	}
+
+	void i32_print(int val) {
 		std::cout << val;
 	}
-	void fprint(float val) {
+	void f32_print(float val) {
 		std::cout << val;
 	}
-	void iprintln(int val) {
+	void i1_print(bool val) {
+		std::cout << val;
+	}
+	void i32_println(int val) {
 		std::cout << val << std::endl;
 	}
-	void fprintln(float val) {
+	void f32_println(float val) {
+		std::cout << val << std::endl;
+	}
+	void i1_println(bool val) {
 		std::cout << val << std::endl;
 	}
 }
