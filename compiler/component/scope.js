@@ -73,6 +73,7 @@ class Scope {
 	}
 
 
+
 	compile_constant(ast) {
 		let type = "i32";
 		let val = ast.tokens[0].tokens;
@@ -85,7 +86,6 @@ class Scope {
 
 		return new LLVM.Constant(type, val, ast.ref.start);
 	}
-
 
 
 	compile_declare(ast){
@@ -112,6 +112,7 @@ class Scope {
 			new LLVM.Name(reg.id, false, ast.tokens[1].ref.start),
 			new LLVM.Alloc(
 				new LLVM.Type(reg.type.represent, ptrLvl-1, ast.tokens[0].ref.start),
+				reg.type.size,
 				ast.ref.start
 			),
 			ast.ref.start
@@ -146,6 +147,7 @@ class Scope {
 					target.type.size,
 					ast.ref.start
 				));
+				frag.merge( this.markUpdatedVar(name) ); // update any original values if using a cache
 				break;
 			case "call":
 				let inner_frag = this.compile_call(ast.tokens[1]);
@@ -161,6 +163,8 @@ class Scope {
 				target = load.register;
 
 				frag.append(new LLVM.Set(new LLVM.Name(target.id, false), call));
+				// NOT NEEDED, as we already wrote the new value to the cache
+				// frag.merge( this.markUpdatedVar(name) );
 				break;
 			default:
 				file.throw(
@@ -169,7 +173,6 @@ class Scope {
 				);
 		}
 
-		frag.merge( this.markUpdatedVar(name) ); // update any original values if using a cache
 		return frag;
 	}
 	compile_return(ast){
