@@ -8,6 +8,7 @@
   },
   "devDependencies": {},
   "scripts": {
+    "setup"         : "npm install && npm run build",
     "compile"       : "node compiler/compile.js",
     "test"          : "npm run test-parser",
     "test-parser"   : "node compiler/parser/test.js",
