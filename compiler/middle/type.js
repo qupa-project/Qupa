@@ -1,6 +1,13 @@
 const Instruction = require("./instruction.js");
+const LLVM = require('./llvm.js');
 
 class Name extends Instruction {
+	/**
+	 * 
+	 * @param {String} term 
+	 * @param {Number} pointerDepth 
+	 * @param {BNF_Reference?} ref 
+	 */
 	constructor(term, pointerDepth, ref) {
 		super (ref);
 		this.term = term;

@@ -1,14 +1,14 @@
 const Instruction = require("./instruction.js");
+const LLVM = require('./llvm.js');
 
 class Store extends Instruction {
 	/**
 	 * 
-	 * @param {LLVM.Name} reg 
 	 * @param {LLVM.Type} regType 
-	 * @param {String} data 
-	 * @param {LLVM.Type} dataType 
+	 * @param {LLVM.Name} regName 
+	 * @param {LLVM.Instruction} data 
 	 * @param {Number} width 
-	 * @param {BNF_Reference} ref 
+	 * @param {BNF_Reference?} ref 
 	 */
 	constructor(regType, regName, data, width, ref) {
 		super (ref);

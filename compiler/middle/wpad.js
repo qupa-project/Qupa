@@ -1,4 +1,8 @@
 class WPad {
+	/**
+	 * 
+	 * @param {Number} lines 
+	 */
 	constructor (lines) {
 		this.lines = lines;
 	}

@@ -3,12 +3,11 @@ const Instruction = require("./instruction.js");
 class Load extends Instruction {
 	/**
 	 * 
-	 * @param {LLVM.Name} reg 
-	 * @param {LLVM.Type} regType 
-	 * @param {String} data 
-	 * @param {LLVM.Type} dataType 
-	 * @param {Number} width 
-	 * @param {BNF_Reference} ref 
+	 * @param {LLVM.Name} reg_store Where the data is being stored
+	 * @param {LLVM.Type} type The type of data
+	 * @param {LLVM.Name} reg_address The register which holds the address of the data
+	 * @param {Number} width The width of hte data
+	 * @param {BNF_Reference?} ref 
 	 */
 	constructor(reg_store, type, reg_address, width, ref) {
 		super (ref);

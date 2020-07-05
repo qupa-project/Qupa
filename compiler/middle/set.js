@@ -1,10 +1,11 @@
 const Instruction = require("./instruction.js");
+const LLVM = require('./llvm.js');
 
 class Set extends Instruction {
 	/**
 	 * 
-	 * @param {Name} register 
-	 * @param {Type} type 
+	 * @param {LLVM.Name} register 
+	 * @param {LLVM.Type} type 
 	 * @param {BNF_Reference} ref 
 	 */
 	constructor(name, expr, ref) {

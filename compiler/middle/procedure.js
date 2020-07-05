@@ -1,6 +1,16 @@
 const Instruction = require("./instruction.js");
+const LLVM = require('./llvm.js');
 
 class Procedure extends Instruction {
+	/**
+	 * 
+	 * @param {LLVM.Type} rtrnType 
+	 * @param {LLVM.Name} name 
+	 * @param {LLVM.Argument[]} args 
+	 * @param {String} attributes 
+	 * @param {Boolean} external 
+	 * @param {BNF_Reference?} ref 
+	 */
 	constructor (rtrnType, name, args, attributes, external, ref) {
 		super(ref);
 		this.rtrnType = rtrnType;

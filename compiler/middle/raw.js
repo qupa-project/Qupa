@@ -1,4 +1,8 @@
 class Raw {
+	/**
+	 * 
+	 * @param {String} text 
+	 */
 	constructor (text) {
 		this.text = text;
 	}

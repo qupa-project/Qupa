@@ -23,6 +23,12 @@ class Scope {
 		return this.variables[name];
 	}
 
+	/**
+	 * Get the register holding the variable or it's dereferenced state
+	 * @param {BNF_SyntaxNode} name "type" = variable
+	 * @param {Number|Null} pointerLvl -X means dereference at least X times, +X means to that reference depth, null depth ignorant
+	 * @param {*} read Will data be read or just written?
+	 */
 	getVar(name, pointerLvl = null, read = true) {
 		let mode = "exact";
 		if (pointerLvl < 0) {
@@ -64,6 +70,10 @@ class Scope {
 			register: target
 		};
 	}
+	/**
+	 * Mark this variable as updated, thus caches need to be refreshed on next read
+	 * @param {BNF_SyntaxNode} name "type" = variable
+	 */
 	markUpdatedVar(name) {
 		if (this.variables[name]) {
 			return this.variables[name].markUpdated();
@@ -147,7 +157,7 @@ class Scope {
 					target.type.size,
 					ast.ref.start
 				));
-				frag.merge( this.markUpdatedVar(name) ); // update any original values if using a cache
+				frag.merge( target.markUpdatedVar(name) ); // update any original values if using a cache
 				break;
 			case "call":
 				let inner_frag = this.compile_call(ast.tokens[1]);
