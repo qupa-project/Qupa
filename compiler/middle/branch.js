@@ -15,8 +15,8 @@ class Branch extends Instruction {
 		this.false = label_false;
 	}
 
-	toLLVM() {
-		return `br ${this.condition.toLLVM()}, ${this.true.toLLVM()}, ${this.false.toLLVM()}`;
+	toLLVM(indent) {
+		return super.toLLVM(`br ${this.condition.toLLVM()}, ${this.true.toLLVM()}, ${this.false.toLLVM()}`, indent);
 	}
 }
 module.exports = Branch;

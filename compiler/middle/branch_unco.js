@@ -11,8 +11,8 @@ class Branch_Unco extends Instruction {
 		this.label = label;
 	}
 
-	toLLVM() {
-		return `br ${this.label.toLLVM()}`;
+	toLLVM(indent) {
+		return super.toLLVM(`br ${this.label.toLLVM()}`, indent);
 	}
 }
 module.exports = Branch_Unco;

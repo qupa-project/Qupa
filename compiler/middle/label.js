@@ -1,4 +1,5 @@
 const Instruction = require("./instruction.js");
+let LLVM = require('./llvm.js');
 
 class Label extends Instruction {
 	/**
@@ -11,8 +12,19 @@ class Label extends Instruction {
 		this.name = name;
 	}
 
+	toDefinition() {
+		return new Label_Definition(this.name, this.ref);
+	}
+
 	toLLVM() {
 		return `label ${this.name.toLLVM()}`;
 	}
 }
+
+class Label_Definition extends Label {
+	toLLVM() {
+		return `\n${this.name.term}:`;
+	}
+}
+
 module.exports = Label;
