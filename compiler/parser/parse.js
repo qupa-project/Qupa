@@ -483,7 +483,7 @@ function Simplify_Call_Args (node) {
 function Simplify_If (node) {
 	let out = [
 		Simplify_If_Stmt(node.tokens[0][0]),
-		[ node.tokens[1].map(x => Simplify_If_Stmt(x)) ],
+		node.tokens[1].map(x => Simplify_If_Stmt(x)),
 		node.tokens[3].length > 0 ? Simplify_If_Else(node.tokens[3][0]) : null
 	];
 
