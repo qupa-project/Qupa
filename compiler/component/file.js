@@ -42,6 +42,17 @@ class File {
 			return;
 		}
 
+		if (!fs.lstatSync(this.path).isFile()) {
+			let msg = "\n";
+			msg += `Error: Cannot import directory as a file\n`;
+			msg += `  absolute: ${this.path}\n`;
+			msg += `  relative: ${this.getRelative()}\n`;
+
+			console.error(msg);
+			this.project.markError(msg);
+			return;
+		}
+
 		this.data = fs.readFileSync(this.path, 'utf8').replace(/\n\r/g, '\n');
 		let syntax = Parse(this.data, this.path);
 
