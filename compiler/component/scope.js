@@ -285,7 +285,10 @@ class Scope {
 				frag.append(new LLVM.Set(new LLVM.Name(cache.id, false), inner.instruction));
 				frag.merge(inner.epilog); // Mark any pointers that were parsed as updated
 																	// due to potential side effects
-				frag.merge(target.flushCache());
+				frag.merge(target.flushCache(
+					ast.ref.start,
+					this.caching ? cache : null // mark the cache generated here as already being the new cache
+				));
 				break;
 			case "variable":
 				let otherName = Flattern.VariableStr(ast.tokens[1]);

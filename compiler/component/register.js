@@ -23,7 +23,7 @@ class Register {
 	 * Forces caches to write data to the correct location
 	 * @param {BNF_Reference} ref 
 	 */
-	flushCache(ref) {
+	flushCache(ref, replacement = null) {
 		let frag = new LLVM.Fragment();
 
 		if (this.cache) {
@@ -42,7 +42,7 @@ class Register {
 				ref
 			));
 		}
-		this.cache = null;
+		this.cache = replacement;
 
 		return frag;
 	}
@@ -50,9 +50,9 @@ class Register {
 	/**
 	 * Dumps all caches, forcing reloads
 	 */
-	clearCache() {
+	clearCache(ref) {
 		if (this.cache) {
-			this.cache.clearCache();
+			this.cache.clearCache(ref);
 		}
 		this.cache = null;
 	}
