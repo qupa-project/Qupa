@@ -11,6 +11,8 @@ class Scope {
 		this.variables = {};
 		this.generator = id_generator;
 		this.caching   = caching;
+
+		this.updated = [];
 	}
 
 	/**
@@ -37,6 +39,12 @@ class Scope {
 			return this.ctx;
 		}
 		return null;
+	}
+
+	notifyUpdated(name) {
+		if (this.updated.indexOf(name) == -1) {
+			this.updated.push(name);
+		}
 	}
 
 	/**
@@ -122,6 +130,15 @@ class Scope {
 				pointerLvl--;
 			}
 		}
+
+		// Mark all variables altered in this scope
+		// So upper scopes can be notified
+		if (!read) {
+			let parent = this.getParent();
+			if (parent) {
+				parent.notifyUpdated(name);
+			}
+		};
 
 		return {
 			preamble,
@@ -505,6 +522,17 @@ class Scope {
 			if (inner !== null) {
 				fragment.merge(inner);
 			}
+
+			// Propergate any updates from lower scopes
+			let parent = this.getParent();
+			for (let val in this.updated) {
+				this.getVar(val).markUpdated();
+
+				if (parent) {
+					parent.notifyUpdated(val);
+				}
+			}
+			this.updated = [];
 		}
 
 		return fragment;
