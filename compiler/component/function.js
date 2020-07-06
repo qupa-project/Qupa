@@ -233,7 +233,7 @@ class Function_Instance {
 		}
 
 		let generator = new Generator_ID(0);
-		let scope = new Scope(this, generator);
+		let scope = new Scope(this, this.getFile().project.config.caching, generator);
 		let args = [];
 
 		let head = this.ast.tokens[0]

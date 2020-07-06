@@ -11,16 +11,23 @@ class Register {
 	}
 
 	get register(){
-		// let err = new Error('Using depricated name');
-		// console.info(err);
+		console.warn(new Error('Using depricated name'));
 		return this.id;
 	}
 
 	markUpdated(ref) {
+		return this.flushCache(ref);
+	}
+
+	/**
+	 * Forces caches to write data to the correct location
+	 * @param {BNF_Reference} ref 
+	 */
+	flushCache(ref) {
 		let frag = new LLVM.Fragment();
 
 		if (this.cache) {
-			frag.merge(this.cache.markUpdated());
+			frag.merge(this.cache.flushCache());
 
 			frag.append(new LLVM.Store(
 				new LLVM.Type(this.type.represent, this.pointer-1),
@@ -36,6 +43,16 @@ class Register {
 		this.cache = null;
 
 		return frag;
+	}
+
+	/**
+	 * Dumps all caches, forcing reloads
+	 */
+	clearCache() {
+		if (this.cache) {
+			this.cache.clearCache();
+		}
+		this.cache = null;
 	}
 }
 

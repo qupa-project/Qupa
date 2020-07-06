@@ -4,11 +4,11 @@ const Flattern = require('../parser/flattern.js');
 const Register = require('./register.js');
 
 class Scope {
-	constructor(ctx, id_generator = new Generator_ID(1)) {
+	constructor(ctx, caching = true, id_generator = new Generator_ID(1)) {
 		this.ctx       = ctx;
 		this.variables = {};
-		this.caches    = {};
 		this.generator = id_generator;
+		this.caching   = caching;
 	}
 
 	register_Var(type, pointerLvl, name, ref) {
@@ -40,6 +40,10 @@ class Scope {
 
 		let preamble = new LLVM.Fragment();
 		let target = this.variables[name];
+
+		if (target && !this.caching) {
+			target.clearCache();
+		}
 
 		while ( target != null && (
 			( mode == "exact" && target.pointer > pointerLvl ) ||
@@ -268,7 +272,7 @@ class Scope {
 			// Clear any lower caches
 			//   If this is a pointer the value may have changed
 			for (let arg of varArgs) {
-				epilog.merge(arg.markUpdated())
+				arg.clearCache();
 			}
 		} else {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
