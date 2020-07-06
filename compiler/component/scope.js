@@ -267,7 +267,7 @@ class Scope {
 					target.type.size,
 					ast.ref.start
 				));
-				target.markUpdated(name); // Mark that this value was directly changed
+				target.markUpdated(); // Mark that this value was directly changed
 				                          //  and caches need to be dropped
 				break;
 			case "call":
@@ -287,8 +287,31 @@ class Scope {
 																	// due to potential side effects
 				frag.merge(target.flushCache());
 				break;
+			case "variable":
+				let otherName = Flattern.VariableStr(ast.tokens[1]);
+				load = this.getVar(otherName, -1, true);
+				frag.merge(load.preamble);
+
+				frag.append(new LLVM.Store(
+					new LLVM.Argument(
+						new LLVM.Type(target.type.represent, target.pointer, target.declared),
+						new LLVM.Name(`${target.id}`, false, ast.tokens[0].ref.start),
+						ast.tokens[0].ref,
+						name
+					),
+					new LLVM.Argument(
+						new LLVM.Type(load.register.type.represent, load.register.pointer, load.register.declared),
+						new LLVM.Name(`${load.register.id}`, false, ast.tokens[1].ref.start),
+						ast.tokens[1].ref.start
+					),
+					target.type.size,
+					ast.ref.start
+				));
+
+				target.markUpdated();
+				break;
 			default:
-				file.throw(
+				this.getFile().throw(
 					`Unexpected assignment type "${ast.tokens[1].type}"`,
 					ast.ref.start, ast.ref.end
 				);
