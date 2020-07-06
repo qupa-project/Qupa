@@ -4,6 +4,8 @@ const Flattern = require('../parser/flattern.js');
 const Register = require('./register.js');
 
 class Scope {
+	static raisedVariables = true; // whether or not a variable can be redefined within a new scope
+
 	constructor(ctx, caching = true, id_generator = new Generator_ID(1)) {
 		this.ctx       = ctx;
 		this.variables = {};
@@ -11,7 +13,39 @@ class Scope {
 		this.caching   = caching;
 	}
 
+	/**
+	 * Return the function this scope is within
+	 */
+	getFunction() {
+		if (this.ctx instanceof Scope) {
+			return this.ctx.getFunction();
+		}
+	}
+
+	/**
+	 * Return the parent scope if this is a sub scope
+	 */
+	getParent() {
+		if (this.ctx instanceof Scope) {
+			return this.ctx;
+		}
+		return null;
+	}
+
+	/**
+	 * Define a new variable
+	 * @param {TypeDef} type 
+	 * @param {Number} pointerLvl 
+	 * @param {String} name 
+	 * @param {BNF_Reference} ref 
+	 */
 	register_Var(type, pointerLvl, name, ref) {
+		if (Scope.raisedVariables) {
+			if (this.getParent()) {
+				return this.ctx.register_Var(type, pointerLvl, name, ref);
+			}
+		}
+
 		if (this.variables[name]) {
 			this.ctx.getFile().throw(
 				`Duplicate declaration of name ${name} in scope`,
@@ -30,6 +64,12 @@ class Scope {
 	 * @param {*} read Will data be read or just written?
 	 */
 	getVar(name, pointerLvl = null, read = true) {
+		if (Scope.raisedVariables) {
+			if (this.getParent()) {
+				return this.ctx.getVar(name, pointerLvl, read);
+			}
+		}
+
 		let mode = "exact";
 		if (pointerLvl < 0) {
 			mode = "down";
