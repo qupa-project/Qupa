@@ -176,10 +176,11 @@ program ::= w* ( stmt_top w* )*
 #  If statement
 #=============================
 	if ::= if_stmt ( w* elif_stmt )* w* else_stmt?
-		if_stmt   ::= "if"   w* "(" w* expr w* ")" w* "{" w* if_body w* "}"
-		elif_stmt ::= "elif" w* "(" w* expr w* ")" w* "{" w* if_body w* "}"
-		else_stmt ::= "else" w* "{" w* if_body w* "}"
-		if_body ::= func_stmt*
+		if_stmt   ::= "if"   w* "(" w* expr w* ")" w* if_body
+		elif_stmt ::= "elif" w* "(" w* expr w* ")" w* if_body
+		else_stmt ::= "else" w* if_body
+
+		if_body ::= "{" w* ( func_stmt w* )* "}"
 
 
 #=============================

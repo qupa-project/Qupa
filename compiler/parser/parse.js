@@ -422,6 +422,8 @@ function Simplify_Function_Stmt (node) {
 			inner = Simplify_Call(node.tokens[0]);
 			break;
 		case "if":
+			inner = Simplify_If(node.tokens[0]);
+			break;
 		case "for":
 		case "while":
 		case "asm":
@@ -474,6 +476,42 @@ function Simplify_Call_Args (node) {
 			}) )
 	node.reached = null;
 	return node;
+}
+
+
+
+function Simplify_If (node) {
+	let out = [
+		Simplify_If_Stmt(node.tokens[0][0]),
+		[ node.tokens[1].map(x => Simplify_If_Stmt(x)) ],
+		node.tokens[3].length > 0 ? Simplify_If_Else(node.tokens[3][0]) : null
+	];
+
+	node.tokens = out;
+	node.reached = null;
+	return node;
+}
+function Simplify_If_Stmt (node) {
+	let out = [
+		Simplify_Expr(node.tokens[4][0]),
+		Simplify_If_Body(node.tokens[8][0])
+	];
+
+	node.tokens  = out;
+	node.reached = null;
+	return node;
+}
+function Simplify_If_Else (node) {
+	let out = [
+		Simplify_Function_Body(node.tokens[2][0])
+	];
+
+	node.tokens = out;
+	node.reached = null;
+	return node;
+}
+function Simplify_If_Body (node) {
+	return Simplify_Function_Body(node);
 }
 
 
