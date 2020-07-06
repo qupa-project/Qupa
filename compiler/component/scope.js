@@ -89,7 +89,13 @@ class Scope {
 			( mode == "exact" && target.pointer > pointerLvl ) ||
 			( mode == "down" && pointerLvl > 0 )
 		)) {
-			if (!target.cache) {
+			if (!target.cache ||
+				// No not reuse a register with a write action
+				(!read && (
+					(mode == "exact" && target.pointer+1 == pointerLvl) ||
+					(mode == "down" && pointerLvl == 1)
+				))
+			) {
 				let id = this.generator.next();
 				target.cache = new Register(id, target.type, `#t${id}`, target.pointer-1);
 				if (read) {
@@ -188,7 +194,7 @@ class Scope {
 
 
 
-	
+
 
 	compile_declare(ast){
 		let typeRef = this.ctx.getTypeFrom_DataType(ast.tokens[0]);
@@ -334,6 +340,10 @@ class Scope {
 		return frag;
 	}
 
+
+
+
+	
 	compile(ast) {
 		let fragment = new LLVM.Fragment();
 
