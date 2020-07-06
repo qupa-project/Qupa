@@ -117,6 +117,8 @@ class Scope {
 
 
 
+
+
 	compile_constant(ast) {
 		let type = "i32";
 		let val = ast.tokens[0].tokens;
@@ -130,6 +132,63 @@ class Scope {
 		return new LLVM.Constant(type, val, ast.ref.start);
 	}
 
+	compile_call(ast) {
+		let instruction = null;
+		let preamble    = new LLVM.Fragment();
+		let epilog      = new LLVM.Fragment();
+
+		let varArgs = [];
+		for (let arg of ast.tokens[1].tokens) {
+			let name = Flattern.VariableStr(arg);
+			let target = this.getVar(name, 0);
+			if (!target.register) {
+				this.ctx.getFile().throw(
+					`Undefined variable name ${name}`,
+					arg.ref.start, arg.ref.end
+				);
+				return null;
+			}
+
+			preamble.merge(target.preamble);
+			varArgs.push(target.register);
+		}
+		let signature = varArgs.map(arg => [arg.pointer, arg.type]);
+
+		let target = this.ctx.getFile().getFunction(ast.tokens[0], signature);
+		if (target) {
+			let irArgs = varArgs.map(arg => { return new LLVM.Argument(
+				new LLVM.Type(arg.type.represent, arg.pointer),
+				new LLVM.Name(arg.id, false),
+				null, arg.name
+			)});
+
+			instruction = new LLVM.Call(
+				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),
+				new LLVM.Name(target.represent, true, ast.tokens[0].ref),
+				irArgs,
+				ast.ref.start
+			);
+
+			// Clear any lower caches
+			//   If this is a pointer the value may have changed
+			for (let arg of varArgs) {
+				arg.clearCache();
+			}
+		} else {
+			let funcName = Flattern.VariableStr(ast.tokens[0]);
+			this.ctx.getFile().throw(
+				`Unable to find function "${funcName}" with signature ${signature.map(x => x[1].name).join(',')}`,
+				ast.ref.start, ast.ref.end
+			);
+			return null;
+		}
+
+		return { preamble, instruction, epilog };
+	}
+
+
+
+	
 
 	compile_declare(ast){
 		let typeRef = this.ctx.getTypeFrom_DataType(ast.tokens[0]);
@@ -259,60 +318,6 @@ class Scope {
 		frag.append(new LLVM.Return(inner, ast.ref.start));
 
 		return frag;
-	}
-
-	compile_call(ast) {
-		let instruction = null;
-		let preamble    = new LLVM.Fragment();
-		let epilog      = new LLVM.Fragment();
-
-		let varArgs = [];
-		for (let arg of ast.tokens[1].tokens) {
-			let name = Flattern.VariableStr(arg);
-			let target = this.getVar(name, 0);
-			if (!target.register) {
-				this.ctx.getFile().throw(
-					`Undefined variable name ${name}`,
-					arg.ref.start, arg.ref.end
-				);
-				return null;
-			}
-
-			preamble.merge(target.preamble);
-			varArgs.push(target.register);
-		}
-		let signature = varArgs.map(arg => [arg.pointer, arg.type]);
-
-		let target = this.ctx.getFile().getFunction(ast.tokens[0], signature);
-		if (target) {
-			let irArgs = varArgs.map(arg => { return new LLVM.Argument(
-				new LLVM.Type(arg.type.represent, arg.pointer),
-				new LLVM.Name(arg.id, false),
-				null, arg.name
-			)});
-
-			instruction = new LLVM.Call(
-				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),
-				new LLVM.Name(target.represent, true, ast.tokens[0].ref),
-				irArgs,
-				ast.ref.start
-			);
-
-			// Clear any lower caches
-			//   If this is a pointer the value may have changed
-			for (let arg of varArgs) {
-				arg.clearCache();
-			}
-		} else {
-			let funcName = Flattern.VariableStr(ast.tokens[0]);
-			this.ctx.getFile().throw(
-				`Unable to find function "${funcName}" with signature ${signature.map(x => x[1].name).join(',')}`,
-				ast.ref.start, ast.ref.end
-			);
-			return null;
-		}
-
-		return { preamble, instruction, epilog };
 	}
 
 	compile_call_procedure(ast) {
