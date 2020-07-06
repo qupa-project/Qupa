@@ -249,8 +249,12 @@ class Scope {
 			case "constant":
 				let cnst = this.compile_constant(ast.tokens[1]);
 				frag.append(new LLVM.Store(
-					new LLVM.Type(target.type.represent, target.pointer-1),
-					new LLVM.Name(`${target.id}`, false),
+					new LLVM.Argument(
+						new LLVM.Type(target.type.represent, target.pointer),
+						new LLVM.Name(`${target.id}`, false),
+						ast.tokens[0].ref,
+						name
+					),
 					cnst,
 					target.type.size,
 					ast.ref.start
@@ -341,9 +345,26 @@ class Scope {
 	}
 
 
+	compile_if (ast) {
+		let frag = new LLVM.Fragment(ast);
+
+		if (ast.tokens[1].length > 0) {
+			file.throw(
+				`Elif statements are currently unsupported`,
+				ast.ref.start, ast.ref.end
+			);
+			return;
+		}
+
+		frag.append(new LLVM.Comment(`If statment ${ast.ref.start.toString()}`))
+
+		return frag;
+	}
 
 
-	
+
+
+
 	compile(ast) {
 		let fragment = new LLVM.Fragment();
 
@@ -361,6 +382,9 @@ class Scope {
 					break;
 				case "call_procedure":
 					inner = this.compile_call_procedure(token);
+					break;
+				case "if":
+					inner = this.compile_if(token);
 					break;
 				default:
 					this.ctx.getFile().throw(
