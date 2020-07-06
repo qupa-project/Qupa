@@ -1,0 +1,45 @@
+import "../std.qp";
+
+
+int main () {
+	int a;
+	int b;
+	int c;
+	bool d;
+
+	a = 2;
+	b = 3;
+
+	c = 0;
+	println(c);
+	println(a);
+	println(b);
+
+	c = 2;
+	d = equal(a, c);
+	if (d) {
+		a = 42;
+	}
+
+	c = 0;
+	println(c);
+	println(a);
+	println(b);
+
+	d = equal(a, b);
+	if (d) {
+		b = add(a, b);
+	} else {
+		b = 1;
+	}
+	
+	c = 0;
+	println(c);
+	println(a);
+	println(b);
+
+	return 0;
+}
+external export {
+	int main();
+}

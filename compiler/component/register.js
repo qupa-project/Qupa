@@ -16,31 +16,33 @@ class Register {
 	}
 
 	markUpdated(ref) {
-		return this.flushCache(ref);
+		return this.clearCache(ref);
 	}
 
 	/**
 	 * Forces caches to write data to the correct location
 	 * @param {BNF_Reference} ref 
 	 */
-	flushCache(ref) {
+	flushCache(ref, replacement = null) {
 		let frag = new LLVM.Fragment();
 
 		if (this.cache) {
 			frag.merge(this.cache.flushCache());
 
 			frag.append(new LLVM.Store(
-				new LLVM.Type(this.type.represent, this.pointer-1),
-				new LLVM.Name(this.id, false),
 				new LLVM.Argument(
-					new LLVM.Type(this.type.represent, this.pointer-1),
+					new LLVM.Type(this.type.represent, this.pointer),
+					new LLVM.Name(this.id, false),
+				),
+				new LLVM.Argument(
+					new LLVM.Type(this.type.represent, this.cache.pointer),
 					new LLVM.Name(this.cache.id, false)
 				),
 				this.type.size,
 				ref
 			));
 		}
-		this.cache = null;
+		this.cache = replacement;
 
 		return frag;
 	}
@@ -48,9 +50,9 @@ class Register {
 	/**
 	 * Dumps all caches, forcing reloads
 	 */
-	clearCache() {
+	clearCache(ref) {
 		if (this.cache) {
-			this.cache.clearCache();
+			this.cache.clearCache(ref);
 		}
 		this.cache = null;
 	}

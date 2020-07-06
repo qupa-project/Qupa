@@ -76,7 +76,7 @@ fs.writeFileSync(`${config.output}.ll`, asm.toLLVM(), 'utf8');
 ------------------------------------------*/
 if (config.source != "llvm") {
 	console.info("\nCompiling to executable...");
-	let runtime_path = path.resolve(__dirname, "./../runtime/runtime.cpp");
+	let runtime_path = path.resolve(__dirname, "./../runtime/runtime.ll");
 	let args = [runtime_path, `${config.output}.ll`];
 
 	exec_out = config.output;

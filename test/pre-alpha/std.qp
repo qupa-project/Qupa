@@ -1,0 +1,74 @@
+external assume {
+	type i32 size 4;
+	type float size 4;
+	type double size 4;
+	type void size 0;
+	type i1 size 4;
+
+	i32 i32_add(i32 a, i32 b);
+	float f32_add(float a, float b);
+
+	void i1_print(bool val);
+	void i32_print(i32 val);
+	void f32_print(float val);
+	void i1_println(bool val);
+	void i32_println(i32 val);
+	void f32_println(float val);
+
+	i1 i32_equal(i32 a, i32 b);
+	i1 f32_equal(float a, float b);
+}
+alias int i32; // allow referring to i32 as int
+alias bool i1; // allow referring to i1 as bool
+
+// Merge add functions into single namespace
+i32 add (int a, int b) {
+	int c;
+	c = i32_add(a, b);
+	return c;
+}
+float add(float a, float b) {
+	float c;
+	c = f32_add(a, b);
+	return c;
+}
+
+
+void print(int val) {
+	i32_print(val);
+	return;
+}
+void print(float val) {
+	f32_print(val);
+	return;
+}
+void print(bool val) {
+	i1_print(val);
+	return;
+}
+
+
+void println(int val) {
+	i32_println(val);
+	return;
+}
+void println(float val) {
+	f32_println(val);
+	return;
+}
+void println(bool val) {
+	i1_println(val);
+	return;
+}
+
+
+bool equal(int a, int b) {
+	bool res;
+	res = i32_equal(a, b);
+	return res;
+}
+bool equal(float a, float b) {
+	bool res;
+	res = f32_equal(a, b);
+	return res;
+}

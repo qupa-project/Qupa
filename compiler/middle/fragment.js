@@ -5,6 +5,10 @@ class Fragment {
 		this.stmts = [];
 	}
 
+	prepend(instruction) {
+		this.stmts = [instruction, ...this.stmts];
+	}
+
 	append(instruction) {
 		this.stmts.push(instruction);
 	}

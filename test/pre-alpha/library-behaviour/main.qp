@@ -1,5 +1,5 @@
-import "export.qp";
-import "export.qp"; // twice to check double importation behaviour
+import "../std.qp";
+import "../std.qp"; // twice to check double importation behaviour
 
 
 int main() {
