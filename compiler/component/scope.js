@@ -114,17 +114,6 @@ class Scope {
 			register: target
 		};
 	}
-	/**
-	 * Mark this variable as updated, thus caches need to be refreshed on next read
-	 * @param {BNF_SyntaxNode} name "type" = variable
-	 */
-	markUpdatedVar(name) {
-		if (this.variables[name]) {
-			return this.variables[name].markUpdated();
-		}
-
-		return new LLVM.Fragment();
-	}
 
 
 
