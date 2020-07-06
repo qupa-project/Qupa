@@ -9,17 +9,11 @@
 
 external assume {
 	type i32 size 4;
-	type float size 4;
-	type double size 4;
 	type void size 0;
 
-	i32 iadd(i32 a, i32 b);
-	float fadd(float a, float b);
+	i32 i32_add(i32 a, i32 b);
 
-	void iprint(i32 val);
-	void fprint(float val);
-	void iprintln(i32 val);
-	void fprintln(float val);
+	void i32_println(i32 val);
 }
 
 
@@ -31,12 +25,12 @@ i32 main () {
 	a = 1;
 	b = 2;
 
-	iprintln(a);
-	iprintln(b);
+	i32_println(a);
+	i32_println(b);
 
-	c = iadd(a, b);
+	c = i32_add(a, b);
 
-	iprintln(c);
+	i32_println(c);
 
 	return 1;
 }
