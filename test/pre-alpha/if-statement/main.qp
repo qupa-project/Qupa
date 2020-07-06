@@ -30,3 +30,6 @@ int main () {
 
 	return 0;
 }
+external export {
+	int main();
+}
