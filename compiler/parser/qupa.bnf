@@ -58,9 +58,8 @@ program ::= w* ( stmt_top w* )*
 			accessor_refer   ::= "->" name
 			accessor_static  ::= "." name
 
-	data_type ::= pointer | deref | variable
+	data_type ::= pointer | variable
 		pointer ::= "@" variable
-		deref   ::= "$" variable
 
 	declare ::= data_type w+ name w* ";"
 
