@@ -14,6 +14,7 @@ const Raw = require('./raw.js');
 const Return = require('./return.js');
 const Set = require('./set.js');
 const Store = require('./store.js');
+const Struct = require('./struct.js');
 const Type = require('./type.js');
 const WPad = require('./wpad');
 
@@ -27,7 +28,7 @@ module.exports = {
 	Name,
 	Procedure,
 	Raw, Return,
-	Set, Store,
+	Set, Store, Struct,
 	Type,
 	WPad
 };

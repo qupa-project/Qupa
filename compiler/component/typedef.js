@@ -9,20 +9,30 @@ class TypeDef {
 		this.ref      = ast.ref.start;
 		this.external = external;
 
+		this.linked = false;
+
 		this.id = typeIDGen.next();
 
-		this.name = ast.tokens[0].tokens;
-		this.size = Number(this.ast.tokens[1].tokens);
+		this.represent = "unknown";
+		this.name = "unknown";
+		this.size = 0;
 
-		this.represent = external ? this.name : `"${this.name}@${this.ctx.getFileID().toString(36)}.${this.id.toString(36)}"`;
+		this.parse();
+	}
+
+	parse() {
+		this.name = this.ast.tokens[0].tokens;
+		this.represent = this.external ? this.name : `"${this.name}@${this.ctx.getFileID().toString(36)}.${this.id.toString(36)}"`;
 	}
 
 	link() {
+		this.size = Number(this.ast.tokens[1].tokens);
+		this.linked = true;
 		return;
 	}
 
 	compile() {
-		return new LLVM.Comment(`Assume Typedef: ${this.represent}, ${this.size}`, this.ref);
+		return new LLVM.Comment(`Assume Typedef: ${this.name} ${this.represent}, ${this.size}`, this.ref);
 	}
 }
 module.exports = TypeDef;

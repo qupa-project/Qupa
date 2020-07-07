@@ -4,6 +4,7 @@ const BNF = require('bnf-parser');
 const LLVM = require('./../middle/llvm.js');
 const Function = require('./function.js');
 const TypeDef  = require('./typedef.js');
+const Structure = require('./struct.js');
 const Import  = require('./import.js');
 const Alias  = require('./alias.js');
 
@@ -121,6 +122,9 @@ class File {
 				break;
 			case "alias":
 				space = new Alias(this, element);
+				break;
+			case "struct":
+				space = new Structure(this, element);
 				break;
 			default:
 				throw new Error(`Unexpected file scope namespace type "${element.type}"`);
