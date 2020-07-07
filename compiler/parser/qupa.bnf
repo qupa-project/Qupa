@@ -1,5 +1,5 @@
 program ::= w* ( stmt_top w* )*
-	stmt_top ::= comment | library | class | template | flag_definition | external | alias | function
+	stmt_top ::= comment | library | class | template | struct | flag_definition | external | alias | function
 
 #=============================
 #  Helper patterns
@@ -96,6 +96,14 @@ program ::= w* ( stmt_top w* )*
 
 
 #=============================
+#  Structure
+#=============================
+	struct  ::= "struct" w+ name w+ "{" w* struct_body w* "}" w* ";"?
+		struct_body ::= ( w* struct_stmt )*
+		struct_stmt ::= comment | declare
+
+
+#=============================
 #  Class
 #=============================
 	class ::= "class" w+ name w* flags? w* class_inherit? w* "{" class_body "}" w* ";"?
@@ -156,13 +164,9 @@ program ::= w* ( stmt_top w* )*
 	external ::= "external" w+ external_mode w* "{" w* external_body w* "}" ";"?
 		external_mode ::= "assume" | "export"
 		external_body ::= ( external_term w* )*
-		external_term ::= type_def | structure | function_outline | declare | comment
+		external_term ::= type_def | struct | function_outline | declare | comment
 
 	type_def ::= "type" w+ name w+ "size" w+ integer w* ";"
-
-	structure ::= "struct" w* "{" stuct_body w* "}" w* ";"
-		struct_body ::= ( declare )*
-
 
 #=============================
 #  LLVM IR manipulation

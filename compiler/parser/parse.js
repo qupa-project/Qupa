@@ -39,6 +39,9 @@ function Simplify_Stmt_Top(node) {
 		case "template":
 			inner = Simplify_Template(node.tokens[0]);
 			break;
+		case "struct":
+			inner = Simplify_Struct(node.tokens[0]);
+			break;
 		case "flag_definition":
 			inner = Simplify_Flag_Definition(node.tokens[0]);
 			break;
@@ -183,7 +186,7 @@ function Simplify_External_Term(node) {
 			inner = Simplify_Function_Outline(node.tokens[0]);
 			break;
 		case "structure":
-			inner = Simplify_Structure(node.tokens[0]);
+			inner = Simplify_Struct(node.tokens[0]);
 			break;
 		case "type_def":
 			inner = Simplify_Type_Def(node.tokens[0]);
@@ -200,11 +203,6 @@ function Simplify_External_Term(node) {
 	return inner;
 }
 
-function Simplify_Structure(node) {
-	// TODO
-	return node;
-}
-
 function Simplify_Type_Def(node) {
 	node.tokens = [
 		Simplify_Name(node.tokens[2][0]),   // name
@@ -216,7 +214,38 @@ function Simplify_Type_Def(node) {
 
 
 
-function Simplify_Name(node) {
+function Simplify_Struct (node) {
+	let out = [
+		Simplify_Name(node.tokens[2][0]),
+		Simplify_Struct_Body(node.tokens[6][0])
+	];
+	node.tokens  = out;
+	node.reached = null;
+	return node;
+}
+function Simplify_Struct_Body (node) {
+	node.tokens = node.tokens[0].map( x => Simplify_Struct_Stmt(x.tokens[1][0]).tokens[0] );
+	node.reached = null;
+	return node;
+}
+function Simplify_Struct_Stmt (node) {
+	switch (node.tokens[0].type) {
+		case "comment":
+			break;
+		case "declare":
+			node.tokens = [ Simplify_Declare(node.tokens[0]) ];
+			break;
+		default:
+			throw new Error(`Unexpected structure statement "${node.tokens[0].type}"`);
+	}
+
+	node.reached = null;
+	return node;
+}
+
+
+
+function Simplify_Name (node) {
 	let out = node.tokens[0][0].tokens[0].tokens;
 	for (let inner of node.tokens[1]) {
 		if (Array.isArray(inner.tokens)) {
@@ -234,7 +263,7 @@ function Simplify_Name(node) {
 	node.reached = null;
 	return node;
 }
-function Simplify_Data_Type(node) {
+function Simplify_Data_Type (node) {
 	let inner;
 	switch (node.tokens[0].type) {
 		case "variable":
