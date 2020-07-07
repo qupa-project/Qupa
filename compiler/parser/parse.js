@@ -310,7 +310,8 @@ function Simplify_Data_Type (node) {
 
 function Simplify_Pointer (node) {	
 	node.tokens = [
-		"@", Simplify_Variable(node.tokens[1][0])
+		node.tokens[0].length,
+		Simplify_Variable(node.tokens[1][0])
 	];
 	node.reached = null;
 	return node;

@@ -59,7 +59,7 @@ program ::= w* ( stmt_top w* )*
 			accessor_static  ::= "." name
 
 	data_type ::= pointer | variable
-		pointer ::= "@" variable
+		pointer ::= "@"+ variable
 
 	declare ::= data_type w+ name w* ";"
 
