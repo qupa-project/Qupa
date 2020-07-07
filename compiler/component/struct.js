@@ -17,8 +17,25 @@ class Struct_Term {
 class Structure extends TypeDef {
 	constructor (ctx, ast, external = false) {
 		super(ctx, ast, external = false);
-		this.terms = {};
+		this.terms = [];
 		this.linked = false;
+	}
+
+	/**
+	 * 
+	 * @param {String} name 
+	 * @returns {}
+	 */
+	getTerm(name) {
+		let i = this.terms.indexOf(name);
+		if (i == -1) {
+			return null;
+		}
+
+		return {
+			index: i,
+			term: this.terms[i]
+		};
 	}
 
 	parse() {
@@ -38,11 +55,12 @@ class Structure extends TypeDef {
 			return;
 		}
 
+		let termNames = [];
 		this.linked = true;
 		this.size = 0;
 		for (let node of this.ast.tokens[1].tokens) {
 			let name = node.tokens[1].tokens;
-			if (this.terms[name]) {
+			if (termNames.indexOf(name) != -1) {
 				this.ctx.getFile().throw(
 					`Error: Multiple use of term ${name} in struct`,
 					this.terms[name].declared,
@@ -71,7 +89,7 @@ class Structure extends TypeDef {
 				type.link([this, ...stack]);
 			}
 			let term = new Struct_Term(name, type, pointerLvl, node.tokens[0].tokens[0].ref.start);
-			this.terms[name] = term;
+			this.terms.push(term);
 			this.size += term.size;
 		}
 	};
