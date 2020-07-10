@@ -238,14 +238,14 @@ class File {
 	}
 
 	throw (msg, refStart, refEnd) {
-		let area = BNF.Message.HighlightArea(this.data, refStart, refEnd, 2);
+		let area = BNF.Message.HighlightArea(this.data, refStart, refEnd);
 		console.error(`\n${this.path}:`);
 		if (refEnd) {
 			console.error(`${msg} ${refStart.toString()} -> ${refEnd.toString()}`);
 		} else {
 			console.error(`${msg} ${refStart.toString()}`);
 		}
-		console.error(area);
+		console.error(area.replace(/\t/g, '  '));
 		this.project.markError();
 	}
 
