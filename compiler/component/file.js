@@ -220,7 +220,7 @@ class File {
 	getID () {
 		return this.id;
 	}
-	getFileID () {``
+	getFileID () {
 		return this.getID();
 	}
 	getPath() {
