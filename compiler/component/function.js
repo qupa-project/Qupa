@@ -236,16 +236,17 @@ class Function_Instance {
 		let scope = new Scope(this, this.getFile().project.config.caching, generator);
 		let args = [];
 
-		let head = this.ast.tokens[0]
-
+		let head = this.ast.tokens[0];
+		let argReg = [];
 		for (let i=0; i<this.signature.length; i++) {
-			let reg = scope.register_Var(
-				this.signature[i][1],                                // type
-				this.signature[i][0],                                // isPointer
-				head.tokens[2].tokens[i][1].tokens,                  // name
-				head.tokens[2].tokens[i][0].ref.start,               // ln ref
-				false                                                // allocation needed
-			);
+			let regID = generator.next();
+			argReg.push({
+				id      : regID,
+				type    : this.signature[i][1],                  // type
+				pointer : this.signature[i][0],                  // pointerLvl
+				name    : head.tokens[2].tokens[i][1].tokens,    // name
+				ref     : head.tokens[2].tokens[i][0].ref.start  // ln ref
+			});
 
 			args.push(new LLVM.Argument(
 				new LLVM.Type(
@@ -254,7 +255,7 @@ class Function_Instance {
 					head.tokens[2].tokens[i][0].ref.start
 				),
 				new LLVM.Name(
-					reg.id,
+					regID,
 					false,
 					head.tokens[2].tokens[i][1].ref.start
 				),
@@ -271,9 +272,13 @@ class Function_Instance {
 			this.external,
 			this.ref
 		);
-		if (!this.abstract && !this.external) {
-			generator.next(); // skip one id for entry point
-			frag.merge(scope.compile(this.ast.tokens[1]));
+
+		let setup = scope.register_Args(argReg);
+		if (setup !== null) {
+			if (!this.abstract && !this.external) {
+				frag.merge(setup);
+				frag.merge(scope.compile(this.ast.tokens[1]));
+			}
 		}
 
 		return frag;

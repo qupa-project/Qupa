@@ -47,6 +47,56 @@ class Scope {
 		}
 	}
 
+	register_Args(args) {
+		this.generator.next(); // skip one id for function entry point
+
+		let frag = new LLVM.Fragment();
+
+		for (let arg of args) {
+			if (this.variables[arg.name]) {
+				this.ctx.getFile().throw(
+					`Duplicate use of argument ${arg.name} function`,
+					this.variables[arg.name].declared, ref
+				);
+
+				return null;
+			}
+
+			this.variables[arg.name] = new Register(
+				this.generator.next(),
+				arg.type,
+				arg.name,
+				arg.pointer+1,
+				arg.ref
+			);
+			let cache = new Register(
+				arg.id,
+				arg.type,
+				arg.name,
+				arg.pointer,
+				arg.ref
+			);
+			this.variables[arg.name].cache = cache;
+
+			frag.append(new LLVM.Set(
+				new LLVM.Name(
+					this.variables[arg.name].id,
+					false,
+					arg.ref
+				),
+				new LLVM.Alloc(
+					new LLVM.Type(arg.type.represent, arg.pointer, arg.ref),
+					arg.type.size,
+					arg.ref
+				),
+				arg.ref
+			));
+			frag.merge(this.variables[arg.name].flushCache(arg.ref, cache));
+		}
+
+		return frag;
+	}
+
 	/**
 	 * Define a new variable
 	 * @param {TypeDef} type 
@@ -78,72 +128,30 @@ class Scope {
 	 * @param {Number|Null} pointerLvl -X means dereference at least X times, +X means to that reference depth, null depth ignorant
 	 * @param {*} read Will data be read or just written?
 	 */
-	getVar(name, pointerLvl = null, read = true) {
+	getVar(name, read) {
 		if (Scope.raisedVariables) {
 			if (this.getParent()) {
-				let res = this.ctx.getVar(name, pointerLvl, read);
+				let res = this.ctx.getVar(name, read);
 				return res;
 			}
 		}
 
-		let mode = "exact";
-		if (pointerLvl < 0) {
-			mode = "down";
-			pointerLvl = -pointerLvl;
-		} else if (pointerLvl === null) {
-			mode = "ignorant";
-		}
-
-		let preamble = new LLVM.Fragment();
 		let target = this.variables[name];
+		if (!target) {
+			return null;
+		}
 
 		if (target && !this.caching) {
 			target.clearCache();
 		}
 
-		while ( target != null && (
-			( mode == "exact" && target.pointer > pointerLvl ) ||
-			( mode == "down" && pointerLvl > 0 )
-		)) {
-			if (!target.cache ||
-				// No not reuse a register with a write action
-				(!read && (
-					(mode == "exact" && target.pointer+1 == pointerLvl) ||
-					(mode == "down" && pointerLvl == 1)
-				))
-			) {
-				let id = this.generator.next();
-				target.cache = new Register(id, target.type, `#t${id}`, target.pointer-1);
-				if (read) {
-					let inst = new LLVM.Load(
-						new LLVM.Name(`${target.cache.id}`, false),
-						new LLVM.Type(target.type.represent, target.pointer-1),
-						new LLVM.Name(`${target.id}`, false),
-						target.type.size
-					);
-					preamble.append(inst);
-				}
-			}
-
-			target = target.cache;
-			if (mode == "down") {
-				pointerLvl--;
-			}
-		}
-
 		// Mark all variables altered in this scope
 		// So upper scopes can be notified
 		if (!read) {
-			let parent = this.getParent();
-			if (parent) {
-				parent.notifyUpdated(name);
-			}
-		};
+			this.notifyUpdated(name);
+		}
 
-		return {
-			preamble,
-			register: target
-		};
+		return target;
 	}
 
 
@@ -171,8 +179,8 @@ class Scope {
 		let varArgs = [];
 		for (let arg of ast.tokens[1].tokens) {
 			let name = Flattern.VariableStr(arg);
-			let target = this.getVar(name, 0);
-			if (!target.register) {
+			let target = this.getVar(name);
+			if (!target) {
 				this.ctx.getFile().throw(
 					`Undefined variable name ${name}`,
 					arg.ref.start, arg.ref.end
@@ -180,8 +188,18 @@ class Scope {
 				return null;
 			}
 
-			preamble.merge(target.preamble);
-			varArgs.push(target.register);
+			let cache = target.deref(this, true, 1);
+			if (!cache.register) {
+				this.ctx.getFile().throw(
+					`Cannot dereference ${name}`,
+					arg.ref.start, arg.ref.end
+				);
+				console.log(cache);
+				return null;
+			}
+
+			preamble.merge(cache.preamble);
+			varArgs.push(cache.register);
 		}
 		let signature = varArgs.map(arg => [arg.pointer, arg.type]);
 
@@ -203,7 +221,10 @@ class Scope {
 			// Clear any lower caches
 			//   If this is a pointer the value may have changed
 			for (let arg of varArgs) {
-				arg.clearCache();
+				let cache = arg.deref(this, false);
+				if (cache && cache.register) {
+					cache.register.clearCache();
+				}
 			}
 		} else {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
@@ -258,10 +279,7 @@ class Scope {
 
 		// Get the variable at the right pointer depth
 		let name = Flattern.VariableStr(ast.tokens[0]);
-		let load = this.getVar(name, null);
-		frag.merge(load.preamble);
-
-		let target = load.register;
+		let target = this.getVar(name, false);
 		if (!target) {
 			this.ctx.getFile().throw(
 				`Undefined variable "${name}"`,
@@ -270,71 +288,91 @@ class Scope {
 			return false;
 		}
 
-		switch (ast.tokens[1].type) {
-			case "constant":
-				let cnst = this.compile_constant(ast.tokens[1]);
-				frag.append(new LLVM.Store(
-					new LLVM.Argument(
-						new LLVM.Type(target.type.represent, target.pointer),
-						new LLVM.Name(`${target.id}`, false),
-						ast.tokens[0].ref,
-						name
-					),
-					cnst,
-					target.type.size,
-					ast.ref.start
-				));
-				target.markUpdated(); // Mark that this value was directly changed
-				                          //  and caches need to be dropped
-				break;
-			case "call":
-				let inner = this.compile_call(ast.tokens[1]);
-				if (inner === null) {
-					return null;
-				}
+		if (ast.tokens[1].type == "constant") {
+			let cnst = this.compile_constant(ast.tokens[1]);
+			frag.append(new LLVM.Store(
+				new LLVM.Argument(
+					new LLVM.Type(target.type.represent, target.pointer),
+					new LLVM.Name(`${target.id}`, false),
+					ast.tokens[0].ref,
+					name
+				),
+				cnst,
+				target.type.size,
+				ast.ref.start
+			));
+			target.markUpdated(); // Mark that this value was directly changed
+			                      //  and caches need to be dropped
+		} else if (ast.tokens[1].type == "call") {
+			let inner = this.compile_call(ast.tokens[1]);
+			if (inner === null) {
+				return null;
+			}
 
-				frag.merge(inner.preamble); // add any loads needed for call
+			frag.merge(inner.preamble); // add any loads needed for call
 
-				load = this.getVar(name, -1, false); // since name as an address is known, the resolved cache will be known
-				frag.merge(load.preamble);
-				let cache = load.register;
-
-				frag.append(new LLVM.Set(new LLVM.Name(cache.id, false), inner.instruction));
-				frag.merge(inner.epilog); // Mark any pointers that were parsed as updated
-																	// due to potential side effects
-				frag.merge(target.flushCache(
-					ast.ref.start,
-					this.caching ? cache : null // mark the cache generated here as already being the new cache
-				));
-				break;
-			case "variable":
-				let otherName = Flattern.VariableStr(ast.tokens[1]);
-				load = this.getVar(otherName, -1, true);
-				frag.merge(load.preamble);
-
-				frag.append(new LLVM.Store(
-					new LLVM.Argument(
-						new LLVM.Type(target.type.represent, target.pointer, target.declared),
-						new LLVM.Name(`${target.id}`, false, ast.tokens[0].ref.start),
-						ast.tokens[0].ref,
-						name
-					),
-					new LLVM.Argument(
-						new LLVM.Type(load.register.type.represent, load.register.pointer, load.register.declared),
-						new LLVM.Name(`${load.register.id}`, false, ast.tokens[1].ref.start),
-						ast.tokens[1].ref.start
-					),
-					target.type.size,
-					ast.ref.start
-				));
-
-				target.markUpdated();
-				break;
-			default:
-				this.getFile().throw(
-					`Unexpected assignment type "${ast.tokens[1].type}"`,
-					ast.ref.start, ast.ref.end
+			let cache = target.deref(this, false);
+			if (!cache) {
+				this.ctx.getFile().throw(
+					`Unable to dereference variable "${name}"`,
+					ast.tokens[0].ref.start, ast.tokens[0].ref.end
 				);
+				return false;
+			}
+			frag.merge(cache.preamble);
+
+			frag.append(new LLVM.Set(new LLVM.Name(cache.register.id, false), inner.instruction));
+			frag.merge(inner.epilog); // Mark any pointers that were parsed as updated
+																	// due to potential side effects
+			frag.merge(target.flushCache(
+				ast.ref.start,
+				this.caching ? cache.register : null // mark the cache generated here as already being the new cache
+			));
+		} else if (ast.tokens[1].type == "variable") {
+			let otherName = Flattern.VariableStr(ast.tokens[1]);
+			let other = this.getVar(otherName);
+			if (!other) {
+				this.ctx.getFile().throw(
+					`Unable to find variable name "${otherName}"`,
+					ast.tokens[1].ref.start, ast.tokens[1].ref.end
+				);
+				return false;
+			}
+
+			let cache = other.deref(this, true);
+			if (!cache) {
+				this.ctx.getFile().throw(
+					`Unable to dereference variable "${otherName}"`,
+					ast.tokens[1].ref.start, ast.tokens[1].ref.end
+				);
+				return false;
+			}
+
+			frag.merge(cache.preamble);
+
+			frag.append(new LLVM.Store(
+				new LLVM.Argument(
+					new LLVM.Type(target.type.represent, target.pointer, target.declared),
+					new LLVM.Name(`${target.id}`, false, ast.tokens[0].ref.start),
+					ast.tokens[0].ref,
+					name
+				),
+				new LLVM.Argument(
+					new LLVM.Type(cache.register.type.represent, cache.register.pointer, cache.register.declared),
+					new LLVM.Name(`${cache.register.id}`, false, ast.tokens[1].ref.start),
+					ast.tokens[1].ref.start
+				),
+				target.type.size,
+				ast.ref.start
+			));
+
+			target.markUpdated();
+		} else {
+			this.getFile().throw(
+				`Unexpected assignment type "${ast.tokens[1].type}"`,
+				ast.ref.start, ast.ref.end
+			);
+			return false;
 		}
 
 		return frag;
@@ -353,20 +391,27 @@ class Scope {
 				case "variable":
 					inner = new LLVM.Fragment();
 					let name = Flattern.VariableStr(ast.tokens[0]);
-					let target = this.getVar(name, -1, true);
-					let term = target.register;
-					if (!term) {
+					let target = this.getVar(name, true);
+					if (!target) {
 						this.ctx.getFile().throw(
 							`Undefined variable name ${name}`,
 							ast.tokens[0].ref.start, ast.tokens[0].ref.end
 						);
 						return null;
 					}
+					let cache = target.deref(this, true, 1);
+					if (!cache) {
+						this.ctx.getFile().throw(
+							`Unable to dereference variable "${name}"`,
+							ast.tokens[0].ref.start, ast.tokens[0].ref.end
+						);
+						return false;
+					}
+					frag.merge(cache.preamble);
 
-					frag.merge(target.preamble);
 					inner = new LLVM.Argument(
-						new LLVM.Type( term.type.represent, term.pointer, term.type.ref ),
-						new LLVM.Name( term.id, false, ast.tokens[0].ref )
+						new LLVM.Type( cache.register.type.represent, cache.register.pointer, cache.register.type.ref ),
+						new LLVM.Name( cache.register.id, false, ast.tokens[0].ref )
 					);
 					break;
 				default:
@@ -421,9 +466,23 @@ class Scope {
 			return frag;
 		}
 		let name = Flattern.VariableStr(cond);
-		let load = this.getVar(name, 0, true);
-		frag.merge(load.preamble);
-		let cond_target = load.register;
+		let target = this.getVar(name, true);
+		if (!target) {
+			this.getFile().throw(
+				`Error: Unable to find variable name ${name}`,
+				cond.ref.start, cond.ref.end
+			);
+			return frag;
+		}
+		let cache = target.deref(this, true, 1);
+		if (!cache.register) {
+			this.getFile().throw(
+				`Error: Cannot dereference variable ${name}`,
+				cond.ref.start, cond.ref.end
+			);
+			return frag;
+		}
+		frag.merge(cache.preamble);
 
 
 		/**
@@ -462,8 +521,8 @@ class Scope {
 
 		frag.append(new LLVM.Branch(
 			new LLVM.Argument(
-				new LLVM.Type(cond_target.type.represent, cond_target.pointer, cond_target.declared),
-				new LLVM.Name(cond_target.id, false, ast.tokens[0].tokens[0].ref.start),
+				new LLVM.Type(cache.register.type.represent, cache.register.pointer, cache.register.declared),
+				new LLVM.Name(cache.register.id, false, ast.tokens[0].tokens[0].ref.start),
 				ast.tokens[0].tokens[0].ref.start
 			),
 			label_true,
@@ -525,7 +584,7 @@ class Scope {
 
 			// Propergate any updates from lower scopes
 			let parent = this.getParent();
-			for (let val in this.updated) {
+			for (let val of this.updated) {
 				this.getVar(val).markUpdated();
 
 				if (parent) {

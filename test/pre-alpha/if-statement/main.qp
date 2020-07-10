@@ -1,4 +1,16 @@
 import "../std.qp";
+/*
+	Expected:
+		0
+		2
+		3
+		0
+		42
+		3
+		0
+		42
+		1
+*/
 
 
 int main () {
