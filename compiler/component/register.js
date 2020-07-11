@@ -33,7 +33,7 @@ class Register {
 				if (load == null) {
 					return {
 						error: true,
-						ast
+						ast: ast[0][1]
 					};
 				} else {
 					preamble.merge(load.preamble);
@@ -53,7 +53,7 @@ class Register {
 		if (search == null) {
 			return {
 				error: true,
-				ast
+				ast: ast[0][1]
 			};
 		}
 

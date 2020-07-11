@@ -285,14 +285,14 @@ class Scope {
 		// Get the variable at the right pointer depth
 		let name = Flattern.VariableStr(ast.tokens[0]);
 		let load = this.getVarNew(ast.tokens[0], false);
-		let target = load.register;
-		if (!target) {
+		if (load.error) {
 			this.ctx.getFile().throw(
-				`Undefined variable "${name}"`,
-				ast.ref.start, ast.ref.end
+				`Unable to access structure term "${load.ast.tokens}"`,
+				load.ast.ref.start, load.ast.ref.end
 			);
 			return false;
 		}
+		let target = load.register;
 		frag.merge(load.preamble);
 
 		if (ast.tokens[1].type == "constant") {
