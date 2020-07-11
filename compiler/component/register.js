@@ -72,6 +72,15 @@ class Register {
 			};
 		}
 
+		// Remove the dereference of this structure
+		//   as it's elements has been changed
+		if (!read) {
+			if (register.cache) {
+				register.cache.clearCache();
+			}
+			register.cache = null;
+		}
+
 		// Check the index of the term
 		let search = register.type.getTerm(ast[0][1].tokens);
 		if (search === null) {
@@ -124,15 +133,6 @@ class Register {
 				preamble.merge(inner.preamble);
 				register = inner.register;
 			}
-		}
-
-		// Remove the dereference of this structure
-		//   as it's elements has been changed
-		if (!read) {
-			if (this.cache) {
-				this.cache.clearCache();
-			}
-			this.cache = null;
 		}
 
 		return {
