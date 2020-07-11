@@ -44,6 +44,8 @@ int main() {
 	println(c.width);
 	println(c.height);
 
+	c = a.width;
+
 	return 0;
 }
 

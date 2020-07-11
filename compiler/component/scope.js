@@ -289,6 +289,14 @@ class Scope {
 
 		if (ast.tokens[1].type == "constant") {
 			let cnst = this.compile_constant(ast.tokens[1]);
+			if (cnst.type != target.type.represent) {
+				this.ctx.getFile().throw(
+					`Error: Assignment type miss-match, expected ${target.type.name} but got ${cnst.type}`,
+					ast.ref.start, ast.ref.end
+				);
+				return false;
+			}
+
 			frag.append(new LLVM.Store(
 				new LLVM.Argument(
 					new LLVM.Type(target.type.represent, target.pointer),
@@ -306,6 +314,14 @@ class Scope {
 			let inner = this.compile_call(ast.tokens[1]);
 			if (inner === null) {
 				return null;
+			}
+
+			if (inner.instruction.rtrnType.term != target.type.represent) {
+				this.ctx.getFile().throw(
+					`Error: Type miss-match, this functiion does not return ${target.type.name}`,
+					ast.tokens[1].ref.start, ast.tokens[1].ref.end
+				);
+				return false;
 			}
 
 			frag.merge(inner.preamble); // add any loads needed for call
@@ -332,12 +348,20 @@ class Scope {
 			let load = this.getVarNew(ast.tokens[1], true);
 			if (load.error) {
 				this.ctx.getFile().throw(
-					`Unable to access structure term "${load.ast.tokens}"`,
+					`Error: Unable to access structure term "${load.ast.tokens}"`,
 					load.ast.ref.start, load.ast.ref.end
 				);
 				return false;
 			}
 			frag.merge(load.preamble);
+
+			if (load.register.type != target.type) {
+				this.ctx.getFile().throw(
+					`Error: Type miss-match, expected ${target.type.name} but got ${load.register.type.name}`,
+					ast.ref.start, ast.ref.end
+				);
+				return false;
+			}
 
 			let cache = load.register.deref(this, true);
 			if (!cache) {
