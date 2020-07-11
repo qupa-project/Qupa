@@ -1,5 +1,5 @@
 program ::= w* ( stmt_top w* )*
-	stmt_top ::= comment | library | class | template | flag_definition | external | alias | function
+	stmt_top ::= comment | library | class | template | struct | flag_definition | external | alias | function
 
 #=============================
 #  Helper patterns
@@ -58,9 +58,8 @@ program ::= w* ( stmt_top w* )*
 			accessor_refer   ::= "->" name
 			accessor_static  ::= "." name
 
-	data_type ::= pointer | deref | variable
-		pointer ::= "@" variable
-		deref   ::= "$" variable
+	data_type ::= pointer | variable
+		pointer ::= "@"+ variable
 
 	declare ::= data_type w+ name w* ";"
 
@@ -93,6 +92,14 @@ program ::= w* ( stmt_top w* )*
 	call_procedure ::= variable w* "(" w* call_args? w* ")" w* ";"
 
 	return ::= "return" ( w+ expr )? w* ";"
+
+
+#=============================
+#  Structure
+#=============================
+	struct  ::= "struct" w+ name w+ "{" w* struct_body w* "}" w* ";"?
+		struct_body ::= ( w* struct_stmt )*
+		struct_stmt ::= comment | declare
 
 
 #=============================
@@ -156,13 +163,9 @@ program ::= w* ( stmt_top w* )*
 	external ::= "external" w+ external_mode w* "{" w* external_body w* "}" ";"?
 		external_mode ::= "assume" | "export"
 		external_body ::= ( external_term w* )*
-		external_term ::= type_def | structure | function_outline | declare | comment
+		external_term ::= type_def | struct | function_outline | declare | comment
 
 	type_def ::= "type" w+ name w+ "size" w+ integer w* ";"
-
-	structure ::= "struct" w* "{" stuct_body w* "}" w* ";"
-		struct_body ::= ( declare )*
-
 
 #=============================
 #  LLVM IR manipulation

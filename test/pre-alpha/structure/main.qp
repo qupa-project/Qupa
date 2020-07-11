@@ -1,0 +1,60 @@
+/**
+	Expect:
+	20
+	42
+	10
+	12
+*/
+
+import "../std.qp";
+
+struct Rect {
+	int width;
+	int height;
+}
+
+
+int main() {
+	// Define two example rectangles
+	Rect a;
+	Rect b;
+	a.width = 4;
+	a.height = 5;
+	b.width = 6;
+	b.height = 7;
+
+	// Test single structure argument function
+	int area;
+	area = Area(a);
+	println(area);
+	area = Area(b);
+	println(area);
+
+	// Test returning struct function
+	Rect c;
+	c = Combine(a, b);
+	println(c.width);
+	println(c.height);
+
+	return 0;
+}
+
+
+int Area(Rect rec){
+	int area;
+	area = mul(rec.width, rec.height);
+	return area;
+}
+
+Rect Combine(Rect a, Rect b) {
+	Rect c;
+	c.width = add(a.width, b.width);
+	c.height = add(a.height, b.height);
+
+	return c;
+}
+
+
+external export {
+	int main();
+}

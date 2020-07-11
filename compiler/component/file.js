@@ -4,6 +4,7 @@ const BNF = require('bnf-parser');
 const LLVM = require('./../middle/llvm.js');
 const Function = require('./function.js');
 const TypeDef  = require('./typedef.js');
+const Structure = require('./struct.js');
 const Import  = require('./import.js');
 const Alias  = require('./alias.js');
 
@@ -122,6 +123,9 @@ class File {
 			case "alias":
 				space = new Alias(this, element);
 				break;
+			case "struct":
+				space = new Structure(this, element);
+				break;
 			default:
 				throw new Error(`Unexpected file scope namespace type "${element.type}"`);
 		}
@@ -216,7 +220,7 @@ class File {
 	getID () {
 		return this.id;
 	}
-	getFileID () {``
+	getFileID () {
 		return this.getID();
 	}
 	getPath() {
@@ -234,14 +238,14 @@ class File {
 	}
 
 	throw (msg, refStart, refEnd) {
-		let area = BNF.Message.HighlightArea(this.data, refStart, refEnd, 2);
+		let area = BNF.Message.HighlightArea(this.data, refStart, refEnd);
 		console.error(`\n${this.path}:`);
 		if (refEnd) {
 			console.error(`${msg} ${refStart.toString()} -> ${refEnd.toString()}`);
 		} else {
 			console.error(`${msg} ${refStart.toString()}`);
 		}
-		console.error(area);
+		console.error(area.replace(/\t/g, '  '));
 		this.project.markError();
 	}
 

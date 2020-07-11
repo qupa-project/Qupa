@@ -8,6 +8,10 @@ extern "C" {
 		return a + b;
 	}
 
+	int i32_mul(int a, int b) {
+		return a * b;
+	}
+
 	bool i32_equal(int a, int b) {
 		return a == b;
 	}

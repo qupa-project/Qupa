@@ -6,6 +6,7 @@ const Call = require('./call.js');
 const Comment = require('./comment.js');
 const Constant = require('./constant.js');
 const Fragment = require('./fragment.js');
+const GEP = require('./gep.js');
 const Label = require('./label.js');
 const Load = require('./load.js');
 const Name = require('./name.js');
@@ -14,6 +15,7 @@ const Raw = require('./raw.js');
 const Return = require('./return.js');
 const Set = require('./set.js');
 const Store = require('./store.js');
+const Struct = require('./struct.js');
 const Type = require('./type.js');
 const WPad = require('./wpad');
 
@@ -22,12 +24,13 @@ module.exports = {
 	Branch, Branch_Unco,
 	Call, Comment, Constant,
 	Fragment,
+	GEP,
 	Label,
 	Load,
 	Name,
 	Procedure,
 	Raw, Return,
-	Set, Store,
+	Set, Store, Struct,
 	Type,
 	WPad
 };

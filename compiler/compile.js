@@ -23,7 +23,8 @@ if (process.argv.indexOf("-v") != -1) {
 let config = {
 	caching: true,
 	output: "out",
-	source: false
+	source: false,
+	execute: false
 };
 let index = process.argv.indexOf('-o');
 if (index != -1 && index > 2) {
@@ -32,6 +33,10 @@ if (index != -1 && index > 2) {
 index = process.argv.indexOf('--no-caching');
 if (index != -1) {
 	config.caching = false;
+}
+index = process.argv.indexOf('--execute');
+if (index != -1) {
+	config.execute = true;
 }
 index = process.argv.indexOf('-S');
 if (index != -1) {
@@ -53,6 +58,7 @@ let project = new Project(root, {
 project.import(origin);
 
 // Link elements
+console.info("Linking...");
 project.link();
 if (project.error) {
 	console.error("\nLinker error");
@@ -60,6 +66,7 @@ if (project.error) {
 }
 
 // Compile to LLVM
+console.info("Compiling...");
 let asm = project.compile();
 if (project.error) {
 	console.error("\nUncompilable errors");
@@ -74,8 +81,12 @@ fs.writeFileSync(`${config.output}.ll`, asm.toLLVM(), 'utf8');
 /*------------------------------------------
 	Compilation in Clang
 ------------------------------------------*/
+console.info("\nCompiling to assembly...");
+if (config.execute && config.source !== false) {
+	console.warn("Warn: Compilation flaged as executing result, but result is configured to output a non-executable");
+}
+
 if (config.source != "llvm") {
-	console.info("\nCompiling to executable...");
 	let runtime_path = path.resolve(__dirname, "./../runtime/runtime.ll");
 	let args = [runtime_path, `${config.output}.ll`];
 
@@ -95,4 +106,12 @@ if (config.source != "llvm") {
 	let clang = spawn('clang++', args);
 	clang.stderr.pipe (process.stderr);
 	clang.stdout.pipe (process.stdout);
+
+
+	clang.on('exit', ()=> {
+		console.log('\nRunning...');
+		let app = spawn(exec_out);
+		app.stderr.pipe (process.stderr);
+		app.stdout.pipe (process.stdout);
+	});
 }

@@ -3,8 +3,8 @@ const Instruction = require("./instruction.js");
 class Constant extends Instruction {
 	/**
 	 * 
-	 * @param {Name} register 
-	 * @param {Type} type 
+	 * @param {String} type 
+	 * @param {String}
 	 * @param {BNF_Reference} ref 
 	 */
 	constructor(type, value, ref) {
