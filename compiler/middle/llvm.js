@@ -6,6 +6,7 @@ const Call = require('./call.js');
 const Comment = require('./comment.js');
 const Constant = require('./constant.js');
 const Fragment = require('./fragment.js');
+const GEP = require('./gep.js');
 const Label = require('./label.js');
 const Load = require('./load.js');
 const Name = require('./name.js');
@@ -23,6 +24,7 @@ module.exports = {
 	Branch, Branch_Unco,
 	Call, Comment, Constant,
 	Fragment,
+	GEP,
 	Label,
 	Load,
 	Name,
