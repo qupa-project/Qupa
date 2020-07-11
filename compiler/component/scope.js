@@ -11,6 +11,7 @@ class Scope {
 		this.variables = {};
 		this.generator = id_generator;
 		this.caching   = caching;
+		this.returned  = false;
 	}
 
 	/**
@@ -133,6 +134,32 @@ class Scope {
 		return target;
 	}
 
+	getVarNew(ast, read = true) {
+		if (ast.type != "variable") {
+			throw new TypeError(`Parsed AST must be a branch of type variable, not "${ast.type}"`);
+		}
+
+		let preamble = new LLVM.Fragment();
+		let target = this.variables[ast.tokens[0].tokens];
+		if (target) {
+			if (ast.tokens.length > 1) {
+				let load = target.get(ast.tokens.slice(1), this, read);
+				if (load.error) {
+					return load;
+				}
+				preamble.merge(load.preamble);
+				target = load.register;
+			}
+		} else {
+			target = null;
+		}
+
+		return {
+			register: target,
+			preamble: preamble
+		};
+	}
+
 
 
 
@@ -161,7 +188,7 @@ class Scope {
 			let target = this.getVar(name);
 			if (!target) {
 				this.ctx.getFile().throw(
-					`Undefined variable name ${name}`,
+					`Undefined variable name ${Flattern.VariableStr(arg)}`,
 					arg.ref.start, arg.ref.end
 				);
 				return null;
@@ -187,7 +214,7 @@ class Scope {
 				new LLVM.Type(arg.type.represent, arg.pointer),
 				new LLVM.Name(arg.id, false),
 				null, arg.name
-			)});
+			);});
 
 			instruction = new LLVM.Call(
 				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),
@@ -257,7 +284,8 @@ class Scope {
 
 		// Get the variable at the right pointer depth
 		let name = Flattern.VariableStr(ast.tokens[0]);
-		let target = this.getVar(name, false);
+		let load = this.getVarNew(ast.tokens[0], false);
+		let target = load.register;
 		if (!target) {
 			this.ctx.getFile().throw(
 				`Undefined variable "${name}"`,
@@ -265,6 +293,7 @@ class Scope {
 			);
 			return false;
 		}
+		frag.merge(load.preamble);
 
 		if (ast.tokens[1].type == "constant") {
 			let cnst = this.compile_constant(ast.tokens[1]);
@@ -561,8 +590,10 @@ class Scope {
 					);
 			}
 
-			if (inner !== null) {
+			if (inner instanceof LLVM.Fragment) {
 				fragment.merge(inner);
+			} else {
+				break;
 			}
 		}
 

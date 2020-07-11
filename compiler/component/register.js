@@ -1,14 +1,105 @@
 const LLVM = require('./../middle/llvm.js');
 
 class Register {
+	/**
+	 * 
+	 * @param {Number} id 
+	 * @param {TypeDef|Structure} type 
+	 * @param {String} name 
+	 * @param {Number} pointerDepth 
+	 * @param {BNF_Reference} ref 
+	 */
 	constructor(id, type, name, pointerDepth, ref) {
 		this.id       = id;
 		this.type     = type;
 		this.name     = name;
 		this.pointer  = pointerDepth;
 		this.declared = ref;
+		this.inner    = [];
 		this.cache    = null;
 		this.isClone  = false;
+	}
+
+	get(ast, scope, read = true) {
+		let preamble = new LLVM.Fragment();
+		let register = this;
+
+		// Do dereferencing if required
+		if (ast[0][0] == "->") {
+			if (this.pointer != 2) {
+				throw new Error(`Cannot dereference a non pointer value ${this.pointer}`);
+			} else {
+				let load = this.deref(scope, read, 1);
+				if (load == null) {
+					return {
+						error: true,
+						ast
+					};
+				} else {
+					preamble.merge(load.preamble);
+					register = load.register;
+				}
+			}
+		} else if (ast[0][0] == ".") {
+			if (this.pointer != 1) {
+				throw new Error(`Cannot get the sub element of direct reference`);
+			}
+		} else {
+			throw new Error(`Unknown access operation ${ast[0][0]}`);
+		}
+
+		// Check the index of the term
+		let search = register.type.getTerm(ast[0][1].tokens);
+		if (search == null) {
+			return {
+				error: true,
+				ast
+			};
+		}
+
+		// Create an address cache if needed
+		if (!register.inner[search.index]) {
+			let reg = new Register(
+				scope.generator.next(),
+				search.term.type,
+				search.term.name,
+				search.term.pointer+1,
+				ast[0][1].ref
+			);
+			register.inner[search.index] = reg;
+
+			preamble.append(new LLVM.Set(
+				new LLVM.Name(reg.id, false, reg.declared),
+				new LLVM.GEP(
+					new LLVM.Type(register.type.represent, register.pointer-1, reg.declared),
+					new LLVM.Name(register.id, false, ast[0][1].ref),
+					[
+						new LLVM.Constant("i32", "0"),
+						new LLVM.Constant("i32", search.index.toString())
+					],
+					ast[0][1].ref
+				),
+				ast[0][1].ref
+			));
+		}
+		register = register.inner[search.index];
+
+		// If further access is required
+		//  Re-occure
+		if (ast.length > 1) {
+			let inner = search.term.get(ast.slice(1));
+			if (inner.error) {
+				return inner;
+			} else {
+				preamble.merge(inner.preamble);
+				register = inner.register;
+			}
+		}
+
+		return {
+			register,
+			preamble
+		};
 	}
 
 	markUpdated(ref) {
@@ -50,6 +141,7 @@ class Register {
 		if (this.cache) {
 			this.cache.clearCache(ref);
 		}
+		this.inner = [];
 		this.cache = null;
 	}
 

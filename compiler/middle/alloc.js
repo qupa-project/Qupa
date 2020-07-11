@@ -13,7 +13,7 @@ class Alloc extends Instruction {
 	}
 
 	toLLVM(indent) {
-		return super.toLLVM(`alloca ${this.type.toLLVM()}, align ${this.size}`, indent)
+		return super.toLLVM(`alloca ${this.type.toLLVM()}, align ${this.size}`, indent);
 	}
 }
 

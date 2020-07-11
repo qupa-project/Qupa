@@ -16,7 +16,7 @@ class Struct_Term {
 
 class Structure extends TypeDef {
 	constructor (ctx, ast, external = false) {
-		super(ctx, ast, external = false);
+		super(ctx, ast, external);
 		this.terms = [];
 		this.linked = false;
 	}
@@ -24,11 +24,19 @@ class Structure extends TypeDef {
 	/**
 	 * 
 	 * @param {String} name 
-	 * @returns {}
+	 * @returns {Object}
 	 */
 	getTerm(name) {
-		let i = this.terms.indexOf(name);
-		if (i == -1) {
+		let found = false;
+		let i = 0;
+		for (; i<this.terms.length && !found; i++) {
+			if (this.terms[i].name == name) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
 			return null;
 		}
 
@@ -40,8 +48,11 @@ class Structure extends TypeDef {
 
 	parse() {
 		this.name = this.ast.tokens[0].tokens;
-		this.represent = this.external ? this.name : `%"struct.${this.name}@${this.ctx.getFileID().toString(36)}.${this.id.toString(36)}"`;
-	};
+		this.represent = "%struct." + (
+			this.external ? this.name : `${this.name}.${this.ctx.getFileID().toString(36)}`
+		);
+	}
+
 	link(stack = []) {
 		if (stack.indexOf(this) != -1) {
 			this.ctx.getFile().throw(
@@ -92,7 +103,7 @@ class Structure extends TypeDef {
 			this.terms.push(term);
 			this.size += term.size;
 		}
-	};
+	}
 
 	compile() {
 		let types = [];

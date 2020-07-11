@@ -22,7 +22,7 @@ class TypeDef {
 
 	parse() {
 		this.name = this.ast.tokens[0].tokens;
-		this.represent = this.external ? this.name : `"${this.name}@${this.ctx.getFileID().toString(36)}.${this.id.toString(36)}"`;
+		this.represent = this.external ? this.name : `"${this.name}@${this.ctx.getFileID().toString(36)}"`;
 	}
 
 	link() {
