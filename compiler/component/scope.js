@@ -461,6 +461,27 @@ class Scope {
 					inner = this.compile_constant(ast.tokens[0]);
 					returnType = inner.type.term;
 					break;
+				case "call":
+					let call = this.compile_call(ast.tokens[0]);
+					frag.merge(call.preamble);
+					if (call.epilog.stmts.length > 0){
+						throw new Error("Unhandled edge case, returning a funciton call without handeling epilog");
+					}
+
+					let regID = this.generator.next();
+					let regName = new LLVM.Name(regID.toString(), false, ast.tokens[0].ref);
+					returnType = call.instruction.rtrnType.term;
+					frag.append(new LLVM.Set(
+						regName,
+						call.instruction,
+						ast.ref
+					));
+					inner = new LLVM.Argument(
+						new LLVM.Type(call.instruction.rtrnType.term, 0),
+						regName,
+						ast.ref
+					);
+					break;
 				case "variable":
 					inner = new LLVM.Fragment();
 					let name = Flattern.VariableStr(ast.tokens[0]);

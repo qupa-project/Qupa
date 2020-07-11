@@ -46,45 +46,37 @@ alias bool i1; // allow referring to i1 as bool
 	 into single namespace
 ------------------------------------*/
 i32 add (int a, int b) {
-	int c = i32_add(a, b);
-	return c;
+	return i32_add(a, b);
 }
 float add(float a, float b) {
-	float c = f32_add(a, b);
-	return c;
+	return f32_add(a, b);
 }
 
 
 i32 sub (int a, int b) {
-	int c = i32_sub(a, b);
-	return c;
+	return i32_sub(a, b);
 }
 
 
 int mul(int a, int b) {
-	int c = i32_mul(a, b);
-	return c;
+	return i32_mul(a, b);
 }
 
 
 int div(int a, int b) {
-	int c = i32_div(a, b);
-	return c;
+	return i32_div(a, b);
 }
 
 
 int rem(int a, int b) {
-	int c = i32_rem(a, b);
-	return c;
+	return i32_rem(a, b);
 }
 
 bool equal(int a, int b) {
-	bool res = i32_equal(a, b);
-	return res;
+	return i32_equal(a, b);
 }
 bool equal(float a, float b) {
-	bool res = f32_equal(a, b);
-	return res;
+	return f32_equal(a, b);
 }
 
 
@@ -107,25 +99,20 @@ bool le(int a, int b) {
 
 
 bool and(bool a, bool b) {
-	bool c = i1_and(a, b);
-	return c;
+	return i1_and(a, b);
 }
 bool or(bool a, bool b) {
-	bool c = i1_or(a, b);
-	return c;
+	return i1_or(a, b);
 }
 bool not(bool a) {
-	bool c = i1_not(a);
-	return c;
+	return i1_not(a);
 }
 bool xor(bool a, bool b) {
 	bool both = and(a, b);
 	if (both) {
 		return false;
 	} else {
-		bool either;
-		either = or(a, b);
-
+		bool either = or(a, b);
 		if (either) {
 			return true;
 		} else {
