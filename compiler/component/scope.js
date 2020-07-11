@@ -380,6 +380,7 @@ class Scope {
 		let frag = new LLVM.Fragment();
 		let inner = null;
 
+		this.returned = true;
 		if (ast.tokens.length == 0){
 			inner = new LLVM.Type("void", false);
 		} else {
@@ -448,8 +449,8 @@ class Scope {
 
 		// Check for elif clause
 		if (ast.tokens[1].length > 0) {
-			file.throw(
-				`Elif statements are currently unsupported`,
+			this.ctx.getFile().throw(
+				`Error: Elif statements are currently unsupported`,
 				ast.ref.start, ast.ref.end
 			);
 			return frag;
@@ -551,6 +552,11 @@ class Scope {
 		this.mergeUpdates(scope_true, false);
 		this.mergeUpdates(scope_false, false);
 
+		// Both branches returned
+		if (scope_true.returned && scope_false.returned) {
+			this.returned = true;
+		}
+
 		return frag;
 	}
 
@@ -561,8 +567,18 @@ class Scope {
 	compile(ast) {
 		let fragment = new LLVM.Fragment();
 
+		let returnWarned = false;
 		let inner = null;
 		for (let token of ast.tokens) {
+			if (this.returned && !returnWarned) {
+				this.ctx.getFile().throw(
+					`Warn: This function has already returned, this line and preceeding lines will not execute`,
+					token.ref.start, token.ref.end
+				);
+				returnWarned = true;
+				break;
+			}
+
 			switch (token.type) {
 				case "declare":
 					inner = this.compile_declare(token);
