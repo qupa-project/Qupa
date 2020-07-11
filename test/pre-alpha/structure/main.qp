@@ -2,6 +2,10 @@
 	Expect:
 	20
 	42
+	4
+	5
+	6
+	7	
 	10
 	12
 */
@@ -33,6 +37,10 @@ int main() {
 	// Test returning struct function
 	Rect c;
 	c = Combine(a, b);
+	println(a.width);
+	println(a.height);
+	println(b.width);
+	println(b.height);
 	println(c.width);
 	println(c.height);
 
@@ -47,11 +55,9 @@ int Area(Rect rec){
 }
 
 Rect Combine(Rect a, Rect b) {
-	Rect c;
-	c.width = add(a.width, b.width);
-	c.height = add(a.height, b.height);
-
-	return c;
+	a.width = add(a.width, b.width);
+	a.height = add(a.height, b.height);
+	return a;
 }
 
 
