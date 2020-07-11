@@ -46,96 +46,80 @@ alias bool i1; // allow referring to i1 as bool
 	 into single namespace
 ------------------------------------*/
 i32 add (int a, int b) {
-	int c;
-	c = i32_add(a, b);
+	int c = i32_add(a, b);
 	return c;
 }
 float add(float a, float b) {
-	float c;
-	c = f32_add(a, b);
+	float c = f32_add(a, b);
 	return c;
 }
 
 
 i32 sub (int a, int b) {
-	int c;
-	c = i32_sub(a, b);
+	int c = i32_sub(a, b);
 	return c;
 }
 
 
 int mul(int a, int b) {
-	int c;
-	c = i32_mul(a, b);
+	int c = i32_mul(a, b);
 	return c;
 }
 
 
 int div(int a, int b) {
-	int c;
-	c = i32_div(a, b);
+	int c = i32_div(a, b);
 	return c;
 }
 
 
 int rem(int a, int b) {
-	int c;
-	c = i32_rem(a, b);
+	int c = i32_rem(a, b);
 	return c;
 }
 
 bool equal(int a, int b) {
-	bool res;
-	res = i32_equal(a, b);
+	bool res = i32_equal(a, b);
 	return res;
 }
 bool equal(float a, float b) {
-	bool res;
-	res = f32_equal(a, b);
+	bool res = f32_equal(a, b);
 	return res;
 }
 
 
 bool gt(int a, int b){
-	bool c;
-	c = i32_gt(a, b);
+	bool c = i32_gt(a, b);
 	return c;
 }
 bool ge(int a, int b) {
-	bool c;
-	c = i32_ge(a, b);
+	bool c = i32_ge(a, b);
 	return c;
 }
 bool lt(int a, int b){
-	bool c;
-	c = i32_lt(a, b);
+	bool c = i32_lt(a, b);
 	return c;
 }
 bool le(int a, int b) {
-	bool c;
-	c = i32_le(a, b);
+	bool c = i32_le(a, b);
 	return c;
 }
 
 
 bool and(bool a, bool b) {
-	bool c;
-	c = i1_and(a, b);
+	bool c = i1_and(a, b);
 	return c;
 }
 bool or(bool a, bool b) {
-	bool c;
-	c = i1_or(a, b);
+	bool c = i1_or(a, b);
 	return c;
 }
 bool not(bool a) {
-	bool c;
-	c = i1_not(a);
+	bool c = i1_not(a);
 	return c;
 }
 bool xor(bool a, bool b) {
-	bool both;
-	both = and(a, b);
+	bool both = and(a, b);
 	if (both) {
 		return false;
 	} else {

@@ -265,9 +265,8 @@ class Scope {
 
 		if (typeRef == null) {
 			let typeName = Flattern.DataTypeStr(ast.tokens[0]);
-
 			this.ctx.getFile().throw(`Error: Invalid type name "${typeName}"`, ast.ref.start, ast.ref.end);
-			process.exit(1);
+			return false;
 		}
 
 		let ptrLvl = typeRef[0]  ? 2 : 1;
@@ -416,6 +415,37 @@ class Scope {
 
 		return frag;
 	}
+	compile_declare_assign(ast) {
+		let frag = new LLVM.Fragment();
+
+		let declare = this.compile_declare(ast);
+		if (declare == false) {
+			return false;
+		}
+		frag.merge(declare);
+
+		let forward = {
+			type: "assign",
+			tokens: [
+				{
+					type: "variable",
+					tokens: [ast.tokens[1]],
+					ref: ast.tokens[1]
+				},
+				ast.tokens[2]
+			],
+			ref: ast.ref
+		};
+		let assign = this.compile_assign(forward);
+		if (assign === false) {
+			return false;
+		}
+		frag.merge(assign);
+
+		return frag;
+	}
+
+
 	compile_return(ast){
 		let frag = new LLVM.Fragment();
 		let inner = null;
@@ -739,6 +769,9 @@ class Scope {
 					break;
 				case "assign":
 					inner = this.compile_assign(token);
+					break;
+				case "declare_assign":
+					inner = this.compile_declare_assign(token);
 					break;
 				case "return":
 					inner = this.compile_return(token);

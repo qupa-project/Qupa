@@ -26,11 +26,9 @@ import "../std.qp";
 
 
 int main() {
-	int a;
-	a = 20;
+	int a = 20;
 
-	bool d;
-	d = true;
+	bool d = true;
 	while (d) {
 		println(a);
 		a = sub(a, 1);
