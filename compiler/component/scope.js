@@ -6,11 +6,12 @@ const Register = require('./register.js');
 class Scope {
 	static raisedVariables = true; // whether or not a variable can be redefined within a new scope
 
-	constructor(ctx, caching = true, id_generator = new Generator_ID(1)) {
+	constructor(ctx, returnType, caching = true, id_generator = new Generator_ID(1)) {
 		this.ctx       = ctx;
 		this.variables = {};
 		this.generator = id_generator;
 		this.caching   = caching;
+		this.returnType = returnType;
 		this.returned  = false;
 	}
 
@@ -171,7 +172,11 @@ class Scope {
 			val = val == "true" ? 1 : 0;
 		}
 
-		return new LLVM.Constant(type, val, ast.ref.start);
+		return new LLVM.Constant(
+			new LLVM.Type(type, 0, ast.ref.start),
+			val,
+			ast.ref.start
+		);
 	}
 
 	compile_call(ast) {
@@ -288,6 +293,14 @@ class Scope {
 
 		if (ast.tokens[1].type == "constant") {
 			let cnst = this.compile_constant(ast.tokens[1]);
+			if (cnst.type.term != target.type.represent) {
+				this.ctx.getFile().throw(
+					`Error: Assignment type miss-match, expected ${target.type.name} but got ${cnst.type}`,
+					ast.ref.start, ast.ref.end
+				);
+				return false;
+			}
+
 			frag.append(new LLVM.Store(
 				new LLVM.Argument(
 					new LLVM.Type(target.type.represent, target.pointer),
@@ -305,6 +318,14 @@ class Scope {
 			let inner = this.compile_call(ast.tokens[1]);
 			if (inner === null) {
 				return null;
+			}
+
+			if (inner.instruction.rtrnType.term != target.type.represent) {
+				this.ctx.getFile().throw(
+					`Error: Type miss-match, this functiion does not return ${target.type.name}`,
+					ast.tokens[1].ref.start, ast.tokens[1].ref.end
+				);
+				return false;
 			}
 
 			frag.merge(inner.preamble); // add any loads needed for call
@@ -331,12 +352,20 @@ class Scope {
 			let load = this.getVarNew(ast.tokens[1], true);
 			if (load.error) {
 				this.ctx.getFile().throw(
-					`Unable to access structure term "${load.ast.tokens}"`,
+					`Error: Unable to access structure term "${load.ast.tokens}"`,
 					load.ast.ref.start, load.ast.ref.end
 				);
 				return false;
 			}
 			frag.merge(load.preamble);
+
+			if (load.register.type != target.type) {
+				this.ctx.getFile().throw(
+					`Error: Type miss-match, expected ${target.type.name} but got ${load.register.type.name}`,
+					ast.ref.start, ast.ref.end
+				);
+				return false;
+			}
 
 			let cache = load.register.deref(this, true);
 			if (!cache) {
@@ -380,12 +409,16 @@ class Scope {
 		let frag = new LLVM.Fragment();
 		let inner = null;
 
+		this.returned = true;
+		let returnType = null;
 		if (ast.tokens.length == 0){
 			inner = new LLVM.Type("void", false);
+			returnType = "void";
 		} else {
 			switch (ast.tokens[0].type) {
 				case "constant":
 					inner = this.compile_constant(ast.tokens[0]);
+					returnType = inner.type.term;
 					break;
 				case "variable":
 					inner = new LLVM.Fragment();
@@ -414,6 +447,7 @@ class Scope {
 						new LLVM.Type( cache.register.type.represent, cache.register.pointer, cache.register.type.ref ),
 						new LLVM.Name( cache.register.id, false, ast.tokens[0].ref )
 					);
+					returnType = cache.register.type.represent;
 					break;
 				default:
 					this.ctx.getFile().throw(
@@ -423,8 +457,14 @@ class Scope {
 			}
 		}
 
-		frag.append(new LLVM.Return(inner, ast.ref.start));
+		if (this.returnType.represent != returnType) {
+			this.ctx.getFile().throw(
+				`Return type miss-match, expected ${this.returnType.name}`,
+				ast.ref.start, ast.ref.end
+			);
+		}
 
+		frag.append(new LLVM.Return(inner, ast.ref.start));
 		return frag;
 	}
 
@@ -448,8 +488,8 @@ class Scope {
 
 		// Check for elif clause
 		if (ast.tokens[1].length > 0) {
-			file.throw(
-				`Elif statements are currently unsupported`,
+			this.ctx.getFile().throw(
+				`Error: Elif statements are currently unsupported`,
 				ast.ref.start, ast.ref.end
 			);
 			return frag;
@@ -551,6 +591,11 @@ class Scope {
 		this.mergeUpdates(scope_true, false);
 		this.mergeUpdates(scope_false, false);
 
+		// Both branches returned
+		if (scope_true.returned && scope_false.returned) {
+			this.returned = true;
+		}
+
 		return frag;
 	}
 
@@ -561,8 +606,18 @@ class Scope {
 	compile(ast) {
 		let fragment = new LLVM.Fragment();
 
+		let returnWarned = false;
 		let inner = null;
 		for (let token of ast.tokens) {
+			if (this.returned && !returnWarned) {
+				this.ctx.getFile().throw(
+					`Warn: This function has already returned, this line and preceeding lines will not execute`,
+					token.ref.start, token.ref.end
+				);
+				returnWarned = true;
+				break;
+			}
+
 			switch (token.type) {
 				case "declare":
 					inner = this.compile_declare(token);
@@ -602,7 +657,7 @@ class Scope {
 	 * @returns {Scope}
 	 */
 	clone() {
-		let out = new Scope(this.ctx, this.caching, this.generator);
+		let out = new Scope(this.ctx, this.returnType, this.caching, this.generator);
 		for (let name in this.variables) {
 			out.variables[name] = this.variables[name].clone();
 		}

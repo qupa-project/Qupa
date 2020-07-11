@@ -66,7 +66,7 @@ if (project.error) {
 }
 
 // Compile to LLVM
-console.info("Compiling...");
+console.info("Processing...");
 let asm = project.compile();
 if (project.error) {
 	console.error("\nUncompilable errors");
@@ -81,9 +81,10 @@ fs.writeFileSync(`${config.output}.ll`, asm.toLLVM(), 'utf8');
 /*------------------------------------------
 	Compilation in Clang
 ------------------------------------------*/
-console.info("\nCompiling to assembly...");
+console.info("Compiling...");
 if (config.execute && config.source !== false) {
 	console.warn("Warn: Compilation flaged as executing result, but result is configured to output a non-executable");
+	config.execute = false;
 }
 
 if (config.source != "llvm") {
@@ -108,10 +109,12 @@ if (config.source != "llvm") {
 	clang.stdout.pipe (process.stdout);
 
 
-	clang.on('exit', ()=> {
-		console.log('\nRunning...');
-		let app = spawn(exec_out);
-		app.stderr.pipe (process.stderr);
-		app.stdout.pipe (process.stdout);
-	});
+	if (config.execute) {
+		clang.on('exit', ()=> {
+			console.log('\nRunning...');
+			let app = spawn(exec_out);
+			app.stderr.pipe (process.stderr);
+			app.stdout.pipe (process.stdout);
+		});
+	}
 }

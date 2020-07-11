@@ -3,7 +3,7 @@ const Instruction = require("./instruction.js");
 class Constant extends Instruction {
 	/**
 	 * 
-	 * @param {String} type 
+	 * @param {LLVM.Type} type 
 	 * @param {String}
 	 * @param {BNF_Reference} ref 
 	 */
@@ -14,7 +14,7 @@ class Constant extends Instruction {
 	}
 
 	toLLVM() {
-		return `${this.type} ${this.val}`;
+		return `${this.type.toLLVM()} ${this.val}`;
 	}
 }
 
