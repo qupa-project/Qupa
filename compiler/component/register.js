@@ -214,11 +214,13 @@ class Register {
 			// If the value is going to be read, loads in the cache value
 			// Otherwise leave the assigned register unused
 			if (read) {
-				out.preamble.append(new LLVM.Load(
+				out.preamble.append(new LLVM.Set(
 					new LLVM.Name(`${this.cache.id}`, false),
-					new LLVM.Type(this.type.represent, this.pointer-1),
-					new LLVM.Name(`${this.id}`, false),
-					this.type.size
+					new LLVM.Load(
+						new LLVM.Type(this.type.represent, this.pointer-1),
+						new LLVM.Name(`${this.id}`, false),
+						this.type.size
+					)
 				));
 			}
 		}
