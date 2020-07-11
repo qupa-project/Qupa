@@ -14,21 +14,6 @@ struct Rect {
 }
 
 
-int Area(Rect rec){
-	int area;
-	area = mul(rec.width, rec.height);
-	return area;
-}
-
-Rect Combine(Rect a, Rect b) {
-	Rect c;
-	c.width = add(a.width, b.width);
-	c.height = add(a.height, b.height);
-
-	return c;
-}
-
-
 int main() {
 	// Define two example rectangles
 	Rect a;
@@ -50,6 +35,21 @@ int main() {
 	c = Combine(a, b);
 	println(c.width);
 	println(c.height);
+}
+
+
+int Area(Rect rec){
+	int area;
+	area = mul(rec.width, rec.height);
+	return area;
+}
+
+Rect Combine(Rect a, Rect b) {
+	Rect c;
+	c.width = add(a.width, b.width);
+	c.height = add(a.height, b.height);
+
+	return c;
 }
 
 
