@@ -444,6 +444,9 @@ function Simplify_Function_Stmt (node) {
 		case "declare":
 			inner = Simplify_Declare(node.tokens[0]);
 			break;
+		case "declare_assign":
+			inner = Simplify_Declare_Assign(node.tokens[0]);
+			break;
 		case "assign":
 			inner = Simplify_Assign(node.tokens[0]);
 			break;
@@ -456,8 +459,10 @@ function Simplify_Function_Stmt (node) {
 		case "if":
 			inner = Simplify_If(node.tokens[0]);
 			break;
-		case "for":
 		case "while":
+			inner = Simplify_While(node.tokens[0]);
+			break;
+		case "for":
 		case "asm":
 		default:
 			throw new TypeError(`Unexpected function statement ${node.tokens[0].type}`);
@@ -526,7 +531,7 @@ function Simplify_If (node) {
 function Simplify_If_Stmt (node) {
 	let out = [
 		Simplify_Expr(node.tokens[4][0]),
-		Simplify_If_Body(node.tokens[8][0])
+		Simplify_Function_Body(node.tokens[8][0])
 	];
 
 	node.tokens  = out;
@@ -542,8 +547,18 @@ function Simplify_If_Else (node) {
 	node.reached = null;
 	return node;
 }
-function Simplify_If_Body (node) {
-	return Simplify_Function_Body(node);
+
+
+
+function Simplify_While (node) {
+	let out = [
+		Simplify_Expr(node.tokens[4][0]),
+		Simplify_Function_Body(node.tokens[8][0])
+	];
+
+	node.tokens = out;
+	node.reached = null;
+	return node;
 }
 
 
@@ -571,9 +586,17 @@ function Simplify_Declare (node) {
 	node.reached = null;
 	return node;
 }
+function Simplify_Declare_Assign (node) {
+	let out = [
+		Simplify_Data_Type (node.tokens[0][0]),
+		Simplify_Name (node.tokens[2][0]),
+		Simplify_Expr (node.tokens[6][0])
+	];
 
-
-
+	node.tokens = out;
+	node.reached = null;
+	return node;
+}
 function Simplify_Assign  (node) {
 	node.tokens = [
 		Simplify_Variable (node.tokens[0][0]), // target variable
@@ -668,7 +691,7 @@ function Simplify_Expr_opperand (node) {
 
 	node.reached = null;
 	return node;
-};
+}
 function Simplify_Expr_Brackets (node) {
 	return Simplify_Expr ( node.tokens[2][0] );
 }
@@ -679,13 +702,18 @@ function Parse (data, filename){
 	// Parse the file and check for errors
 	let result = BNF.Parse(data+"\n", syntax, "program");
 
-	if (result.hasError || result.isPartial) {	
-		let ref = result.tree.ref.reached.getReach();
+	if (result.hasError || result.isPartial) {
+		let ref = result.tree.ref.end;
+		let cause = "Unknown";
+		if (result.tree.ref.reached) {
+			ref = result.tree.ref.reached.getReach();
+			cause = result.tree.reached.getCausation();
+		}
 
 		let msg = filename ? `${filename}: ` : "";
 		msg += `Syntax error at ${ref.toString()}\n`;
 		msg += `  ${BNF.Message.HighlightArea(data, ref).split('\n').join('\n  ')}\n\n`;
-		msg += `  Interpreted: ${result.tree.reached.getCausation()}`;
+		msg += `  Interpreted: ${cause}`;
 		console.error(msg);
 		process.exit(1);
 	}

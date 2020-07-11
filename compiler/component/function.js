@@ -100,6 +100,8 @@ class Function_Instance {
 		this.signature = [];
 		this.calls = [];
 
+		this.linked = false;
+
 		this.id = funcIDGen.next();
 
 		this.name = ast.tokens[0].tokens[1].tokens;
@@ -156,13 +158,13 @@ class Function_Instance {
 
 		for (let type of types){
 			let name = null;
-			let ptr = false;
+			let ptr = 0;
 			if (type.tokens[0].type == "variable") {
 				name = type.tokens[0];
 			} else {
 				name = type.tokens[0].tokens[1];
 				if (type.tokens[0].type == "pointer") {
-					ptr = true;
+					ptr = 1;
 				}
 			}
 
@@ -185,19 +187,19 @@ class Function_Instance {
 		}
 
 		this.returnType = this.signature.splice(0, 1)[0];
+		this.linked = true;
 	}
 
 
 
 	match (other) {
-		let a = this.ast.tokens[0].tokens[2].tokens;
-		let b = other.ast.tokens[0].tokens[2].tokens;
-		if (this.signature.length > 0 && other.signature.length > 0) {
-			a = this.signature;
-			b = other.signature;
+		if (!this.linked || !other.linked) {
+			return this.matchSignature(other);
 		}
 
-
+		// Match based on raw names
+		let a = this.ast.tokens[0].tokens[2].tokens;
+		let b = other.ast.tokens[0].tokens[2].tokens;
 		if (a.length != a.length) {
 			return false;
 		}
@@ -217,7 +219,12 @@ class Function_Instance {
 		}
 
 		for (let i=0; i<sig.length; i++) {
-			if (this.signature[i][0] != sig[i][0] || this.signature[i][1] != sig[i][1]) {
+			if (this.signature[i][0] != sig[i][0]) {
+				return false;
+			}
+			let a = this.signature[i][1].represent || this.signature[i][1];
+			let b = sig[i][1].represent || sig[i][1];
+			if (a != b) {
 				return false;
 			}
 		}

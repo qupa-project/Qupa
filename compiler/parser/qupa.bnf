@@ -65,6 +65,8 @@ program ::= w* ( stmt_top w* )*
 
 	assign ::= variable w* "=" w* expr w* ";"
 
+	declare_assign ::= data_type w+ name w* "=" w* expr w* ";"
+
 
 #=============================
 #  Flags
@@ -83,7 +85,7 @@ program ::= w* ( stmt_top w* )*
 				func_arg_list ::= func_arg w* ( "," w* func_arg w* )*
 				func_arg      ::= data_type w+ name ( w* "=" w* constant )?
 		function_body ::= "{" w* ( func_stmt w* )* "}"
-			func_stmt ::= comment | if | for | while | return | asm | call_procedure | declare | assign
+			func_stmt ::= comment | if | for | while | return | asm | call_procedure | declare | assign | declare_assign
 
 	function_outline ::= func_head w* ";"
 
@@ -179,19 +181,15 @@ program ::= w* ( stmt_top w* )*
 #  If statement
 #=============================
 	if ::= if_stmt ( w* elif_stmt )* w* else_stmt?
-		if_stmt   ::= "if"   w* "(" w* expr w* ")" w* if_body
-		elif_stmt ::= "elif" w* "(" w* expr w* ")" w* if_body
-		else_stmt ::= "else" w* if_body
-
-		if_body ::= "{" w* ( func_stmt w* )* "}"
+		if_stmt   ::= "if"   w* "(" w* expr w* ")" w* function_body
+		elif_stmt ::= "elif" w* "(" w* expr w* ")" w* function_body
+		else_stmt ::= "else" w* function_body
 
 
 #=============================
 #  Loops
 #=============================
-	for ::= "for" w* "(" w* for_condition w* ")" w* "{" w* for_body w* "}"
+	for ::= "for" w* "(" w* for_condition w* ")" w* function_body
 		for_condition ::= expr w* ";" w* expr w* ";" expr
-		for_body ::= func_stmt*
 
-	while ::= "while" w* "(" w* expr w* ")" w* "{" w* while_body w* "}"
-		while_body ::= func_stmt*
+	while ::= "while" w* "(" w* expr w* ")" w* function_body
