@@ -574,27 +574,33 @@ class Scope {
 		));
 
 		// Push the if branch
-		body_true.append(new LLVM.Branch_Unco(endpoint));
+		if (!scope_true.returned) {
+			body_true.append(new LLVM.Branch_Unco(endpoint));
+		}
 		frag.merge(body_true);
 
 		// Push the else branch
 		if (hasElse) {
-			body_false.append(new LLVM.Branch_Unco(endpoint));
+			if (!scope_false.returned) {
+				body_false.append(new LLVM.Branch_Unco(endpoint));
+			}
 			frag.merge(body_false);
 		}
-
-		// Push the end point
-		frag.append(endpoint.toDefinition());
-
-		// If any variables were updated within child scopes
-		//   Flush their caches if needed
-		this.mergeUpdates(scope_true, false);
-		this.mergeUpdates(scope_false, false);
 
 		// Both branches returned
 		if (scope_true.returned && scope_false.returned) {
 			this.returned = true;
 		}
+
+		// Push the end point
+		if (!this.returned) {
+			frag.append(endpoint.toDefinition());
+		}
+
+		// If any variables were updated within child scopes
+		//   Flush their caches if needed
+		this.mergeUpdates(scope_true, false);
+		this.mergeUpdates(scope_false, false);
 
 		return frag;
 	}
