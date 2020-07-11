@@ -7,7 +7,7 @@ class Argument extends Instruction {
 	 * @param {LLVM.Type} type 
 	 * @param {LLVM.Name} name 
 	 * @param {BNF_Reference?} ref 
-	 * @param {String} originalName 
+	 * @param {String?} originalName 
 	 */
 	constructor(type, name, ref, originalName) {
 		super(ref);

@@ -33,12 +33,8 @@ int main() {
 	d = true;
 	while (d) {
 		println(a);
-		int inc;
-		inc = 1;
-		a = sub(a, inc);
-
-		inc = 0;
-		d = gt(a, inc);
+		a = sub(a, 1);
+		d = gt(a, 0);
 	}
 
 	println(a);
