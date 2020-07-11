@@ -112,8 +112,8 @@ class Register {
 					new LLVM.Type(register.type.represent, register.pointer-1, reg.declared),
 					new LLVM.Name(register.id, false, ast[0][1].ref),
 					[
-						new LLVM.Constant("i32", "0"),
-						new LLVM.Constant("i32", search.index.toString())
+						new LLVM.Constant(new LLVM.Type("i32", 0), "0"),
+						new LLVM.Constant(new LLVM.Type("i32", 0), search.index.toString())
 					],
 					ast[0][1].ref
 				),

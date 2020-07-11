@@ -172,7 +172,11 @@ class Scope {
 			val = val == "true" ? 1 : 0;
 		}
 
-		return new LLVM.Constant(type, val, ast.ref.start);
+		return new LLVM.Constant(
+			new LLVM.Type(type, 0, ast.ref.start),
+			val,
+			ast.ref.start
+		);
 	}
 
 	compile_call(ast) {
@@ -289,7 +293,7 @@ class Scope {
 
 		if (ast.tokens[1].type == "constant") {
 			let cnst = this.compile_constant(ast.tokens[1]);
-			if (cnst.type != target.type.represent) {
+			if (cnst.type.term != target.type.represent) {
 				this.ctx.getFile().throw(
 					`Error: Assignment type miss-match, expected ${target.type.name} but got ${cnst.type}`,
 					ast.ref.start, ast.ref.end
@@ -414,7 +418,7 @@ class Scope {
 			switch (ast.tokens[0].type) {
 				case "constant":
 					inner = this.compile_constant(ast.tokens[0]);
-					returnType = inner.type;
+					returnType = inner.type.term;
 					break;
 				case "variable":
 					inner = new LLVM.Fragment();
