@@ -108,10 +108,12 @@ if (config.source != "llvm") {
 	clang.stdout.pipe (process.stdout);
 
 
-	clang.on('exit', ()=> {
-		console.log('\nRunning...');
-		let app = spawn(exec_out);
-		app.stderr.pipe (process.stderr);
-		app.stdout.pipe (process.stdout);
-	});
+	if (config.execute) {
+		clang.on('exit', ()=> {
+			console.log('\nRunning...');
+			let app = spawn(exec_out);
+			app.stderr.pipe (process.stderr);
+			app.stdout.pipe (process.stdout);
+		});
+	}
 }
