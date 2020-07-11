@@ -20,6 +20,10 @@ class TypeDef {
 		this.parse();
 	}
 
+	getTerm() {
+		return null;
+	}
+
 	parse() {
 		this.name = this.ast.tokens[0].tokens;
 		this.represent = this.external ? this.name : `"${this.name}@${this.ctx.getFileID().toString(36)}"`;

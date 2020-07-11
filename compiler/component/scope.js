@@ -116,24 +116,10 @@ class Scope {
 	}
 
 	/**
-	 * Get the register holding the variable or it's dereferenced state
-	 * @param {BNF_SyntaxNode} name "type" = variable
-	 * @param {Number|Null} pointerLvl -X means dereference at least X times, +X means to that reference depth, null depth ignorant
-	 * @param {*} read Will data be read or just written?
+	 * Get the register holding the desired value
+	 * @param {BNF_Node} ast 
+	 * @param {Boolean} read Will this value be read? Or only written
 	 */
-	getVar(name) {
-		let target = this.variables[name];
-		if (!target) {
-			return null;
-		}
-
-		if (target && !this.caching) {
-			target.clearCache();
-		}
-
-		return target;
-	}
-
 	getVarNew(ast, read = true) {
 		if (ast.type != "variable") {
 			throw new TypeError(`Parsed AST must be a branch of type variable, not "${ast.type}"`);
@@ -142,6 +128,10 @@ class Scope {
 		let preamble = new LLVM.Fragment();
 		let target = this.variables[ast.tokens[0].tokens];
 		if (target) {
+			if (!this.caching) {
+				target.clearCache();
+			}
+
 			if (ast.tokens.length > 1) {
 				let load = target.get(ast.tokens.slice(1), this, read);
 				if (load.error) {
@@ -151,7 +141,14 @@ class Scope {
 				target = load.register;
 			}
 		} else {
-			target = null;
+			return {
+				error: true,
+				msg: `Unknown variable name ${ast.tokens[0].tokens}`,
+				ref: {
+					start: ast.tokens[0].ref.start,
+					end: ast.tokens[0].ref.end
+				}
+			};
 		}
 
 		return {
@@ -184,18 +181,16 @@ class Scope {
 
 		let varArgs = [];
 		for (let arg of ast.tokens[1].tokens) {
-			let name = Flattern.VariableStr(arg);
-			let target = this.getVar(name);
-			if (!target) {
-				this.ctx.getFile().throw(
-					`Undefined variable name ${Flattern.VariableStr(arg)}`,
-					arg.ref.start, arg.ref.end
-				);
+			let load = this.getVarNew(arg, true);
+			if (load.error) {
+				this.ctx.getFile().throw(load.msg, load.ref.start, load.ref.end);
 				return null;
 			}
+			preamble.merge(load.preamble);
 
-			let cache = target.deref(this, true, 1);
+			let cache = load.register.deref(this, true, 1);
 			if (!cache.register) {
+				let name = Flattern.VariableStr(arg);
 				this.ctx.getFile().throw(
 					`Cannot dereference ${name}`,
 					arg.ref.start, arg.ref.end
@@ -283,13 +278,9 @@ class Scope {
 		let frag = new LLVM.Fragment();
 
 		// Get the variable at the right pointer depth
-		let name = Flattern.VariableStr(ast.tokens[0]);
 		let load = this.getVarNew(ast.tokens[0], false);
 		if (load.error) {
-			this.ctx.getFile().throw(
-				`Unable to access structure term "${load.ast.tokens}"`,
-				load.ast.ref.start, load.ast.ref.end
-			);
+			this.ctx.getFile().throw( load.msg, load.ref.start, load.ref.end );
 			return false;
 		}
 		let target = load.register;
@@ -302,7 +293,7 @@ class Scope {
 					new LLVM.Type(target.type.represent, target.pointer),
 					new LLVM.Name(`${target.id}`, false),
 					ast.tokens[0].ref,
-					name
+					Flattern.VariableStr(ast.tokens[0])
 				),
 				cnst,
 				target.type.size,
@@ -337,16 +328,17 @@ class Scope {
 			));
 		} else if (ast.tokens[1].type == "variable") {
 			let otherName = Flattern.VariableStr(ast.tokens[1]);
-			let other = this.getVar(otherName);
-			if (!other) {
+			let load = this.getVarNew(ast.tokens[1], true);
+			if (load.error) {
 				this.ctx.getFile().throw(
-					`Unable to find variable name "${otherName}"`,
-					ast.tokens[1].ref.start, ast.tokens[1].ref.end
+					`Unable to access structure term "${load.ast.tokens}"`,
+					load.ast.ref.start, load.ast.ref.end
 				);
 				return false;
 			}
+			frag.merge(load.preamble);
 
-			let cache = other.deref(this, true);
+			let cache = load.register.deref(this, true);
 			if (!cache) {
 				this.ctx.getFile().throw(
 					`Unable to dereference variable "${otherName}"`,
@@ -398,15 +390,17 @@ class Scope {
 				case "variable":
 					inner = new LLVM.Fragment();
 					let name = Flattern.VariableStr(ast.tokens[0]);
-					let target = this.getVar(name, true);
-					if (!target) {
+					let load = this.getVarNew(ast.tokens[0], true);
+					if (load.error) {
 						this.ctx.getFile().throw(
-							`Undefined variable name ${name}`,
-							ast.tokens[0].ref.start, ast.tokens[0].ref.end
+							`Unable to access structure term "${load.ast.tokens}"`,
+							load.ast.ref.start, load.ast.ref.end
 						);
-						return null;
+						return false;
 					}
-					let cache = target.deref(this, true, 1);
+					frag.merge(load.preamble);
+
+					let cache = load.register.deref(this, true, 1);
 					if (!cache) {
 						this.ctx.getFile().throw(
 							`Unable to dereference variable "${name}"`,
@@ -473,15 +467,17 @@ class Scope {
 			return frag;
 		}
 		let name = Flattern.VariableStr(cond);
-		let target = this.getVar(name, true);
-		if (!target) {
-			this.getFile().throw(
-				`Error: Unable to find variable name ${name}`,
-				cond.ref.start, cond.ref.end
+		let load = this.getVarNew(cond, true);
+		if (load.error) {
+			this.ctx.getFile().throw(
+				`Unable to access structure term "${load.ast.tokens}"`,
+				load.ast.ref.start, load.ast.ref.end
 			);
-			return frag;
+			return false;
 		}
-		let cache = target.deref(this, true, 1);
+		frag.merge(load.preamble);
+
+		let cache = load.register.deref(this, true, 1);
 		if (!cache.register) {
 			this.getFile().throw(
 				`Error: Cannot dereference variable ${name}`,

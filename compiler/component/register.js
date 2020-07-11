@@ -1,4 +1,5 @@
 const LLVM = require('./../middle/llvm.js');
+const TypeDef = require('./typedef.js');
 
 class Register {
 	/**
@@ -27,13 +28,22 @@ class Register {
 		// Do dereferencing if required
 		if (ast[0][0] == "->") {
 			if (this.pointer != 2) {
-				throw new Error(`Cannot dereference a non pointer value ${this.pointer}`);
+				return {
+					error: true,
+					msg: `Type Error: Cannot dereference a non pointer value`,
+					ref: {
+						start: ast[0][1].ref.start,
+						end: ast[0][1].ref.end
+					}
+				};
 			} else {
 				let load = this.deref(scope, read, 1);
 				if (load == null) {
 					return {
 						error: true,
-						ast: ast[0][1]
+						msg: `Internal Error: Cannot dereference for unknown reason`,
+						start: ast[0][1].ref.start,
+						end: ast[0][1].ref.end,
 					};
 				} else {
 					preamble.merge(load.preamble);
@@ -42,20 +52,39 @@ class Register {
 			}
 		} else if (ast[0][0] == ".") {
 			if (this.pointer != 1) {
-				throw new Error(`Cannot get the sub element of direct reference`);
+				return {
+					error: true,
+					msg: `Internal Error: Cannot get sub element of direct value`,
+					ref: {
+						start: ast[0][1].ref.start,
+						end: ast[0][1].ref.end
+					}
+				};
 			}
 		} else {
-			throw new Error(`Unknown access operation ${ast[0][0]}`);
+			return {
+				error: true,
+				msg: `Internal Error: Unknown access operation ${ast[0][0]}`,
+				ref: {
+					start: ast[0][1].ref.start,
+					end: ast[0][1].ref.end
+				}
+			};
 		}
 
 		// Check the index of the term
 		let search = register.type.getTerm(ast[0][1].tokens);
-		if (search == null) {
+		if (search === null) {
 			return {
 				error: true,
-				ast: ast[0][1]
+				msg: `Type Error: Unknown term ${ast[0][1].tokens} of structure ${register.type.name}`,
+				ref: {
+					start: ast[0][1].ref.start,
+					end: ast[0][1].ref.end
+				}
 			};
 		}
+
 
 		// Create an address cache if needed
 		if (!register.inner[search.index]) {
@@ -84,10 +113,11 @@ class Register {
 		}
 		register = register.inner[search.index];
 
+
 		// If further access is required
 		//  Re-occure
 		if (ast.length > 1) {
-			let inner = search.term.get(ast.slice(1));
+			let inner = register.get(ast.slice(1), scope, read);
 			if (inner.error) {
 				return inner;
 			} else {

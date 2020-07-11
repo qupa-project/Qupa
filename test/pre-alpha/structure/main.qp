@@ -35,6 +35,8 @@ int main() {
 	c = Combine(a, b);
 	println(c.width);
 	println(c.height);
+
+	return 0;
 }
 
 
