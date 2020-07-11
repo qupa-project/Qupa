@@ -1,12 +1,14 @@
 const LLVM = require('./../middle/llvm.js');
 
-class Register_Base {
-	constructor(type, name, pointerDepth, ref) {
+class Register {
+	constructor(id, type, name, pointerDepth, ref) {
+		this.id       = id;
 		this.type     = type;
 		this.name     = name;
 		this.pointer  = pointerDepth;
 		this.declared = ref;
 		this.cache    = null;
+		this.isClone  = false;
 	}
 
 	markUpdated(ref) {
@@ -26,7 +28,7 @@ class Register_Base {
 			frag.append(new LLVM.Store(
 				new LLVM.Argument(
 					new LLVM.Type(this.type.represent, this.pointer),
-					new LLVM.Name(this.id, false),
+					new LLVM.Name(this.id, false)
 				),
 				new LLVM.Argument(
 					new LLVM.Type(this.type.represent, this.cache.pointer),
@@ -98,25 +100,60 @@ class Register_Base {
 
 		return out;
 	}
-}
 
-class Register_Hollow extends Register_Base {
-	constructor(type, name, pointerDepth, ref) {
-		super(type, name, pointerDepth, ref);
+	/**
+	 * Deep clone
+	 * @returns {Register}
+	 */
+	clone () {
+		let out = new Register(this.id, this.type, this.name, this.pointer, this.ref);
+		if (this.cache !== null) {
+			out.cache = this.cache.clone();
+		}
+		out.isClone = true;
+
+		return out;
+	}
+	/**
+	 * Marks this copy as the original instead of a clone
+	 * Applies recursively
+	 */
+	declone() {
+		this.isClone = false;
+
+		if (this.cache) {
+			this.cache.declone();
+		}
 	}
 
-	get id(){
-		throw new Error("Cannot get ID of hollow register");
-	}
-}
+	/**
+	 * Updates any caches due to alterations in child scope
+	 * @param {Register} other the register to be merged
+	 * @param {Boolean} alwaysExecute If this change ALWAYS execute
+	 */
+	mergeUpdates(other, alwaysExecute) {
+		let action = 0; // 0 = no action, 1 = clear cache, 2 = copy new cache
+		if (this.cache !== null && other.cache == null) {                          // a cache was destroyed
+			action = 1;
+		} else if (alwaysExecute && this.cache === null && other.cache !== null) { // a cache was created
+			action = 2;
+		} else if (this.cache !== null && other.cache !== null && this.cache.id != other.cache.id) { // a cache was updated
+			action = alwaysExecute ? 2 : 1;
+		}
 
-class Register extends Register_Base {
-	constructor(id, type, name, pointerDepth, ref) {
-		super(type, name, pointerDepth, ref);
-		this.id       = id;
+		switch (action) {
+			case 0:
+				break;
+			case 1:
+				this.clearCache();
+				break;
+			case 2:
+				this.clearCache();
+				this.cache = other.cache.clone();
+				this.cache.declone();
+				break;
+		}
 	}
-
-	static Hollow = Register_Hollow;
 }
 
 module.exports = Register;

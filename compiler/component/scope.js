@@ -11,8 +11,6 @@ class Scope {
 		this.variables = {};
 		this.generator = id_generator;
 		this.caching   = caching;
-
-		this.updated = [];
 	}
 
 	/**
@@ -39,12 +37,6 @@ class Scope {
 			return this.ctx;
 		}
 		return null;
-	}
-
-	notifyUpdated(name) {
-		if (this.updated.indexOf(name) == -1) {
-			this.updated.push(name);
-		}
 	}
 
 	register_Args(args) {
@@ -128,14 +120,7 @@ class Scope {
 	 * @param {Number|Null} pointerLvl -X means dereference at least X times, +X means to that reference depth, null depth ignorant
 	 * @param {*} read Will data be read or just written?
 	 */
-	getVar(name, read) {
-		if (Scope.raisedVariables) {
-			if (this.getParent()) {
-				let res = this.ctx.getVar(name, read);
-				return res;
-			}
-		}
-
+	getVar(name) {
 		let target = this.variables[name];
 		if (!target) {
 			return null;
@@ -143,12 +128,6 @@ class Scope {
 
 		if (target && !this.caching) {
 			target.clearCache();
-		}
-
-		// Mark all variables altered in this scope
-		// So upper scopes can be notified
-		if (!read) {
-			this.notifyUpdated(name);
 		}
 
 		return target;
@@ -194,7 +173,6 @@ class Scope {
 					`Cannot dereference ${name}`,
 					arg.ref.start, arg.ref.end
 				);
-				console.log(cache);
 				return null;
 			}
 
@@ -221,7 +199,7 @@ class Scope {
 			// Clear any lower caches
 			//   If this is a pointer the value may have changed
 			for (let arg of varArgs) {
-				let cache = arg.deref(this, false);
+				let cache = arg.deref(this, false, 3);
 				if (cache && cache.register) {
 					cache.register.clearCache();
 				}
@@ -491,7 +469,7 @@ class Scope {
 		let label_true = new LLVM.Label(
 			new LLVM.Name(`${this.generator.next()}`, false, ast.tokens[0].tokens[1]), ast.tokens[0].tokens[1]
 		);
-		let scope_true = new Scope(this, this.caching, this.generator);
+		let scope_true = this.clone();
 		let body_true = scope_true.compile(ast.tokens[0].tokens[1]);
 		body_true.prepend(label_true.toDefinition());
 
@@ -504,9 +482,9 @@ class Scope {
 			new LLVM.Name(`${this.generator.next()}`, false)
 		);
 		let body_false = new LLVM.Fragment();
+		let scope_false = this.clone();
 		if (hasElse) {
 			body_false.prepend(label_false.toDefinition());
-			let scope_false = new Scope(this, this.caching, this.generator);
 			body_false = scope_false.compile(ast.tokens[2].tokens[0]);
 			body_false.prepend(label_false.toDefinition());
 		}
@@ -542,6 +520,11 @@ class Scope {
 
 		// Push the end point
 		frag.append(endpoint.toDefinition());
+
+		// If any variables were updated within child scopes
+		//   Flush their caches if needed
+		this.mergeUpdates(scope_true, false);
+		this.mergeUpdates(scope_false, false);
 
 		return frag;
 	}
@@ -581,21 +564,36 @@ class Scope {
 			if (inner !== null) {
 				fragment.merge(inner);
 			}
-
-			// Propergate any updates from lower scopes
-			let parent = this.getParent();
-			for (let val of this.updated) {
-				this.getVar(val).markUpdated();
-
-				if (parent) {
-					parent.notifyUpdated(val);
-				}
-			}
-			this.updated = [];
 		}
 
 		return fragment;
 	}
+
+
+	/**
+	 * Deep clone
+	 * @returns {Scope}
+	 */
+	clone() {
+		let out = new Scope(this.ctx, this.caching, this.generator);
+		for (let name in this.variables) {
+			out.variables[name] = this.variables[name].clone();
+		}
+
+		return out;
+	}
+
+	/**
+	 * Updates any caches due to alterations in child scope
+	 * @param {Scope} childScope the scope to be merged
+	 * @param {Boolean} alwaysExecute If this scope will always execute and is non optional (i.e. not if statement)
+	 */
+	mergeUpdates(childScope, alwaysExecute = false) {
+		for (let name in this.variables) {
+			this.variables[name].mergeUpdates(childScope.variables[name], alwaysExecute);
+		}
+	}
+
 }
 
 module.exports = Scope;
