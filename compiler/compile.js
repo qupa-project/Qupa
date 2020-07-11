@@ -53,6 +53,7 @@ let project = new Project(root, {
 project.import(origin);
 
 // Link elements
+console.info("Linking...");
 project.link();
 if (project.error) {
 	console.error("\nLinker error");
@@ -60,6 +61,7 @@ if (project.error) {
 }
 
 // Compile to LLVM
+console.info("Compiling...");
 let asm = project.compile();
 if (project.error) {
 	console.error("\nUncompilable errors");
