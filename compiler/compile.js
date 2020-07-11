@@ -84,6 +84,7 @@ fs.writeFileSync(`${config.output}.ll`, asm.toLLVM(), 'utf8');
 console.info("Compiling...");
 if (config.execute && config.source !== false) {
 	console.warn("Warn: Compilation flaged as executing result, but result is configured to output a non-executable");
+	config.execute = false;
 }
 
 if (config.source != "llvm") {
