@@ -4,6 +4,9 @@ extern "C" {
 	int i32_add(int a, int b) {
 		return a + b;
 	}
+	int i32_sub(int a, int b) {
+		return a - b;
+	}
 	int i32_mul(int a, int b) {
 		return a * b;
 	}

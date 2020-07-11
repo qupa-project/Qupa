@@ -1,3 +1,27 @@
+/*
+	Expected output:
+20
+19
+18
+17
+16
+15
+14
+13
+12
+11
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+0
+*/
 import "../std.qp";
 
 
@@ -9,10 +33,15 @@ int main() {
 	d = true;
 	while (d) {
 		println(a);
-		a = sub(a, 1);
-		d = gt(a, 0);
+		int inc;
+		inc = 1;
+		a = sub(a, inc);
+
+		inc = 0;
+		d = gt(a, inc);
 	}
 
+	println(a);
 	return 0;
 }
 external export {

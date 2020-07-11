@@ -456,8 +456,10 @@ function Simplify_Function_Stmt (node) {
 		case "if":
 			inner = Simplify_If(node.tokens[0]);
 			break;
-		case "for":
 		case "while":
+			inner = Simplify_While(node.tokens[0]);
+			break;
+		case "for":
 		case "asm":
 		default:
 			throw new TypeError(`Unexpected function statement ${node.tokens[0].type}`);
@@ -526,7 +528,7 @@ function Simplify_If (node) {
 function Simplify_If_Stmt (node) {
 	let out = [
 		Simplify_Expr(node.tokens[4][0]),
-		Simplify_If_Body(node.tokens[8][0])
+		Simplify_Function_Body(node.tokens[8][0])
 	];
 
 	node.tokens  = out;
@@ -542,8 +544,18 @@ function Simplify_If_Else (node) {
 	node.reached = null;
 	return node;
 }
-function Simplify_If_Body (node) {
-	return Simplify_Function_Body(node);
+
+
+
+function Simplify_While (node) {
+	let out = [
+		Simplify_Expr(node.tokens[4][0]),
+		Simplify_Function_Body(node.tokens[8][0])
+	];
+
+	node.tokens = out;
+	node.reached = null;
+	return node;
 }
 
 

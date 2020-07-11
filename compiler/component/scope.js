@@ -504,9 +504,8 @@ class Scope {
 				`Error: If statements may only take variables`,
 				cond.ref.start, cond.ref.end
 			);
-			return frag;
+			return false;
 		}
-		let name = Flattern.VariableStr(cond);
 		let load = this.getVarNew(cond, true);
 		if (load.error) {
 			this.ctx.getFile().throw(
@@ -519,11 +518,12 @@ class Scope {
 
 		let cache = load.register.deref(this, true, 1);
 		if (!cache.register) {
+			let name = Flattern.VariableStr(cond);
 			this.getFile().throw(
 				`Error: Cannot dereference variable ${name}`,
 				cond.ref.start, cond.ref.end
 			);
-			return frag;
+			return false;
 		}
 		frag.merge(cache.preamble);
 
@@ -606,10 +606,108 @@ class Scope {
 	}
 
 
+	compile_while (ast) {
+		let frag = new LLVM.Fragment();
+		frag.append(new LLVM.Comment("While loop"));
+
+		let scope_check = this.clone();
+		scope_check.clearAllCaches();
+		let label_check = new LLVM.Label(
+			new LLVM.Name(`${this.generator.next()}`, false, ast.tokens[0].ref),
+			ast.tokens[0].tokens[0]
+		);
+		let check = scope_check.compile_while_condition(ast.tokens[0]);
+		if (check === null) {
+			return false;
+		}
+
+		let scope_loop = this.clone();
+		scope_loop.clearAllCaches();
+		let label_loop = new LLVM.Label(
+			new LLVM.Name(`${this.generator.next()}`, false, ast.tokens[0].tokens[0]),
+			ast.tokens[0].tokens[0]
+		);
+		let loop = scope_loop.compile(ast.tokens[1]);
+		if (loop === null) {
+			return false;
+		}
+		
+		let label_end = new LLVM.Label(
+			new LLVM.Name(`${this.generator.next()}`, false, ast.tokens[0].tokens[0]),
+			ast.tokens[0].tokens[0]
+		);
+		
+		
+		frag.append(new LLVM.Branch_Unco(label_check));
+		frag.append(label_check.toDefinition());
+		frag.merge(check.instructions);
+		frag.append(new LLVM.Branch(
+			check.register,
+			label_loop,
+			label_end,
+			ast.ref.start
+		));
+		frag.append(label_loop.toDefinition());
+		frag.merge(loop);
+		frag.append(new LLVM.Branch_Unco(label_check));
+		frag.append(label_end.toDefinition());
+
+
+		// If any variables were updated within child scopes
+		//   Flush their caches if needed
+		this.mergeUpdates(scope_check, true);
+		this.mergeUpdates(scope_loop, true);
+
+		return frag;
+	}
+	compile_while_condition(ast) {
+		let frag = new LLVM.Fragment();
+
+		if (ast.type != "variable") {
+			this.getFile().throw(
+				`Error: If statements may only take variables`,
+				cond.ref.start, cond.ref.end
+			);
+			return false;
+		}
+		let load = this.getVarNew(ast, true);
+		if (load.error) {
+			this.ctx.getFile().throw(
+				`Unable to access structure term "${load.ast.tokens}"`,
+				load.ast.ref.start, load.ast.ref.end
+			);
+			return false;
+		}
+		frag.merge(load.preamble);
+
+		let cache = load.register.deref(this, true, 1);
+		if (!cache.register) {
+			let name = Flattern.VariableStr(ast);
+			this.getFile().throw(
+				`Error: Cannot dereference variable ${name}`,
+				cond.ref.start, cond.ref.end
+			);
+			return false;
+		}
+		frag.merge(cache.preamble);
+
+
+		return {
+			instructions: frag,
+			register: new LLVM.Argument(
+				new LLVM.Type(cache.register.type.represent, cache.register.pointer, cache.register.declared),
+				new LLVM.Name(cache.register.id, false, ast.ref.start),
+				ast.ref.start
+			)
+		};
+	}
+
+
 
 
 
 	compile(ast) {
+		// console.log(ast);
 		let fragment = new LLVM.Fragment();
 
 		let returnWarned = false;
@@ -640,6 +738,9 @@ class Scope {
 				case "if":
 					inner = this.compile_if(token);
 					break;
+				case "while":
+					inner = this.compile_while(token);
+					break;
 				default:
 					this.ctx.getFile().throw(
 						`Unexpected statment ${token.type}`,
@@ -669,6 +770,15 @@ class Scope {
 		}
 
 		return out;
+	}
+
+	/**
+	 * Clears the cache of every 
+	 */
+	clearAllCaches() {
+		for (let name in this.variables) {
+			this.variables[name].clearCache();
+		}
 	}
 
 	/**
