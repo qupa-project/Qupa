@@ -6,11 +6,12 @@ const Register = require('./register.js');
 class Scope {
 	static raisedVariables = true; // whether or not a variable can be redefined within a new scope
 
-	constructor(ctx, caching = true, id_generator = new Generator_ID(1)) {
+	constructor(ctx, returnType, caching = true, id_generator = new Generator_ID(1)) {
 		this.ctx       = ctx;
 		this.variables = {};
 		this.generator = id_generator;
 		this.caching   = caching;
+		this.returnType = returnType;
 		this.returned  = false;
 	}
 
@@ -381,12 +382,15 @@ class Scope {
 		let inner = null;
 
 		this.returned = true;
+		let returnType = null;
 		if (ast.tokens.length == 0){
 			inner = new LLVM.Type("void", false);
+			returnType = "void";
 		} else {
 			switch (ast.tokens[0].type) {
 				case "constant":
 					inner = this.compile_constant(ast.tokens[0]);
+					returnType = inner.type;
 					break;
 				case "variable":
 					inner = new LLVM.Fragment();
@@ -415,6 +419,7 @@ class Scope {
 						new LLVM.Type( cache.register.type.represent, cache.register.pointer, cache.register.type.ref ),
 						new LLVM.Name( cache.register.id, false, ast.tokens[0].ref )
 					);
+					returnType = cache.register.type.represent;
 					break;
 				default:
 					this.ctx.getFile().throw(
@@ -424,8 +429,14 @@ class Scope {
 			}
 		}
 
-		frag.append(new LLVM.Return(inner, ast.ref.start));
+		if (this.returnType.represent != returnType) {
+			this.ctx.getFile().throw(
+				`Return type miss-match, expected ${this.returnType.name}`,
+				ast.ref.start, ast.ref.end
+			);
+		}
 
+		frag.append(new LLVM.Return(inner, ast.ref.start));
 		return frag;
 	}
 
@@ -618,7 +629,7 @@ class Scope {
 	 * @returns {Scope}
 	 */
 	clone() {
-		let out = new Scope(this.ctx, this.caching, this.generator);
+		let out = new Scope(this.ctx, this.returnType, this.caching, this.generator);
 		for (let name in this.variables) {
 			out.variables[name] = this.variables[name].clone();
 		}
