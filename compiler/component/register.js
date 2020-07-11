@@ -126,6 +126,15 @@ class Register {
 			}
 		}
 
+		// Remove the dereference of this structure
+		//   as it's elements has been changed
+		if (!read) {
+			if (this.cache) {
+				this.cache.clearCache();
+			}
+			this.cache = null;
+		}
+
 		return {
 			register,
 			preamble
