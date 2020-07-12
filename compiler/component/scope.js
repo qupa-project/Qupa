@@ -71,6 +71,7 @@ class Scope {
 				arg.ref
 			);
 			this.variables[arg.name].cache = cache;
+			cache.concurrent = arg.pointer > 0;
 
 			frag.append(new LLVM.Set(
 				new LLVM.Name(
@@ -133,7 +134,6 @@ class Scope {
 				target.clearCache();
 			}
 
-			console.log(136, ast.tokens);
 			if (ast.tokens.length > 2) {
 				let load = target.get(ast.tokens.slice(2), this, read);
 				if (load.error) {
@@ -255,6 +255,7 @@ class Scope {
 			// Clear any lower caches
 			//   If this is a pointer the value may have changed
 			for (let arg of regs) {
+				arg.concurrent = true;
 				let cache = arg.deref(this, false, 3);
 				if (cache && cache.register) {
 					cache.register.clearCache();
@@ -554,7 +555,7 @@ class Scope {
 
 		// Ensure that pointers actually write their data before returning
 		for (let name in this.variables) {
-			if (this.variables[name].pointer > 1) {
+			if (this.variables[name].concurrent) {
 				frag.merge(this.variables[name].flushCache());
 			}
 		}

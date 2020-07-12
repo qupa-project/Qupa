@@ -11,14 +11,15 @@ class Register {
 	 * @param {BNF_Reference} ref 
 	 */
 	constructor(id, type, name, pointerDepth, ref) {
-		this.id       = id;
-		this.type     = type;
-		this.name     = name;
-		this.pointer  = pointerDepth;
-		this.declared = ref;
-		this.inner    = [];
-		this.cache    = null;
-		this.isClone  = false;
+		this.id         = id;
+		this.type       = type;
+		this.name       = name;
+		this.pointer    = pointerDepth;
+		this.declared   = ref;
+		this.inner      = [];
+		this.cache      = null;
+		this.isClone    = false;
+		this.concurrent = false;
 	}
 
 	get(ast, scope, read = true) {
