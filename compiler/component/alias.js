@@ -32,7 +32,7 @@ class Alias {
 		}
 
 		let file = this.ctx.getFile();
-		this.target = file.getType(Flattern.VariableList(this.ast.tokens[1]));
+		this.target = file.getType(Flattern.VariableList(this.ast.tokens[1]).slice(1));
 		if (!this.target) {
 			file.throw(`Link Error: Unknown type ${Flattern.VariableStr(this.ast.tokens[1])}`, this.ref);
 		}

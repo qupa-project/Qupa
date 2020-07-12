@@ -120,20 +120,26 @@ class Function_Instance {
 		return this.ctx.getFile();
 	}
 
-	getTypeFrom_DataType(type) {
-		let file = this.ctx.ctx;
+	getTypeFrom_DataType(dataType) {
+		let file = this.getFile();
 		let name = null;
-		let ptr = false;
-		if (type.tokens[0].type == "variable") {
-			name = type.tokens[0];
+		let ptr = 0;
+
+		if (dataType.tokens[0].type == "variable") {
+			name = dataType.tokens[0];
+		} else if (dataType.tokens[0].type == "pointer") {
+			name = dataType.tokens[0].tokens[1];
+			ptr = dataType.tokens[0].tokens[0];
 		} else {
-			name = type.tokens[0].tokens[1];
-			if (type.tokens[0].type == "pointer") {
-				ptr = true;
-			}
+			return null;
 		}
 
-		let ref = file.getType(Flattern.VariableList(name));
+		// Cannot dereference type
+		if (name.tokens[0].length > 0) {
+			return null;
+		}
+
+		let ref = file.getType(Flattern.VariableList(name).slice(1));
 		if (ref instanceof TypeDef) {
 			return [ptr, ref];
 		} else {
@@ -144,6 +150,10 @@ class Function_Instance {
 
 
 	link () {
+		if (this.linked) {
+			return;
+		}
+
 		let file = this.ctx.ctx;
 		let head = this.ast.tokens[0];
 		let args = head.tokens[2].tokens;
@@ -168,7 +178,14 @@ class Function_Instance {
 				}
 			}
 
-			let ref = file.getType(Flattern.VariableList(name));
+			if (name.tokens[0].length != 0) {
+				file.throw(
+					`Cannot dereference a function argument "${Flattern.VariableStr(name)}"`,
+					name.ref.start, name.ref.end
+				);
+			}
+
+			let ref = file.getType(Flattern.VariableList(name).slice(1));
 			if (ref instanceof TypeDef) {
 				this.signature.push([ptr, ref]);
 			} else {
@@ -193,25 +210,12 @@ class Function_Instance {
 
 
 	match (other) {
-		if (!this.linked || !other.linked) {
-			return this.matchSignature(other);
-		}
+		// Ensure both functions have linked their data types
+		this.link();
+		other.link();
 
-		// Match based on raw names
-		let a = this.ast.tokens[0].tokens[2].tokens;
-		let b = other.ast.tokens[0].tokens[2].tokens;
-		if (a.length != a.length) {
-			return false;
-		}
-
-		for (let i=0; i<a.length; i++) {
-			if (a[i][0] != b[i][0] || a[i][1] != b[i][1]) {
-				return false;
-			}
-		}
-
-
-		return true;
+		// Match the signatures
+		return this.matchSignature(other);
 	}
 	matchSignature (sig) {
 		if (this.signature.length != sig.length) {

@@ -246,10 +246,12 @@ function Simplify_Struct_Stmt (node) {
 
 
 function Simplify_Variable (node) {
-	let out = [];
-	out.push(Simplify_Name( node.tokens[0][0] )); // root
+	let out = [
+		node.tokens[0].map(x => "$").join("")
+	];
+	out.push(Simplify_Name( node.tokens[1][0] )); // root
 
-	for (let access of node.tokens[1]) {
+	for (let access of node.tokens[2]) {
 		access = access.tokens[0];
 		switch (access.type) {
 			case "accessor_dynamic":
@@ -389,14 +391,6 @@ function Simplify_Boolean (node) {
 
 
 
-function Simplify_Deref (node) {
-	node.tokens = [
-		"$", Simplify_Variable(node.tokens[1][0])
-	];
-	node.reached = null;
-	return node;
-}
-
 
 function Simplify_Function(node) {
 	node.tokens = [
@@ -498,7 +492,10 @@ function Simplify_Func_Flags (node) {
 function Simplify_Call (node) {
 	let out = [
 		Simplify_Variable(node.tokens[0][0]),
-		node.tokens[4].length > 0 ? Simplify_Call_Args(node.tokens[4][0]) : [],
+		node.tokens[4].length > 0 ? Simplify_Call_Args(node.tokens[4][0]) : {
+			type: "call_args",
+			tokens: []
+		},
 	];
 
 	node.tokens = out;
@@ -601,7 +598,7 @@ function Simplify_Assign  (node) {
 	node.tokens = [
 		Simplify_Variable (node.tokens[0][0]), // target variable
 		Simplify_Expr     (node.tokens[4][0])  // value
-	]
+	];
 	node.reached = null;
 	return node;
 }
@@ -715,7 +712,7 @@ function Parse (data, filename){
 		msg += `  ${BNF.Message.HighlightArea(data, ref).split('\n').join('\n  ')}\n\n`;
 		msg += `  Interpreted: ${cause}`;
 		console.error(msg);
-		process.exit(1);
+		throw msg;
 	}
 
 	return Simplify_Program(result.tree);

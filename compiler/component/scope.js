@@ -127,14 +127,15 @@ class Scope {
 		}
 
 		let preamble = new LLVM.Fragment();
-		let target = this.variables[ast.tokens[0].tokens];
+		let target = this.variables[ast.tokens[1].tokens];
 		if (target) {
 			if (!this.caching) {
 				target.clearCache();
 			}
 
-			if (ast.tokens.length > 1) {
-				let load = target.get(ast.tokens.slice(1), this, read);
+			console.log(136, ast.tokens);
+			if (ast.tokens.length > 2) {
+				let load = target.get(ast.tokens.slice(2), this, read);
 				if (load.error) {
 					return load;
 				}
@@ -144,12 +145,29 @@ class Scope {
 		} else {
 			return {
 				error: true,
-				msg: `Unknown variable name ${ast.tokens[0].tokens}`,
+				msg: `Unknown variable name ${ast.tokens[1].tokens}`,
 				ref: {
-					start: ast.tokens[0].ref.start,
-					end: ast.tokens[0].ref.end
+					start: ast.tokens[1].ref.start,
+					end: ast.tokens[1].ref.end
 				}
 			};
+		}
+
+		if (ast.tokens[0].length > 0) {
+			let load = target.deref(this, read, ast.tokens[0].length);
+			if (load === null) {
+				return {
+					error: true,
+					msg: `Cannot dereference ${Flattern.VariableStr(ast)}`,
+					ref: {
+						start: ast.tokens[1].ref.start,
+						end: ast.tokens[1].ref.end
+					}
+				};
+			}
+
+			preamble.merge(load.preamble);
+			target = load.register;
 		}
 
 		return {
@@ -245,7 +263,7 @@ class Scope {
 		} else {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
 			this.ctx.getFile().throw(
-				`Unable to find function "${funcName}" with signature ${signature.map(x => x[0]).join(',')}`,
+				`Unable to find function "${funcName}" with signature ${signature.map(x => Flattern.PointerLvl(x[0])+x[1]).join(',')}`,
 				ast.ref.start, ast.ref.end
 			);
 			return null;
@@ -269,10 +287,10 @@ class Scope {
 			return false;
 		}
 
-		let ptrLvl = typeRef[0]  ? 2 : 1;
+		let ptrLvl = typeRef[0];
 		let reg = this.register_Var(
 			typeRef[1],
-			ptrLvl,
+			ptrLvl+1,
 			name,
 			ast.ref.start
 		);
@@ -280,7 +298,7 @@ class Scope {
 		frag.append(new LLVM.Set(
 			new LLVM.Name(reg.id, false, ast.tokens[1].ref.start),
 			new LLVM.Alloc(
-				new LLVM.Type(reg.type.represent, ptrLvl-1, ast.tokens[0].ref.start),
+				new LLVM.Type(reg.type.represent, ptrLvl, ast.tokens[0].ref.start),
 				reg.type.size,
 				ast.ref.start
 			),
@@ -292,8 +310,14 @@ class Scope {
 	compile_assign(ast){
 		let frag = new LLVM.Fragment();
 
+		let usingStore = false;
+		switch (ast.tokens[1].type){
+			case "constant":
+				usingStore = true;
+		}
+
 		// Get the variable at the right pointer depth
-		let load = this.getVarNew(ast.tokens[0], false);
+		let load = this.getVarNew(ast.tokens[0], usingStore);
 		if (load.error) {
 			this.ctx.getFile().throw( load.msg, load.ref.start, load.ref.end );
 			return false;
@@ -393,7 +417,7 @@ class Scope {
 					new LLVM.Type(target.type.represent, target.pointer, target.declared),
 					new LLVM.Name(`${target.id}`, false, ast.tokens[0].ref.start),
 					ast.tokens[0].ref,
-					name
+					Flattern.VariableStr(ast.tokens[0])
 				),
 				new LLVM.Argument(
 					new LLVM.Type(cache.register.type.represent, cache.register.pointer, cache.register.declared),
@@ -416,6 +440,7 @@ class Scope {
 		return frag;
 	}
 	compile_declare_assign(ast) {
+		// TODO FIX
 		let frag = new LLVM.Fragment();
 
 		let declare = this.compile_declare(ast);
@@ -427,6 +452,7 @@ class Scope {
 		let forward = {
 			type: "assign",
 			tokens: [
+				ast.tokens[0],
 				{
 					type: "variable",
 					tokens: [ast.tokens[1]],
@@ -526,6 +552,12 @@ class Scope {
 			);
 		}
 
+		// Ensure that pointers actually write their data before returning
+		for (let name in this.variables) {
+			if (this.variables[name].pointer > 1) {
+				frag.merge(this.variables[name].flushCache());
+			}
+		}
 		frag.append(new LLVM.Return(inner, ast.ref.start));
 		return frag;
 	}
