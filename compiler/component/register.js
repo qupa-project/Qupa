@@ -184,10 +184,7 @@ class Register {
 	 * Dumps all caches, forcing reloads
 	 * @returns {void}
 	 */
-	clearCache(ref) {
-		if (this.cache) {
-			this.cache.clearCache(ref);
-		}
+	clearCache() {
 		this.inner = [];
 		this.cache = null;
 	}

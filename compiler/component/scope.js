@@ -154,7 +154,7 @@ class Scope {
 		}
 
 		if (ast.tokens[0].length > 0) {
-			let load = target.deref(this, read, ast.tokens[0].length);
+			let load = target.deref(this, true, ast.tokens[0].length);
 			if (load === null) {
 				return {
 					error: true,
@@ -232,7 +232,7 @@ class Scope {
 				));
 				regs.push(cache.register);
 			} else if (arg.type == "constant") {
-				args.push(this.compile_constant(arg));
+				args.push(cnst);
 			} else {
 				this.ctx.getFile().throw(
 					`Cannot take ${arg.type} as call argument`,
@@ -359,8 +359,8 @@ class Scope {
 				);
 				return false;
 			}
-
 			frag.merge(inner.preamble); // add any loads needed for call
+
 
 			let cache = target.deref(this, false);
 			if (!cache) {
@@ -407,8 +407,10 @@ class Scope {
 				);
 				return false;
 			}
-
+			// Cache replacement due to constant value caches
+			//   and now shared value
 			frag.merge(cache.preamble);
+			target.cache = load.register.cache;
 
 			frag.append(new LLVM.Store(
 				new LLVM.Argument(
@@ -425,8 +427,6 @@ class Scope {
 				target.type.size,
 				ast.ref.start
 			));
-
-			target.markUpdated();
 		} else {
 			this.getFile().throw(
 				`Unexpected assignment type "${ast.tokens[1].type}"`,

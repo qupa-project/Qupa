@@ -1,16 +1,3 @@
-; ModuleID = 'test.cpp'
-source_filename = "test.cpp"
-target datalayout = "e-m:w-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
-target triple = "x86_64-pc-windows-msvc19.25.28614"
-
-; Function Attrs: argmemonly nounwind willreturn
-declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #3
-
-declare dso_local i32 @i32_add(i32 %0, i32 %1) #1
-declare dso_local i32 @i32_mul(i32 %0, i32 %1) #1
-declare dso_local void @i32_println(i32 %0) #1
-
-
 %struct.Rect = type { i32, i32 }
 
 ; Function Attrs: noinline optnone uwtable

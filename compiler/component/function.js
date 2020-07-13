@@ -218,6 +218,8 @@ class Function_Instance {
 		return this.matchSignature(other);
 	}
 	matchSignature (sig) {
+		this.link();
+		
 		if (this.signature.length != sig.length) {
 			return false;
 		}
