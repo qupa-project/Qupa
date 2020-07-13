@@ -222,8 +222,8 @@ class Scope {
 					);
 					return null;
 				}
-
 				preamble.merge(cache.preamble);
+
 				args.push(new LLVM.Argument(
 					new LLVM.Type(cache.register.type.represent, cache.register.pointer),
 					new LLVM.Name(cache.register.id, false),
@@ -256,10 +256,7 @@ class Scope {
 			//   If this is a pointer the value may have changed
 			for (let arg of regs) {
 				arg.concurrent = true;
-				let cache = arg.deref(this, false, 3);
-				if (cache && cache.register) {
-					cache.register.clearCache();
-				}
+				arg.clearCache();
 			}
 		} else {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
@@ -508,6 +505,7 @@ class Scope {
 						regName,
 						ast.ref
 					);
+					frag.merge(call.epilog);
 					break;
 				case "variable":
 					inner = new LLVM.Fragment();
@@ -851,6 +849,13 @@ class Scope {
 			} else {
 				break;
 			}
+		}
+
+		if (this.returned == false) {
+			this.ctx.getFile().throw(
+				`Function does not return`,
+				ast.ref.start, ast.ref.end
+			);
 		}
 
 		return fragment;
