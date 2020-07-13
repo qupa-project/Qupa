@@ -13,6 +13,7 @@ class Scope {
 		this.caching   = caching;
 		this.returnType = returnType;
 		this.returned  = false;
+		this.child = false;
 	}
 
 	/**
@@ -852,7 +853,7 @@ class Scope {
 			}
 		}
 
-		if (this.returned == false) {
+		if (this.returned == false && !this.child) {
 			this.ctx.getFile().throw(
 				`Function does not return`,
 				ast.ref.start, ast.ref.end
@@ -872,6 +873,7 @@ class Scope {
 		for (let name in this.variables) {
 			out.variables[name] = this.variables[name].clone();
 		}
+		out.child = true;
 
 		return out;
 	}
