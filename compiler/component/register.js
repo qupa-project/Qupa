@@ -142,13 +142,19 @@ class Register {
 		};
 	}
 
+	/**
+	 * 
+	 * @param {BNF_Reference?} ref 
+	 * @returns {void}
+	 */
 	markUpdated(ref) {
 		return this.clearCache(ref);
 	}
 
 	/**
 	 * Forces caches to write data to the correct location
-	 * @param {BNF_Reference} ref 
+	 * @param {BNF_Reference?} ref 
+	 * @returns {LLVM.Fragment?}
 	 */
 	flushCache(ref, replacement = null) {
 		let frag = new LLVM.Fragment();
@@ -176,6 +182,7 @@ class Register {
 
 	/**
 	 * Dumps all caches, forcing reloads
+	 * @returns {void}
 	 */
 	clearCache(ref) {
 		if (this.cache) {
@@ -225,6 +232,10 @@ class Register {
 
 		if (amount > 1) {
 			let next = this.cache.deref(scope, read, amount-1);
+			if (next === null) {
+				return null;
+			}
+
 			out.register = next.register;
 			out.preamble.merge(next.preamble);
 		}
