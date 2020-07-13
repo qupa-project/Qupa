@@ -5,33 +5,26 @@
 	20
 	22
 */
-// import "../std.qp";
+import "../std.qp";
 
 external assume {
-	type i32 size 4;
-	type void size 0;
-
-	i32 i32_add(@i32 a, i32 b);
-	void i32_println(i32 val);
-	@i32 createInt();
+	@int createInt();
 };
 
-void add(@i32 target, i32 val) {
-	$target = 4;
+void add(@int target, int val) {
+	$target = i32_add($target, val);
 	return;
 }
 
-i32 main() {
-	i32 a;
-	a = 20;
-	@i32 b;
-	b = createInt();
+int main() {
+	int a = 20;
+	@int b = createInt();
 	$b = 2;
 
 	i32_println(a);
 	i32_println($b);
 
-	// add(b, a);
+	add(b, a);
 
 	i32_println(a);
 	i32_println($b);
@@ -39,5 +32,5 @@ i32 main() {
 	return 0;
 }
 external export {
-	i32 main();
+	int main();
 }
