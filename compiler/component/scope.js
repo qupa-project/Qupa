@@ -438,7 +438,6 @@ class Scope {
 		return frag;
 	}
 	compile_declare_assign(ast) {
-		// TODO FIX
 		let frag = new LLVM.Fragment();
 
 		let declare = this.compile_declare(ast);
@@ -450,15 +449,17 @@ class Scope {
 		let forward = {
 			type: "assign",
 			tokens: [
-				ast.tokens[0],
 				{
 					type: "variable",
-					tokens: [ast.tokens[1]],
-					ref: ast.tokens[1]
+					tokens: ["", ast.tokens[1]],
+					ref: ast.tokens[1].ref
 				},
 				ast.tokens[2]
 			],
-			ref: ast.ref
+			ref: {
+				start: ast.tokens[1].ref.start,
+				end: ast.ref.end
+			}
 		};
 		let assign = this.compile_assign(forward);
 		if (assign === false) {
