@@ -1,0 +1,36 @@
+/*
+	Expected output:
+	20
+	2
+	20
+	22
+*/
+import "../std.qp";
+
+external assume {
+	@int createInt();
+};
+
+void add(@int target, int val) {
+	$target = i32_add($target, val);
+	return;
+}
+
+int main() {
+	int a = 20;
+	@int b = createInt();
+	$b = 2;
+
+	i32_println(a);
+	i32_println($b);
+
+	add(b, a);
+
+	i32_println(a);
+	i32_println($b);
+
+	return 0;
+}
+external export {
+	int main();
+}

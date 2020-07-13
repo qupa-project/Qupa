@@ -9,7 +9,7 @@ class Struct_Term {
 		this.type = type;
 		this.pointer = pointerLvl;
 		this.declared = ref;
-		this.size = pointerLvl > 0 ? 8 : type.size;
+		this.size = pointerLvl > 0 ? 4 : type.size;
 	}
 }
 
@@ -87,7 +87,7 @@ class Structure extends TypeDef {
 				typeNode = typeNode.tokens[1];
 			}
 
-			let type = this.ctx.getType(Flattern.VariableList(typeNode));
+			let type = this.ctx.getType(Flattern.VariableList(typeNode).slice(1));
 			if (type === null) {
 				this.ctx.getFile().throw(
 					`Error: Unknown type ${Flattern.VariableStr(typeNode)}`,

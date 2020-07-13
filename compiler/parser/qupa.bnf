@@ -52,7 +52,7 @@ program ::= w* ( stmt_top w* )*
 #  Variables
 #=============================
 	name ::= letter ( letter | digit | "_" )*
-	variable ::= name accessor*
+	variable ::= "$"* name accessor*
 		accessor ::= accessor_dynamic | accessor_refer | accessor_static
 			accessor_dynamic ::= "[" w* call_args w* "]"
 			accessor_refer   ::= "->" name
@@ -139,10 +139,8 @@ program ::= w* ( stmt_top w* )*
 	expr_p2       ::= expr_p2_add | expr_p2_sub | expr_p1
 		expr_p2_add      ::= w* expr_p1 w* "+" w* expr_p2
 		expr_p2_sub      ::= w* expr_p1 w* "-" w* expr_p2
-	expr_p1       ::= expr_p1_invert | expr_p1_address | expr_p1_value | expr_opperand
-		expr_p1_invert   ::= w* "!" w* expr_opperand
-		expr_p1_address  ::= w* "@" w* expr_opperand
-		expr_p1_value    ::= w* "$" w* expr_opperand
+	expr_p1       ::= expr_p1_invert | expr_opperand
+		expr_p1_invert   ::= w* "~" w* expr_opperand
 	expr_opperand ::= call | expr_brackets | constant | variable
 		expr_brackets    ::= "(" w* expr w* ")"
 

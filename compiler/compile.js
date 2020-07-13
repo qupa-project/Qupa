@@ -89,7 +89,8 @@ if (config.execute && config.source !== false) {
 
 if (config.source != "llvm") {
 	let runtime_path = path.resolve(__dirname, "./../runtime/runtime.ll");
-	let args = [runtime_path, `${config.output}.ll`];
+	let prebuilt_path = path.resolve(__dirname, "./../runtime/prebuilt.ll");
+	let args = [runtime_path, prebuilt_path, `${config.output}.ll`];
 
 	exec_out = config.output;
 	if (config.source == "asm") {
@@ -111,7 +112,7 @@ if (config.source != "llvm") {
 
 	if (config.execute) {
 		clang.on('exit', ()=> {
-			console.log('\nRunning...');
+			console.info('\nRunning...');
 			let app = spawn(exec_out);
 			app.stderr.pipe (process.stderr);
 			app.stdout.pipe (process.stdout);

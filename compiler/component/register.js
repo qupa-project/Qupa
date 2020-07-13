@@ -11,14 +11,15 @@ class Register {
 	 * @param {BNF_Reference} ref 
 	 */
 	constructor(id, type, name, pointerDepth, ref) {
-		this.id       = id;
-		this.type     = type;
-		this.name     = name;
-		this.pointer  = pointerDepth;
-		this.declared = ref;
-		this.inner    = [];
-		this.cache    = null;
-		this.isClone  = false;
+		this.id         = id;
+		this.type       = type;
+		this.name       = name;
+		this.pointer    = pointerDepth;
+		this.declared   = ref;
+		this.inner      = [];
+		this.cache      = null;
+		this.isClone    = false;
+		this.concurrent = false;
 	}
 
 	get(ast, scope, read = true) {
@@ -141,13 +142,19 @@ class Register {
 		};
 	}
 
+	/**
+	 * 
+	 * @param {BNF_Reference?} ref 
+	 * @returns {void}
+	 */
 	markUpdated(ref) {
 		return this.clearCache(ref);
 	}
 
 	/**
 	 * Forces caches to write data to the correct location
-	 * @param {BNF_Reference} ref 
+	 * @param {BNF_Reference?} ref 
+	 * @returns {LLVM.Fragment?}
 	 */
 	flushCache(ref, replacement = null) {
 		let frag = new LLVM.Fragment();
@@ -175,11 +182,9 @@ class Register {
 
 	/**
 	 * Dumps all caches, forcing reloads
+	 * @returns {void}
 	 */
-	clearCache(ref) {
-		if (this.cache) {
-			this.cache.clearCache(ref);
-		}
+	clearCache() {
 		this.inner = [];
 		this.cache = null;
 	}
@@ -191,9 +196,6 @@ class Register {
 			return null;
 		}
 
-		if (!read) {
-
-		}
 		let out = {
 			preamble: new LLVM.Fragment(),
 			register: this.cache
@@ -202,7 +204,7 @@ class Register {
 		// If a new cache needs to be generated because:
 		//  a) something needs to be written and LLVM registers are constant value
 		//  b) the value of this reference has not yet been cached
-		if (!read || this.cache === null) {
+		if (!read || this.cache === null || amount > 1) {
 			this.cache = new Register(
 				scope.generator.next(),
 				this.type,
@@ -213,7 +215,7 @@ class Register {
 
 			// If the value is going to be read, loads in the cache value
 			// Otherwise leave the assigned register unused
-			if (read) {
+			if (read || amount > 1) {
 				out.preamble.append(new LLVM.Set(
 					new LLVM.Name(`${this.cache.id}`, false),
 					new LLVM.Load(
@@ -227,6 +229,10 @@ class Register {
 
 		if (amount > 1) {
 			let next = this.cache.deref(scope, read, amount-1);
+			if (next === null) {
+				return null;
+			}
+
 			out.register = next.register;
 			out.preamble.merge(next.preamble);
 		}

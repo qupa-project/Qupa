@@ -1,6 +1,9 @@
 function VariableList(node) {
-	let out = [node.tokens[0].tokens];
-	for (let i=1; i<node.tokens.length; i++) {
+	let out = [
+		node.tokens[0].length,
+		node.tokens[1].tokens
+	];
+	for (let i=2; i<node.tokens.length; i++) {
 		out.push([ node.tokens[i][0], node.tokens[i][1].tokens ]);
 	}
 
@@ -8,8 +11,8 @@ function VariableList(node) {
 }
 
 function VariableStr (node) {
-	let str = node.tokens[0].tokens;
-	for (let i=1; i<node.tokens.length; i++) {
+	let str = node.tokens[0] + node.tokens[1].tokens;
+	for (let i=2; i<node.tokens.length; i++) {
 		str += node.tokens[i][0] + node.tokens[i][1].tokens;
 	}
 
@@ -32,7 +35,17 @@ function DataTypeStr (node) {
 	return out;
 }
 
+function PointerLvl(int) {
+	let str = "";
+	while (int > 0) {
+		str += "@";
+		int--;
+	}
+
+	return str;
+}
+
 
 module.exports = {
-	VariableList, VariableStr, DataTypeStr
+	VariableList, VariableStr, DataTypeStr, PointerLvl
 }

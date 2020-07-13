@@ -73,7 +73,8 @@ class File {
 					}
 				} else {
 					console.error(`Error: Unknown external type "${element.tokens[0]}"`);
-					process.exit(1);
+					this.project.markError();
+					return false;
 				}
 			} else if (element.type == "library") {
 				let inner = element.tokens[0];
@@ -88,7 +89,8 @@ class File {
 					this.register(inner);
 				} else {
 					console.error(`  Parse Error: Unknown library action "${inner.type}"`);
-					process.exit(1);
+					this.project.markError();
+					return false;
 				}
 			} else {
 				this.register(element);
@@ -140,7 +142,8 @@ class File {
 			console.error("  name :", space.name);
 			console.error("   1st :", this.names[space.name].ref.toString());
 			console.error("   2nd :", space.ref.toString());
-			process.exit(1);
+			this.project.markError();
+			return false;
 		}
 	}
 
@@ -201,11 +204,15 @@ class File {
 	}
 
 	getFunction(variable, signature) {
-		let first = variable.tokens[0].tokens;
+		let first = variable.tokens[1].tokens;
 		if (this.names[first]) {
-			if (this.names[first] instanceof Function && variable.tokens.length == 1) {
-				return this.names[first].matchSignature(signature);
-			}	
+			if (variable.tokens.length == 2) {
+				if (this.names[first] instanceof Function) {
+					return this.names[first].matchSignature(signature);
+				}
+			} else if (this.names[first] instanceof Import) {
+				return this.names[first].getFunction(variable, signature);
+			}
 		}
 
 		// If the name isn't defined in this file
