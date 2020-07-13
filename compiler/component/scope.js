@@ -122,7 +122,7 @@ class Scope {
 	 * @param {BNF_Node} ast 
 	 * @param {Boolean} read Will this value be read? Or only written
 	 */
-	getVarNew(ast, read = true) {
+	getVar(ast, read = true) {
 		if (ast.type != "variable") {
 			throw new TypeError(`Parsed AST must be a branch of type variable, not "${ast.type}"`);
 		}
@@ -206,7 +206,7 @@ class Scope {
 		let regs = [];
 		for (let arg of ast.tokens[1].tokens) {
 			if (arg.type == "variable") {
-				let load = this.getVarNew(arg, true);
+				let load = this.getVar(arg, true);
 				if (load.error) {
 					this.ctx.getFile().throw(load.msg, load.ref.start, load.ref.end);
 					return null;
@@ -318,7 +318,7 @@ class Scope {
 		}
 
 		// Get the variable at the right pointer depth
-		let load = this.getVarNew(ast.tokens[0], usingStore);
+		let load = this.getVar(ast.tokens[0], usingStore);
 		if (load.error) {
 			this.ctx.getFile().throw( load.msg, load.ref.start, load.ref.end );
 			return false;
@@ -384,7 +384,7 @@ class Scope {
 			));
 		} else if (ast.tokens[1].type == "variable") {
 			let otherName = Flattern.VariableStr(ast.tokens[1]);
-			let load = this.getVarNew(ast.tokens[1], true);
+			let load = this.getVar(ast.tokens[1], true);
 			if (load.error) {
 				this.ctx.getFile().throw(
 					`Error: Unable to access structure term "${load.ast.tokens}"`,
@@ -512,7 +512,7 @@ class Scope {
 				case "variable":
 					inner = new LLVM.Fragment();
 					let name = Flattern.VariableStr(ast.tokens[0]);
-					let load = this.getVarNew(ast.tokens[0], true);
+					let load = this.getVar(ast.tokens[0], true);
 					if (load.error) {
 						this.ctx.getFile().throw(
 							`Unable to access structure term "${load.ast.tokens}"`,
@@ -602,7 +602,7 @@ class Scope {
 			);
 			return false;
 		}
-		let load = this.getVarNew(cond, true);
+		let load = this.getVar(cond, true);
 		if (load.error) {
 			this.ctx.getFile().throw(
 				`Unable to access structure term "${load.ast.tokens}"`,
@@ -766,7 +766,7 @@ class Scope {
 			);
 			return false;
 		}
-		let load = this.getVarNew(ast, true);
+		let load = this.getVar(ast, true);
 		if (load.error) {
 			this.ctx.getFile().throw(
 				`Unable to access structure term "${load.ast.tokens}"`,
