@@ -5,6 +5,7 @@ const TypeDef = require('./typedef.js');
 const LLVM = require('../middle/llvm.js');
 const Scope = require('./scope.js');
 const Execution = require('./execution.js');
+const State = require('./state.js');
 
 
 let funcIDGen = new Generator_ID();
@@ -97,7 +98,7 @@ class Function_Instance {
 
 		this.returnType = null;
 		this.signature = [];
-		this.calls = [];
+		this.calls = new Map();
 
 		this.linked = false;
 
@@ -148,6 +149,33 @@ class Function_Instance {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * Marks this function as being called from this function
+	 * @param {Function_Instance} func 
+	 * @param {State} state
+	 * @returns {Boolean} whether this was a new call or not
+	 */
+	addCall(func, state = new State()) {
+		let states = this.calls.get(func) || [];
+
+		let found = false;
+		for (let prev of states) {
+			if (prev.match(state)) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			states.push(state);
+			this.calls.set(func, states);
+
+			return true;
+		}
+
+		return false;
 	}
 
 

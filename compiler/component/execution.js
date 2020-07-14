@@ -1,6 +1,7 @@
 const Flattern = require('../parser/flattern.js');
 const LLVM = require("../middle/llvm.js");
 const Scope = require('./scope.js');
+const State = require('./state.js');
 
 class Execution {
 	/**
@@ -43,6 +44,11 @@ class Execution {
 
 
 
+	/**
+	 * Generates the LLVM for a constant
+	 * Used in other compile functions
+	 * @param {BNF_Node} ast 
+	 */
 	compile_constant(ast) {
 		let type = "i32";
 		let val = ast.tokens[0].tokens;
@@ -60,11 +66,19 @@ class Execution {
 		);
 	}
 
+	/**
+	 * Generates the LLVM for a call
+	 * Used in other compile functions
+	 * @param {BNF_Node} ast 
+	 */
 	compile_call(ast) {
 		let instruction = null;
 		let preamble    = new LLVM.Fragment();
 		let epilog      = new LLVM.Fragment();
 
+		// Get argument types
+		//  and generate LLVM for argument inputs
+		//  also add any preamble to get the arguments
 		let args = [];
 		let regs = [];
 		for (let arg of ast.tokens[1].tokens) {
@@ -106,6 +120,8 @@ class Execution {
 		}
 		let signature = args.map(arg => [(arg.type.pointer || 0), arg.type.term]);
 
+		// Generate the LLVM for the call
+		//   Mark any parsed pointers as now being concurrent
 		let target = this.getFile().getFunction(ast.tokens[0], signature);
 		if (target) {
 			instruction = new LLVM.Call(
@@ -130,9 +146,16 @@ class Execution {
 			return null;
 		}
 
+		// Mark this function as being called for the callgraph
+		this.getFunction().addCall(target);
+
 		return { preamble, instruction, epilog };
 	}
 
+	/**
+	 * Generates the LLVM for a call where the result is ignored
+	 * @param {BNF_Reference} ast 
+	 */
 	compile_call_procedure(ast) {
 		let frag = new LLVM.Fragment(ast);
 		let out = this.compile_call(ast);
