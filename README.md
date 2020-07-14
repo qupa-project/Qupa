@@ -16,21 +16,14 @@ First you need do install Clang and NPM, both of which are operating system spec
 
 Once that is done, simply run these lines in the folder and now all required files are prepared for your system
 ```
-npm install
-npm run build
+npm install @qupa/qupa
 ```
 
 ## CLI Ussage
-
-Once you have the required files build, you can then compile an executable via:
-<details>
-	<summary>Unix</summary>
-	<code>./compile.bash test/pre-alpha/first-execution.qp</code>
-</details>
-<details>
-	<summary>Windows</summary>
-	<code>compile test/pre-alpha/first-execution.qp</code>
-</details>
+Once you have followed the setup, NPM has registered ``qupa`` as a command that can be used to compile with.
+```
+qupa {entry_file}
+```
 
 ## Flags
 
@@ -38,5 +31,6 @@ Once you have the required files build, you can then compile an executable via:
 | :- | :- |
 | ``-S {llvm?}`` | The flag specifies not to build a binary, if optional term ``llvm`` is entered it will only output LLVM-IR, otherwise it will output the assembly of the target platform |
 | ``-o {file}`` | Specify the output filename from the compiler |
-| ``--no-caching`` | Specifies that the compiler should not reuse values cached in registers, and should instead reload any reference values each time they are used
-| ``--execute`` | Specifies that the compiler should not reuse values cached in registers, and should instead reload any reference values each time they are used
+| ``--no-caching`` | Specifies that the compiler should not reuse values cached in registers, and should instead reload any reference values each time they are used |
+| ``--execute`` | Specifies that the compiler should not reuse values cached in registers, and should instead reload any reference values each time they are used |
+| ``-v`` | Will log out the current version number of the compiler |

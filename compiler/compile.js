@@ -1,3 +1,6 @@
+#!/usr/bin/env node
+"use strict";
+
 const Project = require('./component/project.js');
 
 const path = require('path');
@@ -5,7 +8,7 @@ const os = require('os');
 const fs = require('fs');
 const { exec, spawn } = require('child_process');
 
-const version = "0.0.0";
+const version = "Compiler v0.0.2";
 const root = path.resolve("./");
 
 
@@ -92,7 +95,7 @@ if (config.source != "llvm") {
 	let prebuilt_path = path.resolve(__dirname, "./../runtime/prebuilt.ll");
 	let args = [runtime_path, prebuilt_path, `${config.output}.ll`];
 
-	exec_out = config.output;
+	let exec_out = config.output;
 	if (config.source == "asm") {
 		args.push('-S');
 		exec_out += ".s";

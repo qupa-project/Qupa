@@ -24,6 +24,7 @@
 
 # Node Modules
 node_modules/*
+package-lock.json
 
 # Executables
 *.exe

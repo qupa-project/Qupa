@@ -1,6 +1,10 @@
 class State {
 	constructor (ctx) {
-		this.ctx = ctx.getFile();
+		this.ctx = null;
+
+		if (ctx) {
+			this.ctx = ctx.getFile();
+		}
 	}
 
 	match() {
