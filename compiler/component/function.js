@@ -4,6 +4,7 @@ const Flattern = require('./../parser/flattern.js');
 const TypeDef = require('./typedef.js');
 const LLVM = require('../middle/llvm.js');
 const Scope = require('./scope.js');
+const Execution = require('./execution.js');
 
 
 let funcIDGen = new Generator_ID();
@@ -71,8 +72,6 @@ class Function {
 	}
 
 	compile() {
-		// let fragment = [`\n; Function Group "${this.name}":`];
-
 		let fragment = new LLVM.Fragment();
 		fragment.append(new LLVM.WPad(1));
 		fragment.append(new LLVM.Comment(`Function Group "${this.name}":`));
@@ -118,6 +117,10 @@ class Function_Instance {
 
 	getFile() {
 		return this.ctx.getFile();
+	}
+
+	getFunction() {
+		return this;
 	}
 
 	getTypeFrom_DataType(dataType) {
@@ -246,10 +249,9 @@ class Function_Instance {
 		}
 
 		let generator = new Generator_ID(0);
-		let args = [];
-
 		let head = this.ast.tokens[0];
 		let argReg = [];
+		let args = [];
 		for (let i=0; i<this.signature.length; i++) {
 			let regID = generator.next();
 			argReg.push({
@@ -287,7 +289,6 @@ class Function_Instance {
 
 		let scope = new Scope(
 			this,
-			this.returnType[1],
 			this.getFile().project.config.caching,
 			generator
 		);
@@ -295,7 +296,8 @@ class Function_Instance {
 		if (setup !== null) {
 			if (!this.abstract && !this.external) {
 				frag.merge(setup);
-				frag.merge(scope.compile(this.ast.tokens[1]));
+				let exec = new Execution(this, this.returnType[1], scope);
+				frag.merge(exec.compile(this.ast.tokens[1]));
 			}
 		}
 

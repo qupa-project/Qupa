@@ -19,7 +19,7 @@ class Register {
 		this.inner      = [];
 		this.cache      = null;
 		this.isClone    = false;
-		this.concurrent = false;
+		this.isConcurrent = false;
 	}
 
 	get(ast, scope, read = true) {
@@ -271,6 +271,11 @@ class Register {
 	 * @param {Boolean} alwaysExecute If this change ALWAYS execute
 	 */
 	mergeUpdates(other, alwaysExecute) {
+		// This is now a concurrent pointer
+		if (other.isConcurrent) {
+			this.isConcurrent = true;
+		}
+
 		let action = 0; // 0 = no action, 1 = clear cache, 2 = copy new cache
 		if (this.cache !== null && other.cache == null) {                          // a cache was destroyed
 			action = 1;
