@@ -1,29 +1,38 @@
 {
-  "name": "qupa",
-  "version": "1.0.0",
+  "name": "@qupa/qupa",
+  "version": "0.0.2",
   "description": "Queued Parallelism Language",
-  "main": "index.js",
+  "main": "compile/compile.js",
+  "preferGlobal": true,
   "dependencies": {
     "bnf-parser": "^2.2.1"
   },
   "devDependencies": {},
   "scripts": {
-    "setup"         : "npm install && npm run build",
-    "compile"       : "node compiler/compile.js",
-    "test"          : "npm run test-parser",
-    "test-parser"   : "node compiler/parser/test.js",
-    "build"         : "npm run build-syntax && npm run build-runtime",
-    "build-syntax"  : "node compiler/parser/build.js",
-    "build-runtime" : "clang++ runtime/runtime.cpp -S -emit-llvm -o runtime/runtime.ll"
+    "setup": "npm install && npm run build",
+    "start": "node compiler/compile.js",
+    "compile": "node compiler/compile.js",
+    "test": "npm run test-parser",
+    "test-parser": "node compiler/parser/test.js",
+    "postinstall": "npm run build",
+    "build": "npm run build-syntax && npm run build-runtime",
+    "build-syntax": "node compiler/parser/build.js",
+    "build-runtime": "clang++ runtime/runtime.cpp -S -emit-llvm -o runtime/runtime.ll"
+  },
+  "bin": {
+    "qupa": "compiler/compile.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/qupa-lang/Qupa.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/qupa-lang/Qupa/issues"
   },
-  "homepage": "https://github.com/qupa-lang/Qupa#readme"
+  "homepage": "https://github.com/qupa-lang/Qupa#readme",
+  "directories": {
+    "test": "test"
+  }
 }

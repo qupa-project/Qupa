@@ -4,6 +4,8 @@ const Flattern = require('./../parser/flattern.js');
 const TypeDef = require('./typedef.js');
 const LLVM = require('../middle/llvm.js');
 const Scope = require('./scope.js');
+const Execution = require('./execution.js');
+const State = require('./state.js');
 
 
 let funcIDGen = new Generator_ID();
@@ -71,8 +73,6 @@ class Function {
 	}
 
 	compile() {
-		// let fragment = [`\n; Function Group "${this.name}":`];
-
 		let fragment = new LLVM.Fragment();
 		fragment.append(new LLVM.WPad(1));
 		fragment.append(new LLVM.Comment(`Function Group "${this.name}":`));
@@ -98,7 +98,7 @@ class Function_Instance {
 
 		this.returnType = null;
 		this.signature = [];
-		this.calls = [];
+		this.calls = new Map();
 
 		this.linked = false;
 
@@ -118,6 +118,10 @@ class Function_Instance {
 
 	getFile() {
 		return this.ctx.getFile();
+	}
+
+	getFunction() {
+		return this;
 	}
 
 	getTypeFrom_DataType(dataType) {
@@ -145,6 +149,33 @@ class Function_Instance {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * Marks this function as being called from this function
+	 * @param {Function_Instance} func 
+	 * @param {State} state
+	 * @returns {Boolean} whether this was a new call or not
+	 */
+	addCall(func, state = new State()) {
+		let states = this.calls.get(func) || [];
+
+		let found = false;
+		for (let prev of states) {
+			if (prev.match(state)) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			states.push(state);
+			this.calls.set(func, states);
+
+			return true;
+		}
+
+		return false;
 	}
 
 
@@ -246,10 +277,9 @@ class Function_Instance {
 		}
 
 		let generator = new Generator_ID(0);
-		let args = [];
-
 		let head = this.ast.tokens[0];
 		let argReg = [];
+		let args = [];
 		for (let i=0; i<this.signature.length; i++) {
 			let regID = generator.next();
 			argReg.push({
@@ -287,7 +317,6 @@ class Function_Instance {
 
 		let scope = new Scope(
 			this,
-			this.returnType[1],
 			this.getFile().project.config.caching,
 			generator
 		);
@@ -295,7 +324,8 @@ class Function_Instance {
 		if (setup !== null) {
 			if (!this.abstract && !this.external) {
 				frag.merge(setup);
-				frag.merge(scope.compile(this.ast.tokens[1]));
+				let exec = new Execution(this, this.returnType[1], scope);
+				frag.merge(exec.compile(this.ast.tokens[1]));
 			}
 		}
 
