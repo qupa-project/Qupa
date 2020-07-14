@@ -2,7 +2,8 @@
   "name": "qupa",
   "version": "1.0.0",
   "description": "Queued Parallelism Language",
-  "main": "index.js",
+  "main": "compile/compile.js",
+  "preferGlobal": true,
   "dependencies": {
     "bnf-parser": "^2.2.1"
   },
