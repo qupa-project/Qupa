@@ -1,3 +1,5 @@
+const Primative = require('../primative/main.js');
+
 const { Generator_ID } = require('./generate.js');
 const LLVM = require('./../middle/llvm.js');
 const File = require('./file.js');
@@ -14,12 +16,13 @@ class Project {
 			caching: config.caching === undefined ? true : config.caching
 		};
 
-		this.exports = [];
+		Primative.Generate(this);
 
+		this.exports = [];
 		this.error = false;
 	}
 
-	import(path) {
+	import(path, entry = false) {
 		for (let file of this.files) {
 			if (file.getPath() == path) {
 				return file;
@@ -30,7 +33,31 @@ class Project {
 		this.files.push(temp);
 		temp.parse();
 
+		if (entry) {
+			let main = temp.getMain();
+			if (main.instances.length > 1) {
+				console.log('Error: Multiple definitions of main in root file');
+				process.exit(1);
+			}
+			main.instances[0].markExport();
+		}
+
 		return temp;
+	}
+
+	/**
+	 * Returns the primative library
+	 */
+	getPrimative() {
+		return this.files[0];
+	}
+
+	/**
+	 * 
+	 * @param {File} file 
+	 */
+	inject(file) {
+		this.files.push(file);
 	}
 
 	registerExport(name) {

@@ -22,6 +22,13 @@ class File {
 
 		this.names = {};
 
+		let prim = this.project.getPrimative();
+		if (prim) {
+			let lib = new Import(this, null);
+			lib.inject(prim);
+			this.names["*"] = lib;
+		} 
+
 		this.exports = [];
 		this.imports = [];
 	}
@@ -222,6 +229,10 @@ class File {
 		}
 
 		return null;
+	}
+
+	getMain() {
+		return this.names['main'];
 	}
 
 	getID () {

@@ -58,7 +58,7 @@ let origin = path.resolve(root, process.argv[2]);
 let project = new Project(root, {
 	caching: config.caching
 });
-project.import(origin);
+project.import(origin, true);
 
 // Link elements
 console.info("Linking...");
