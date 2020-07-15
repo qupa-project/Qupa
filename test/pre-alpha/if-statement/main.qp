@@ -52,6 +52,3 @@ i32 main () {
 
 	return 0;
 }
-external export {
-	i32 main();
-}
