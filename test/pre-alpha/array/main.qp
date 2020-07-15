@@ -1,0 +1,11 @@
+import "../std.qp";
+
+i32 main() {
+	Array[i32, 3] arr;
+
+	return 0;
+}
+
+external export {
+	i32 main();
+}

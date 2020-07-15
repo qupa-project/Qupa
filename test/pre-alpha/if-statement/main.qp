@@ -13,10 +13,10 @@ import "../std.qp";
 */
 
 
-int main () {
-	int a;
-	int b;
-	int c;
+i32 main () {
+	i32 a;
+	i32 b;
+	i32 c;
 	bool d;
 
 	a = 2;
@@ -53,5 +53,5 @@ int main () {
 	return 0;
 }
 external export {
-	int main();
+	i32 main();
 }

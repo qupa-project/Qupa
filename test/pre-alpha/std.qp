@@ -1,10 +1,4 @@
 external assume {
-	type i32 size 4;
-	type float size 4;
-	type double size 4;
-	type void size 0;
-	type i1 size 4;
-
 	i32 i32_add(i32 a, i32 b);
 	i32 i32_sub(i32 a, i32 b);
 	i32 i32_mul(i32 a, i32 b);
@@ -36,7 +30,7 @@ external assume {
 /*------------------------------------
 	Easier type references
 ------------------------------------*/
-alias int i32; // allow referring to i32 as int
+alias i32 i32; // allow referring to i32 as i32
 alias bool i1; // allow referring to i1 as bool
 
 
@@ -45,7 +39,7 @@ alias bool i1; // allow referring to i1 as bool
 	Merge multi name C style functions
 	 into single namespace
 ------------------------------------*/
-i32 add (int a, int b) {
+i32 add (i32 a, i32 b) {
 	return i32_add(a, b);
 }
 float add(float a, float b) {
@@ -53,26 +47,26 @@ float add(float a, float b) {
 }
 
 
-i32 sub (int a, int b) {
+i32 sub (i32 a, i32 b) {
 	return i32_sub(a, b);
 }
 
 
-int mul(int a, int b) {
+i32 mul(i32 a, i32 b) {
 	return i32_mul(a, b);
 }
 
 
-int div(int a, int b) {
+i32 div(i32 a, i32 b) {
 	return i32_div(a, b);
 }
 
 
-int rem(int a, int b) {
+i32 rem(i32 a, i32 b) {
 	return i32_rem(a, b);
 }
 
-bool equal(int a, int b) {
+bool equal(i32 a, i32 b) {
 	return i32_equal(a, b);
 }
 bool equal(float a, float b) {
@@ -80,19 +74,19 @@ bool equal(float a, float b) {
 }
 
 
-bool gt(int a, int b){
+bool gt(i32 a, i32 b){
 	bool c = i32_gt(a, b);
 	return c;
 }
-bool ge(int a, int b) {
+bool ge(i32 a, i32 b) {
 	bool c = i32_ge(a, b);
 	return c;
 }
-bool lt(int a, int b){
+bool lt(i32 a, i32 b){
 	bool c = i32_lt(a, b);
 	return c;
 }
-bool le(int a, int b) {
+bool le(i32 a, i32 b) {
 	bool c = i32_le(a, b);
 	return c;
 }
@@ -123,7 +117,7 @@ bool xor(bool a, bool b) {
 
 
 
-void print(int val) {
+void print(i32 val) {
 	i32_print(val);
 	return;
 }
@@ -137,7 +131,7 @@ void print(bool val) {
 }
 
 
-void println(int val) {
+void println(i32 val) {
 	i32_println(val);
 	return;
 }
