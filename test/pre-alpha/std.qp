@@ -1,37 +1,29 @@
 external assume {
 	i32 i32_add(i32 a, i32 b);
-	i32 i32_sub(i32 a, i32 b);
-	i32 i32_mul(i32 a, i32 b);
-	i32 i32_div(i32 a, i32 b);
-	i32 i32_rem(i32 a, i32 b);
-	i1 i32_equal(i32 a, i32 b);
-	i1 i32_gt(i32 a, i32 b);
-	i1 i32_ge(i32 a, i32 b);
-	i1 i32_lt(i32 a, i32 b);
-	i1 i32_le(i32 a, i32 b);
+	// i32 i32_sub(i32 a, i32 b);
+	// i32 i32_mul(i32 a, i32 b);
+	// i32 i32_div(i32 a, i32 b);
+	// i32 i32_rem(i32 a, i32 b);
+	// bool i32_equal(i32 a, i32 b);
+	// bool i32_gt(i32 a, i32 b);
+	// bool i32_ge(i32 a, i32 b);
+	// bool i32_lt(i32 a, i32 b);
+	// bool i32_le(i32 a, i32 b);
 
-	float f32_add(float a, float b);
-	i1 f32_equal(float a, float b);
+	// float f32_add(float a, float b);
+	// bool f32_equal(float a, float b);
 
-	i1 i1_not(i1 a);
-	i1 i1_and(i1 a, i1 b);
-	i1 i1_or(i1 a, i1 b);
+	// bool i1_not(bool a);
+	// bool i1_and(bool a, bool b);
+	// bool i1_or(bool a, bool b);
 
-	void i1_print(bool val);
-	void i1_println(bool val);
-	void i32_print(i32 val);
+	// void i1_print(bool val);
+	// void i1_println(bool val);
+	// void i32_print(i32 val);
 	void i32_println(i32 val);
-	void f32_print(float val);
-	void f32_println(float val);
+	// void f32_print(float val);
+	// void f32_println(float val);
 }
-
-
-
-/*------------------------------------
-	Easier type references
-------------------------------------*/
-alias i32 i32; // allow referring to i32 as i32
-alias bool i1; // allow referring to i1 as bool
 
 
 
@@ -42,104 +34,104 @@ alias bool i1; // allow referring to i1 as bool
 i32 add (i32 a, i32 b) {
 	return i32_add(a, b);
 }
-float add(float a, float b) {
-	return f32_add(a, b);
-}
+// float add(float a, float b) {
+// 	return f32_add(a, b);
+// }
 
 
-i32 sub (i32 a, i32 b) {
-	return i32_sub(a, b);
-}
+// i32 sub (i32 a, i32 b) {
+// 	return i32_sub(a, b);
+// }
 
 
-i32 mul(i32 a, i32 b) {
-	return i32_mul(a, b);
-}
+// i32 mul(i32 a, i32 b) {
+// 	return i32_mul(a, b);
+// }
 
 
-i32 div(i32 a, i32 b) {
-	return i32_div(a, b);
-}
+// i32 div(i32 a, i32 b) {
+// 	return i32_div(a, b);
+// }
 
 
-i32 rem(i32 a, i32 b) {
-	return i32_rem(a, b);
-}
+// i32 rem(i32 a, i32 b) {
+// 	return i32_rem(a, b);
+// }
 
-bool equal(i32 a, i32 b) {
-	return i32_equal(a, b);
-}
-bool equal(float a, float b) {
-	return f32_equal(a, b);
-}
-
-
-bool gt(i32 a, i32 b){
-	bool c = i32_gt(a, b);
-	return c;
-}
-bool ge(i32 a, i32 b) {
-	bool c = i32_ge(a, b);
-	return c;
-}
-bool lt(i32 a, i32 b){
-	bool c = i32_lt(a, b);
-	return c;
-}
-bool le(i32 a, i32 b) {
-	bool c = i32_le(a, b);
-	return c;
-}
+// bool equal(i32 a, i32 b) {
+// 	return i32_equal(a, b);
+// }
+// bool equal(float a, float b) {
+// 	return f32_equal(a, b);
+// }
 
 
-bool and(bool a, bool b) {
-	return i1_and(a, b);
-}
-bool or(bool a, bool b) {
-	return i1_or(a, b);
-}
-bool not(bool a) {
-	return i1_not(a);
-}
-bool xor(bool a, bool b) {
-	bool both = and(a, b);
-	if (both) {
-		return false;
-	} else {
-		bool either = or(a, b);
-		if (either) {
-			return true;
-		} else {
-			 return false;
-		}
-	}
-}
+// bool gt(i32 a, i32 b){
+// 	bool c = i32_gt(a, b);
+// 	return c;
+// }
+// bool ge(i32 a, i32 b) {
+// 	bool c = i32_ge(a, b);
+// 	return c;
+// }
+// bool lt(i32 a, i32 b){
+// 	bool c = i32_lt(a, b);
+// 	return c;
+// }
+// bool le(i32 a, i32 b) {
+// 	bool c = i32_le(a, b);
+// 	return c;
+// }
+
+
+// bool and(bool a, bool b) {
+// 	return i1_and(a, b);
+// }
+// bool or(bool a, bool b) {
+// 	return i1_or(a, b);
+// }
+// bool not(bool a) {
+// 	return i1_not(a);
+// }
+// bool xor(bool a, bool b) {
+// 	bool both = and(a, b);
+// 	if (both) {
+// 		return false;
+// 	} else {
+// 		bool either = or(a, b);
+// 		if (either) {
+// 			return true;
+// 		} else {
+// 			 return false;
+// 		}
+// 	}
+// }
 
 
 
-void print(i32 val) {
-	i32_print(val);
-	return;
-}
-void print(float val) {
-	f32_print(val);
-	return;
-}
-void print(bool val) {
-	i1_print(val);
-	return;
-}
+// void print(i32 val) {
+// 	i32_print(val);
+// 	return;
+// }
+// void print(float val) {
+// 	f32_print(val);
+// 	return;
+// }
+// void print(bool val) {
+// 	i1_print(val);
+// 	return;
+// }
 
 
 void println(i32 val) {
 	i32_println(val);
 	return;
 }
-void println(float val) {
-	f32_println(val);
-	return;
-}
-void println(bool val) {
-	i1_println(val);
-	return;
-}
+// void println(float val) {
+// 	f32_println(val);
+// 	return;
+// }
+// void println(bool val) {
+// 	i1_println(val);
+// 	return;
+// }

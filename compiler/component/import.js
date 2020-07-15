@@ -5,7 +5,7 @@ class Import {
 		this.ctx      = ctx;
 		this.ref      = ast ? ast.ref.start : null;
 
-		this.name = ast ? ast.tokens[1] : "*";
+		this.name = ( ast && ast.tokens[1] && ast.tokens[1].tokens ) ? ast.tokens[1].tokens : "*";
 		this.files = [];
 
 		if (ast) {

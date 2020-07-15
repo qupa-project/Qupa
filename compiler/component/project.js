@@ -33,10 +33,14 @@ class Project {
 		this.files.push(temp);
 		temp.parse();
 
-		if (entry) {
+		if (entry === true) {
 			let main = temp.getMain();
+			if (!main) {
+				console.error(`Error: Entry file does not contain a main entry`);
+				process.exit(1);
+			}
 			if (main.instances.length > 1) {
-				console.log('Error: Multiple definitions of main in root file');
+				console.error('Error: Multiple definitions of main in root file');
 				process.exit(1);
 			}
 			main.instances[0].markExport();

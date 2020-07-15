@@ -27,7 +27,7 @@ class File {
 			let lib = new Import(this, null);
 			lib.inject(prim);
 			this.names["*"] = lib;
-		} 
+		}
 
 		this.exports = [];
 		this.imports = [];
@@ -145,6 +145,7 @@ class File {
 			!this.names[space.name].merge ||
 			!this.names[space.name].merge(space)
 		) {
+			console.log(150, this);
 			console.error("Multiple definitions of same namespace");
 			console.error("  name :", space.name);
 			console.error("   1st :", this.names[space.name].ref.toString());

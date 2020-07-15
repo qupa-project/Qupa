@@ -20,6 +20,22 @@ let types = {
 			end: null
 		}
 	}, true),
+	bool: new TypeDef(null, {
+		tokens: [
+			{
+				type   : "name",
+				tokens : 'i1'
+			},
+			{
+				type   : "integer",
+				tokens : "1"
+			}
+		],
+		ref: {
+			start: null,
+			end: null
+		}
+	}, true),
 	float: new TypeDef(null, {
 		tokens: [
 			{
