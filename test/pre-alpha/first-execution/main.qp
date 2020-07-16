@@ -24,7 +24,7 @@ i32 main () {
 	i32_println(a);
 	i32_println(b);
 
-	c = i32_add(a, b);
+	c = add(a, b);
 
 	i32_println(c);
 

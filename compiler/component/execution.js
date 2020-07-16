@@ -2,6 +2,7 @@ const Flattern = require('../parser/flattern.js');
 const LLVM = require("../middle/llvm.js");
 const Scope = require('./scope.js');
 const State = require('./state.js');
+const Instruction = require('../middle/instruction.js');
 
 class Execution {
 	/**
@@ -53,7 +54,7 @@ class Execution {
 		let type = "i32";
 		let val = ast.tokens[0].tokens;
 		if (ast.tokens[0].type == "float") {
-			type = "double";
+			type = "float";
 		} else if (ast.tokens[0].type == "boolean") {
 			type = "i1";
 			val = val == "true" ? 1 : 0;
@@ -75,6 +76,7 @@ class Execution {
 		let instruction = null;
 		let preamble    = new LLVM.Fragment();
 		let epilog      = new LLVM.Fragment();
+		let returnType    = null;
 
 		// Get argument types
 		//  and generate LLVM for argument inputs
@@ -123,21 +125,7 @@ class Execution {
 		// Generate the LLVM for the call
 		//   Mark any parsed pointers as now being concurrent
 		let target = this.getFile().getFunction(ast.tokens[0].tokens.slice(1), signature);
-		if (target) {
-			instruction = new LLVM.Call(
-				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),
-				new LLVM.Name(target.represent, true, ast.tokens[0].ref),
-				args,
-				ast.ref.start
-			);
-
-			// Clear any lower caches
-			//   If this is a pointer the value may have changed
-			for (let arg of regs) {
-				arg.concurrent = true;
-				arg.clearCache();
-			}
-		} else {
+		if (!target) {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
 			this.getFile().throw(
 				`Unable to find function "${funcName}" with signature ${signature.map(x => Flattern.PointerLvl(x[0])+x[1]).join(',')}`,
@@ -146,10 +134,33 @@ class Execution {
 			return null;
 		}
 
-		// Mark this function as being called for the callgraph
-		this.getFunction().addCall(target);
+		if (target.isInline) {
+			let inner = target.generate(regs, args);
+			preamble.merge(inner.preamble);
 
-		return { preamble, instruction, epilog };
+			instruction = inner.instruction;
+			returnType = inner.returnType;
+		} else {
+			instruction = new LLVM.Call(
+				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),
+				new LLVM.Name(target.represent, true, ast.tokens[0].ref),
+				args,
+				ast.ref.start
+			);
+			returnType = target.returnType;
+	
+			// Clear any lower caches
+			//   If this is a pointer the value may have changed
+			for (let arg of regs) {
+				arg.concurrent = true;
+				arg.clearCache();
+			}
+
+			// Mark this function as being called for the callgraph
+			this.getFunction().addCall(target);
+		}
+
+		return { preamble, instruction, epilog, returnType };
 	}
 
 	/**
@@ -225,7 +236,7 @@ class Execution {
 			let cnst = this.compile_constant(ast.tokens[1]);
 			if (cnst.type.term != target.type.represent) {
 				this.getFile().throw(
-					`Error: Assignment type miss-match, expected ${target.type.name} but got ${cnst.type}`,
+					`Error: Assignment type miss-match, expected ${target.type.name} but got ${cnst.type.term}`,
 					ast.ref.start, ast.ref.end
 				);
 				return false;
@@ -250,7 +261,7 @@ class Execution {
 				return null;
 			}
 
-			if (inner.instruction.rtrnType.term != target.type.represent) {
+			if (inner.returnType != target.type) {
 				this.getFile().throw(
 					`Error: Type miss-match, this functiion does not return ${target.type.name}`,
 					ast.tokens[1].ref.start, ast.tokens[1].ref.end
