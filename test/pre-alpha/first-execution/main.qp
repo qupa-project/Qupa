@@ -8,11 +8,7 @@
 
 
 external assume {
-	type i32 size 4;
-	type void size 0;
-
 	i32 i32_add(i32 a, i32 b);
-
 	void i32_println(i32 val);
 }
 
@@ -34,6 +30,3 @@ i32 main () {
 
 	return 1;
 }
-external export {
-	i32 main ();
-};

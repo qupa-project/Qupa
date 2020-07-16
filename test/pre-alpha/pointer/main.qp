@@ -8,17 +8,17 @@
 import "../std.qp";
 
 external assume {
-	@int createInt();
+	@i32 createInt();
 };
 
-void add(@int target, int val) {
+void add(@i32 target, i32 val) {
 	$target = i32_add($target, val);
 	return;
 }
 
-int main() {
-	int a = 20;
-	@int b = createInt();
+i32 main() {
+	i32 a = 20;
+	@i32 b = createInt();
 	$b = 2;
 
 	i32_println(a);
@@ -32,5 +32,5 @@ int main() {
 	return 0;
 }
 external export {
-	int main();
+	i32 main();
 }

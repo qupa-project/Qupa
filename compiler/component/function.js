@@ -42,6 +42,14 @@ class Function {
 		this.instances[0].markExport();
 	}
 
+	getFunction(variable, signature) {
+		if (variable.length != 0) {
+			return null;
+		}
+
+		return this.matchSignature(signature);
+	}
+
 	matchSignature(sig) {
 		for (let instance of this.instances) {
 			if (instance.matchSignature(sig)) {

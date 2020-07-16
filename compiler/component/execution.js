@@ -122,7 +122,7 @@ class Execution {
 
 		// Generate the LLVM for the call
 		//   Mark any parsed pointers as now being concurrent
-		let target = this.getFile().getFunction(ast.tokens[0], signature);
+		let target = this.getFile().getFunction(ast.tokens[0].tokens.slice(1), signature);
 		if (target) {
 			instruction = new LLVM.Call(
 				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),

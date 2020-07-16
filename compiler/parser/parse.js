@@ -87,7 +87,7 @@ function Simplify_Library(node) {
 	return node;
 }
 function Simplify_Library_Import (node) {
-	let out = [null, null];
+	let out = [null, "*"];
 	switch (node.tokens[0].type) {
 		case "import_direct":
 			out[1] = Simplify_Name(node.tokens[0].tokens[6][0]);

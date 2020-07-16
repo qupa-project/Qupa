@@ -3,14 +3,33 @@ const LLVM = require('./../middle/llvm.js');
 class Import {
 	constructor (ctx, ast) {
 		this.ctx      = ctx;
-		this.ref      = ast.ref.start;
+		this.ref      = ast ? ast.ref.start : null;
 
-		this.name = ast.tokens[1] || "*";
-		this.files = [{
-			file: null,
-			path: ast.tokens[0],
-			ref: ast.ref.start
-		}];
+		this.name = ( ast && ast.tokens[1] && ast.tokens[1].tokens ) ? ast.tokens[1].tokens : "*";
+		this.files = [];
+
+		if (ast) {
+			this.files.push({
+				file: null,
+				path: ast.tokens[0],
+				ref: ast.ref.start
+			});
+		}
+	}
+
+	/**
+	 * 
+	 * @param {File} file 
+	 */
+	inject(file) {
+		this.files.push({
+			file: file,
+			path: file.path,
+			ref: {
+				start: null,
+				end: null
+			}
+		});
 	}
 
 	merge(other) {
@@ -28,7 +47,9 @@ class Import {
 	load() {
 		let file = this.ctx.getFile();
 		for (let extern of this.files) {
-			extern.file = file.import(extern.path);
+			if (!extern.file) {
+				extern.file = file.import(extern.path);
+			}
 		}
 	}
 
@@ -44,8 +65,8 @@ class Import {
 	}
 
 	getFunction(variable, signature) {
-		for (let extern of this.files) {
-			let opt = extern.file.getFunction(variable, signature);
+		for (let lib of this.files) {
+			let opt = lib.file.getFunction(variable, signature);
 			if (opt) {
 				return opt;
 			}
@@ -66,6 +87,10 @@ class Import {
 		}
 
 		return frag;
+	}
+
+	static From() {
+
 	}
 }
 module.exports = Import;

@@ -13,12 +13,12 @@
 import "../std.qp";
 
 struct Rect {
-	int width;
-	int height;
+	i32 width;
+	i32 height;
 }
 
 
-int main() {
+i32 main() {
 	// Define two example rectangles
 	Rect a;
 	Rect b;
@@ -28,7 +28,7 @@ int main() {
 	b.height = 7;
 
 	// Test single structure argument function
-	int area;
+	i32 area;
 	area = Area(a);
 	println(area);
 	area = Area(b);
@@ -48,8 +48,8 @@ int main() {
 }
 
 
-int Area(Rect rec){
-	int area;
+i32 Area(Rect rec){
+	i32 area;
 	area = mul(rec.width, rec.height);
 	return area;
 }
@@ -62,5 +62,5 @@ Rect Combine(Rect a, Rect b) {
 
 
 external export {
-	int main();
+	i32 main();
 }
