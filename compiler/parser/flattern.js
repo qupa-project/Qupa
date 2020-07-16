@@ -4,7 +4,11 @@ function VariableList(node) {
 		node.tokens[1].tokens
 	];
 	for (let i=2; i<node.tokens.length; i++) {
-		out.push([ node.tokens[i][0], node.tokens[i][1].tokens ]);
+		if (node.tokens[i][0] == "[]") {
+			out.push([ "[]", node.tokens[i][1].tokens.map( x => VariableList(x) ) ]);
+		} else {
+			out.push([ node.tokens[i][0], node.tokens[i][1].tokens ]);
+		}
 	}
 
 	return out;
@@ -13,7 +17,11 @@ function VariableList(node) {
 function VariableStr (node) {
 	let str = node.tokens[0] + node.tokens[1].tokens;
 	for (let i=2; i<node.tokens.length; i++) {
-		str += node.tokens[i][0] + node.tokens[i][1].tokens;
+		if (node.tokens[i][0] == "[]") {
+			str += `[${node.tokens[i][1].tokens.map( x => VariableStr(x) )}]`;
+		} else {
+			str += node.tokens[i][0] + node.tokens[i][1].tokens;
+		}
 	}
 
 	return str;

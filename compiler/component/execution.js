@@ -4,6 +4,8 @@ const Scope = require('./scope.js');
 const State = require('./state.js');
 const Instruction = require('../middle/instruction.js');
 
+const Primative = require('./../primative/main.js');
+
 class Execution {
 	/**
 	 * 
@@ -78,9 +80,12 @@ class Execution {
 		let epilog      = new LLVM.Fragment();
 		let returnType    = null;
 
+
+
 		// Get argument types
 		//  and generate LLVM for argument inputs
 		//  also add any preamble to get the arguments
+		let signature = [];
 		let args = [];
 		let regs = [];
 		for (let arg of ast.tokens[1].tokens) {
@@ -110,8 +115,11 @@ class Execution {
 					arg.name
 				));
 				regs.push(cache.register);
+				signature.push([ cache.register.pointer, cache.register.type ]);
 			} else if (arg.type == "constant") {
-				args.push(this.compile_constant(arg));
+				let cnst = this.compile_constant(arg);
+				args.push(cnst);
+				signature.push([0, Primative.types[cnst.type.term]]);
 			} else {
 				this.getFile().throw(
 					`Cannot take ${arg.type} as call argument`,
@@ -120,14 +128,59 @@ class Execution {
 				return null;
 			}
 		}
-		let signature = args.map(arg => [(arg.type.pointer || 0), arg.type.term]);
+
+
+
+		// Link any [] accessors
+		let accesses = [];
+		let file = this.getFile();
+		for (let access of ast.tokens[0].tokens.slice(1)) {
+			if (access[0] == "[]") {
+				let out = [];
+				for (let inner of access[1].tokens) {
+					let target = this.scope.getVar(inner, true);
+					if (target.error !== true) {
+						file.throw(
+							`Error: Cannot processed variables withiin [] for function access`,
+							inner.ref.start, inner.ref.end
+						);
+						return null;
+					}
+
+					let forward = Flattern.VariableList(inner);
+					if (forward[0] != 0) {
+						file.throw(
+							`Error: Cannot dereference ${Flattern.VariableStr(inner)}`,
+							inner.ref.start, inner.ref.end
+						);
+						return null;
+					}
+
+					target = file.getType(forward.slice(1));
+
+					if (!target) {
+						file.throw(
+							`Error: Unknown variable ${Flattern.VariableStr(inner)}`,
+							inner.ref.start, inner.ref.end
+						);
+						return null;
+					}
+					out.push(target);
+				}
+
+				accesses.push(out);
+			} else {
+				accesses.push(access);
+			}
+		}
+
 
 		// Generate the LLVM for the call
 		//   Mark any parsed pointers as now being concurrent
-		let target = this.getFile().getFunction(ast.tokens[0].tokens.slice(1), signature);
+		let target = file.getFunction(accesses, signature);
 		if (!target) {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
-			this.getFile().throw(
+			file.throw(
 				`Unable to find function "${funcName}" with signature ${signature.map(x => Flattern.PointerLvl(x[0])+x[1]).join(',')}`,
 				ast.ref.start, ast.ref.end
 			);
@@ -263,7 +316,7 @@ class Execution {
 
 			if (inner.returnType != target.type) {
 				this.getFile().throw(
-					`Error: Type miss-match, this functiion does not return ${target.type.name}`,
+					`Error: Type miss-match, this functiion does not return ${target.type.name}, instead returns ${inner.returnType.name}`,
 					ast.tokens[1].ref.start, ast.tokens[1].ref.end
 				);
 				return false;

@@ -27,12 +27,13 @@ class Template_Primative_Math extends Template {
 			}
 
 			// Get related primative
-			signature[i][1] = types[signature[i][1]];
+			signature[i][1] = types[signature[i][1].represent];
 			if (signature[i][1] === undefined) {
 				return false;
 			}
 		}
 
+		// Both opperands must be of the same type
 		if (signature[0][1] != signature[1][1]) {
 			return false;
 		}

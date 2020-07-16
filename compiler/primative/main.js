@@ -2,6 +2,7 @@ const File = require('./../component/file.js');
 const Project = require('../component/project.js');
 
 const types = require('./types.js');
+const Bitcast = require('./bitcast.js');
 const Math = require('./math.js');
 
 
@@ -23,6 +24,7 @@ function Generate (ctx) {
 	file.names.Mul = new Math(file, "Mul");
 	file.names.Rem = new Math(file, "Rem");
 	file.names.Sub = new Math(file, "Sub");
+	file.names.BitCast = new Bitcast(file);
 
 	ctx.inject(file);
 }

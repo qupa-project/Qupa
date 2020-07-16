@@ -1,6 +1,7 @@
 const Add = require('./add.js');
 const Alloc = require('./alloc');
 const Argument = require('./argument.js');
+const Bitcast = require('./bitcast.js');
 const Branch = require('./branch.js');
 const Branch_Unco = require('./branch_unco.js');
 const Call = require('./call.js');
@@ -26,7 +27,7 @@ const WPad = require('./wpad');
 
 module.exports = {
 	Add, Alloc, Argument,
-	Branch, Branch_Unco,
+	Bitcast, Branch, Branch_Unco,
 	Call, Comment, Constant,
 	Div,
 	Fragment,
