@@ -212,19 +212,26 @@ class File {
 	}
 
 	getFunction(variable, signature) {
-		let first = variable.tokens[1].tokens;
-		if (this.names[first]) {
-			if (variable.tokens.length == 2) {
-				if (this.names[first] instanceof Function) {
-					return this.names[first].matchSignature(signature);
-				}
-			} else if (this.names[first] instanceof Import) {
-				return this.names[first].getFunction(variable, signature);
+		if (variable.length < 1) {
+			return null;
+		}
+
+		let first = variable[0];
+		let forward = variable.slice(1);
+		if (Array.isArray(first)) {
+			if (first[0] == ".") {
+				first = first[1];
+			} else {
+				return null;
 			}
 		}
 
-		// If the name isn't defined in this file
-		// Check other files
+		if (this.names[first.tokens]) {
+			return this.names[first.tokens].getFunction(forward, signature);
+		}
+
+		// If the name isn't defined in this file in a regular name space
+		//   Check namespace imports
 		if (this.names["*"] instanceof Import) {
 			return this.names["*"].getFunction(variable, signature);
 		}

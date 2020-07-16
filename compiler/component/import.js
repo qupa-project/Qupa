@@ -65,8 +65,8 @@ class Import {
 	}
 
 	getFunction(variable, signature) {
-		for (let extern of this.files) {
-			let opt = extern.file.getFunction(variable, signature);
+		for (let lib of this.files) {
+			let opt = lib.file.getFunction(variable, signature);
 			if (opt) {
 				return opt;
 			}
