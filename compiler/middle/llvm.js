@@ -22,6 +22,7 @@ const Set = require('./set.js');
 const Store = require('./store.js');
 const Struct = require('./struct.js');
 const Sub = require('./sub.js');
+const Trunc = require('./trunc.js');
 const Type = require('./type.js');
 const WPad = require('./wpad');
 
@@ -40,6 +41,6 @@ module.exports = {
 	Raw, Return,
 	Rem,
 	Set, Store, Struct, Sub,
-	Type,
+	Trunc, Type,
 	WPad
 };
