@@ -15,8 +15,6 @@ class Template_Primative_Trunc extends Template {
 	}
 
 	getFunction(variable, signature) {
-		console.log(18, variable, signature);
-
 		if (!Array.isArray(variable[0])) {
 			return false;
 		}
@@ -25,22 +23,19 @@ class Template_Primative_Trunc extends Template {
 		}
 		// Must be a primative data type
 		if (!types[variable[0][0].represent] || !types[signature[0][1].represent]) {
-			console.warn("Warn: Cannot truncate non-primative types");
 			return false;
 		}
-
 		// Must both be either an int or a float
 		if (
-			(variable[0][0].cat  != "int" && variable[0][0].cat  != "float") ||
-			(signature[0][1].cat != "int" && signature[0][1].cat != "float")
+			(variable[0][0].cat  != "int" && variable[0][0].cat  != "uint" && variable[0][0].cat  != "float") ||
+			(signature[0][1].cat != "int" && signature[0][1].cat != "uint" && signature[0][1].cat != "float")
 		) {
 			return false;
 		}
-		// They must either both be int, or both be float
+		// They must either both be int, both be uint, or both be float
 		if (variable[0][0].cat != signature[0][1].cat) {
 			return false;
 		}
-
 		// The target size must be smaller
 		if (variable[0][0].size > signature[0][1].size) {
 			return false;

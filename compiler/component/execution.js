@@ -2,7 +2,6 @@ const Flattern = require('../parser/flattern.js');
 const LLVM = require("../middle/llvm.js");
 const Scope = require('./scope.js');
 const State = require('./state.js');
-const Instruction = require('../middle/instruction.js');
 
 const Primative = require('./../primative/main.js');
 
@@ -93,7 +92,7 @@ class Execution {
 				let load = this.scope.getVar(arg, true);
 				if (load.error) {
 					this.getFile().throw(load.msg, load.ref.start, load.ref.end);
-					return null;
+					return false;
 				}
 				preamble.merge(load.preamble);
 
@@ -104,7 +103,7 @@ class Execution {
 						`Cannot dereference ${name}`,
 						arg.ref.start, arg.ref.end
 					);
-					return null;
+					return false;
 				}
 				preamble.merge(cache.preamble);
 
@@ -125,7 +124,7 @@ class Execution {
 					`Cannot take ${arg.type} as call argument`,
 					arg.ref.start, arg.ref.end
 				);
-				return null;
+				return false;
 			}
 		}
 
@@ -144,7 +143,7 @@ class Execution {
 							`Error: Cannot processed variables withiin [] for function access`,
 							inner.ref.start, inner.ref.end
 						);
-						return null;
+						return false;
 					}
 
 					let forward = Flattern.VariableList(inner);
@@ -153,7 +152,7 @@ class Execution {
 							`Error: Cannot dereference ${Flattern.VariableStr(inner)}`,
 							inner.ref.start, inner.ref.end
 						);
-						return null;
+						return false;
 					}
 
 					target = file.getType(forward.slice(1));
@@ -163,7 +162,7 @@ class Execution {
 							`Error: Unknown variable ${Flattern.VariableStr(inner)}`,
 							inner.ref.start, inner.ref.end
 						);
-						return null;
+						return false;
 					}
 					out.push(target);
 				}
@@ -181,10 +180,10 @@ class Execution {
 		if (!target) {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
 			file.throw(
-				`Unable to find function "${funcName}" with signature ${signature.map(x => Flattern.PointerLvl(x[0])+x[1]).join(',')}`,
+				`Unable to find function "${funcName}" with signature ${Flattern.SignatureArr(signature)}`,
 				ast.ref.start, ast.ref.end
 			);
-			return null;
+			return false;
 		}
 
 		if (target.isInline) {
@@ -223,8 +222,8 @@ class Execution {
 	compile_call_procedure(ast) {
 		let frag = new LLVM.Fragment(ast);
 		let out = this.compile_call(ast);
-		if (out === null) {
-			return null;
+		if (out === false) {
+			return false;
 		}
 
 		// Merge the preable, execution, and epilog into one fragment
@@ -310,8 +309,8 @@ class Execution {
 			                      //  and caches need to be dropped
 		} else if (ast.tokens[1].type == "call") {
 			let inner = this.compile_call(ast.tokens[1]);
-			if (inner === null) {
-				return null;
+			if (inner === false) {
+				return false;
 			}
 
 			if (inner.returnType != target.type) {
@@ -660,7 +659,7 @@ class Execution {
 			ast.tokens[0].tokens[0]
 		);
 		let check = scope_check.compile_while_condition(ast.tokens[0]);
-		if (check === null) {
+		if (check === false) {
 			return false;
 		}
 
@@ -671,7 +670,7 @@ class Execution {
 			ast.tokens[0].tokens[0]
 		);
 		let loop = scope_loop.compile(ast.tokens[1]);
-		if (loop === null) {
+		if (loop === false) {
 			return false;
 		}
 		
@@ -751,6 +750,7 @@ class Execution {
 		let fragment = new LLVM.Fragment();
 
 		let returnWarned = false;
+		let failed = false;
 		let inner = null;
 		for (let token of ast.tokens) {
 			if (this.returned && !returnWarned) {
@@ -794,11 +794,12 @@ class Execution {
 			if (inner instanceof LLVM.Fragment) {
 				fragment.merge(inner);
 			} else {
+				failed = true;
 				break;
 			}
 		}
 
-		if (this.returned == false && !this.isChild) {
+		if (!failed && this.returned == false && !this.isChild) {
 			this.getFile().throw(
 				`Function does not return`,
 				ast.ref.start, ast.ref.end

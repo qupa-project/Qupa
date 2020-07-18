@@ -53,7 +53,13 @@ function PointerLvl(int) {
 	return str;
 }
 
+function SignatureArr(sig) {
+	return sig.map(x => {
+		return PointerLvl(x[0]) + x[1].name;
+	}).join(',');
+}
+
 
 module.exports = {
-	VariableList, VariableStr, DataTypeStr, PointerLvl
+	VariableList, VariableStr, DataTypeStr, PointerLvl, SignatureArr
 }

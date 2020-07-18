@@ -89,8 +89,8 @@ for (let i=1; i<=8; i+=i) {
 	types[name].cat = "int";
 	types[name].signed = true;
 
-	name = `u${i*8}`;
-	types[name] = new TypeDef(null, {
+	u_name = `u${i*8}`;
+	types[u_name] = new TypeDef(null, {
 		tokens: [
 			{
 				type   : "name",
@@ -106,8 +106,8 @@ for (let i=1; i<=8; i+=i) {
 			end: null
 		}
 	}, true);
-	types[name].cat = "uint";
-	types[name].signed = false;
+	types[u_name].cat = "uint";
+	types[u_name].signed = false;
 }
 
 // Bind float category

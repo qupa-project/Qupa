@@ -8,8 +8,10 @@ const Call = require('./call.js');
 const Comment = require('./comment.js');
 const Constant = require('./constant.js');
 const Div = require('./div.js');
+const Extend = require('./extend.js');
 const Fragment = require('./fragment.js');
 const GEP = require('./gep.js');
+const Instruction = require('./instruction');
 const Label = require('./label.js');
 const Load = require('./load.js');
 const Mul = require('./mul.js');
@@ -31,10 +33,11 @@ module.exports = {
 	Bitcast, Branch, Branch_Unco,
 	Call, Comment, Constant,
 	Div,
+	Extend,
 	Fragment,
 	GEP,
-	Label,
-	Load,
+	Instruction,
+	Label, Load,
 	Mul,
 	Name,
 	Procedure,

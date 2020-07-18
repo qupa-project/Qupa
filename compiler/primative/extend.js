@@ -4,7 +4,7 @@ const LLVM = require('../middle/llvm.js');
 
 const types = require('./types.js');
 
-class Template_Primative_Bitcast extends Template {
+class Template_Primative_Extend extends Template {
 	constructor(ctx) {
 		super(ctx, null);
 	}
@@ -20,24 +20,7 @@ class Template_Primative_Bitcast extends Template {
 		if (variable[0].length != 1) {
 			return false;
 		}
-		// Must be a primative data type
 		if (!types[variable[0][0].represent] || !types[signature[0][1].represent]) {
-			console.warn("Warn: Cannot extend non-primative types");
-			return false;
-		}
-		// Must both be either an int or a float
-		if (
-			(variable[0][0].cat  != "int" && variable[0][0].cat  != "float") ||
-			(signature[0][1].cat != "int" && signature[0][1].cat != "float")
-		) {
-			return false;
-		}
-		// They must either both be int, or both be float
-		if (variable[0][0].cat != signature[0][1].cat) {
-			return false;
-		}
-		// The target size must be greater
-		if (variable[0][0].size < signature[0][1].size) {
 			return false;
 		}
 
@@ -50,6 +33,8 @@ class Template_Primative_Bitcast extends Template {
 			mode = 2;
 		}
 		func.generate = (regs, ir_args) => {
+			console.log(36, variable[0][0].represent, ir_args[0]);
+
 			return {
 				preamble: new LLVM.Fragment(),
 				instruction: new LLVM.Extend(
@@ -66,4 +51,4 @@ class Template_Primative_Bitcast extends Template {
 	}
 }
 
-module.exports = Template_Primative_Bitcast;
+module.exports = Template_Primative_Extend;
