@@ -3,6 +3,8 @@ const LLVM = require("../middle/llvm.js");
 const Scope = require('./scope.js');
 const State = require('./state.js');
 
+const Primative = require('./../primative/main.js');
+
 class Execution {
 	/**
 	 * 
@@ -53,7 +55,7 @@ class Execution {
 		let type = "i32";
 		let val = ast.tokens[0].tokens;
 		if (ast.tokens[0].type == "float") {
-			type = "double";
+			type = "float";
 		} else if (ast.tokens[0].type == "boolean") {
 			type = "i1";
 			val = val == "true" ? 1 : 0;
@@ -75,10 +77,14 @@ class Execution {
 		let instruction = null;
 		let preamble    = new LLVM.Fragment();
 		let epilog      = new LLVM.Fragment();
+		let returnType    = null;
+
+
 
 		// Get argument types
 		//  and generate LLVM for argument inputs
 		//  also add any preamble to get the arguments
+		let signature = [];
 		let args = [];
 		let regs = [];
 		for (let arg of ast.tokens[1].tokens) {
@@ -86,7 +92,7 @@ class Execution {
 				let load = this.scope.getVar(arg, true);
 				if (load.error) {
 					this.getFile().throw(load.msg, load.ref.start, load.ref.end);
-					return null;
+					return false;
 				}
 				preamble.merge(load.preamble);
 
@@ -97,7 +103,7 @@ class Execution {
 						`Cannot dereference ${name}`,
 						arg.ref.start, arg.ref.end
 					);
-					return null;
+					return false;
 				}
 				preamble.merge(cache.preamble);
 
@@ -108,48 +114,105 @@ class Execution {
 					arg.name
 				));
 				regs.push(cache.register);
+				signature.push([ cache.register.pointer, cache.register.type ]);
 			} else if (arg.type == "constant") {
-				args.push(this.compile_constant(arg));
+				let cnst = this.compile_constant(arg);
+				args.push(cnst);
+				signature.push([0, Primative.types[cnst.type.term]]);
 			} else {
 				this.getFile().throw(
 					`Cannot take ${arg.type} as call argument`,
 					arg.ref.start, arg.ref.end
 				);
-				return null;
+				return false;
 			}
 		}
-		let signature = args.map(arg => [(arg.type.pointer || 0), arg.type.term]);
+
+
+
+		// Link any [] accessors
+		let accesses = [];
+		let file = this.getFile();
+		for (let access of ast.tokens[0].tokens.slice(1)) {
+			if (access[0] == "[]") {
+				let out = [];
+				for (let inner of access[1].tokens) {
+					let target = this.scope.getVar(inner, true);
+					if (target.error !== true) {
+						file.throw(
+							`Error: Cannot processed variables withiin [] for function access`,
+							inner.ref.start, inner.ref.end
+						);
+						return false;
+					}
+
+					let forward = Flattern.VariableList(inner);
+					if (forward[0] != 0) {
+						file.throw(
+							`Error: Cannot dereference ${Flattern.VariableStr(inner)}`,
+							inner.ref.start, inner.ref.end
+						);
+						return false;
+					}
+
+					target = file.getType(forward.slice(1));
+
+					if (!target) {
+						file.throw(
+							`Error: Unknown variable ${Flattern.VariableStr(inner)}`,
+							inner.ref.start, inner.ref.end
+						);
+						return false;
+					}
+					out.push(target);
+				}
+
+				accesses.push(out);
+			} else {
+				accesses.push(access);
+			}
+		}
+
 
 		// Generate the LLVM for the call
 		//   Mark any parsed pointers as now being concurrent
-		let target = this.getFile().getFunction(ast.tokens[0].tokens.slice(1), signature);
-		if (target) {
+		let target = file.getFunction(accesses, signature);
+		if (!target) {
+			let funcName = Flattern.VariableStr(ast.tokens[0]);
+			file.throw(
+				`Unable to find function "${funcName}" with signature ${Flattern.SignatureArr(signature)}`,
+				ast.ref.start, ast.ref.end
+			);
+			return false;
+		}
+
+		if (target.isInline) {
+			let inner = target.generate(regs, args);
+			preamble.merge(inner.preamble);
+
+			instruction = inner.instruction;
+			returnType = inner.returnType;
+		} else {
 			instruction = new LLVM.Call(
 				new LLVM.Type(target.returnType[1].represent, target.returnType[0]),
 				new LLVM.Name(target.represent, true, ast.tokens[0].ref),
 				args,
 				ast.ref.start
 			);
-
+			returnType = target.returnType;
+	
 			// Clear any lower caches
 			//   If this is a pointer the value may have changed
 			for (let arg of regs) {
 				arg.concurrent = true;
 				arg.clearCache();
 			}
-		} else {
-			let funcName = Flattern.VariableStr(ast.tokens[0]);
-			this.getFile().throw(
-				`Unable to find function "${funcName}" with signature ${signature.map(x => Flattern.PointerLvl(x[0])+x[1]).join(',')}`,
-				ast.ref.start, ast.ref.end
-			);
-			return null;
+
+			// Mark this function as being called for the callgraph
+			this.getFunction().addCall(target);
 		}
 
-		// Mark this function as being called for the callgraph
-		this.getFunction().addCall(target);
-
-		return { preamble, instruction, epilog };
+		return { preamble, instruction, epilog, returnType };
 	}
 
 	/**
@@ -159,8 +222,8 @@ class Execution {
 	compile_call_procedure(ast) {
 		let frag = new LLVM.Fragment(ast);
 		let out = this.compile_call(ast);
-		if (out === null) {
-			return null;
+		if (out === false) {
+			return false;
 		}
 
 		// Merge the preable, execution, and epilog into one fragment
@@ -225,7 +288,7 @@ class Execution {
 			let cnst = this.compile_constant(ast.tokens[1]);
 			if (cnst.type.term != target.type.represent) {
 				this.getFile().throw(
-					`Error: Assignment type miss-match, expected ${target.type.name} but got ${cnst.type}`,
+					`Error: Assignment type miss-match, expected ${target.type.name} but got ${cnst.type.term}`,
 					ast.ref.start, ast.ref.end
 				);
 				return false;
@@ -246,13 +309,13 @@ class Execution {
 			                      //  and caches need to be dropped
 		} else if (ast.tokens[1].type == "call") {
 			let inner = this.compile_call(ast.tokens[1]);
-			if (inner === null) {
-				return null;
+			if (inner === false) {
+				return false;
 			}
 
-			if (inner.instruction.rtrnType.term != target.type.represent) {
+			if (inner.returnType != target.type) {
 				this.getFile().throw(
-					`Error: Type miss-match, this functiion does not return ${target.type.name}`,
+					`Error: Type miss-match, this functiion does not return ${target.type.name}, instead returns ${inner.returnType.name}`,
 					ast.tokens[1].ref.start, ast.tokens[1].ref.end
 				);
 				return false;
@@ -596,7 +659,7 @@ class Execution {
 			ast.tokens[0].tokens[0]
 		);
 		let check = scope_check.compile_while_condition(ast.tokens[0]);
-		if (check === null) {
+		if (check === false) {
 			return false;
 		}
 
@@ -607,7 +670,7 @@ class Execution {
 			ast.tokens[0].tokens[0]
 		);
 		let loop = scope_loop.compile(ast.tokens[1]);
-		if (loop === null) {
+		if (loop === false) {
 			return false;
 		}
 		
@@ -687,6 +750,7 @@ class Execution {
 		let fragment = new LLVM.Fragment();
 
 		let returnWarned = false;
+		let failed = false;
 		let inner = null;
 		for (let token of ast.tokens) {
 			if (this.returned && !returnWarned) {
@@ -730,11 +794,12 @@ class Execution {
 			if (inner instanceof LLVM.Fragment) {
 				fragment.merge(inner);
 			} else {
+				failed = true;
 				break;
 			}
 		}
 
-		if (this.returned == false && !this.isChild) {
+		if (!failed && this.returned == false && !this.isChild) {
 			this.getFile().throw(
 				`Function does not return`,
 				ast.ref.start, ast.ref.end
