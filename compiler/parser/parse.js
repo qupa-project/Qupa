@@ -313,10 +313,10 @@ function Simplify_Data_Type_Access (node) {
 	let out = [];
 	switch (node.tokens[0].type) {
 		case "datatype_access_dynamic":
-			out = [ "[]" ].concat( Simplify_Data_Type_Args(node.tokens[0].tokens[2][0]) );
+			out = [ "[]", Simplify_Data_Type_Args(node.tokens[0].tokens[2][0]) ];
 			break;
 		case "datatype_access_static":
-			out = [ ".", Simplify_Name(node.tokens[0]) ];
+			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]) ];
 			break;
 		default:
 			throw new TypeError(`Unexpected accessor type ${node.type}`);
