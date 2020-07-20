@@ -569,21 +569,15 @@ class Execution {
 			ast.tokens[0].tokens[0]
 		);
 
-		console.log(574);
-
 		frag.append(new LLVM.Branch_Unco(label_check));
-		console.log(582);
 		frag.append(label_check.toDefinition());
-		console.log(584, check);
 		frag.merge(check.instructions);
-		console.log(579);
 		frag.append(new LLVM.Branch(
 			check.register,
 			label_loop,
 			label_end,
 			ast.ref.start
 		));
-		console.log(586);
 		frag.append(label_loop.toDefinition());
 		frag.merge(loop);
 		frag.append(new LLVM.Branch_Unco(label_check));
