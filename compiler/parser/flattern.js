@@ -68,9 +68,9 @@ function DataTypeStr (node) {
 }
 
 /**
- * 
- * @param {Number} count 
- * @param {String} char 
+ *
+ * @param {Number} count
+ * @param {String} char
  */
 function DuplicateChar(count = 1, char = "@"){
 	let str = "";
@@ -82,13 +82,7 @@ function DuplicateChar(count = 1, char = "@"){
 	return str;
 }
 
-function SignatureArr(sig) {
-	return sig.map(x => {
-		return DuplicateChar(x[0], "@") + x[1].name;
-	}).join(',');
-}
-
 
 module.exports = {
-	VariableList, VariableStr, DataTypeList, DataTypeStr, SignatureArr, DuplicateChar
+	VariableList, VariableStr, DataTypeList, DataTypeStr, DuplicateChar
 }

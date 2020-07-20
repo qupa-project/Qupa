@@ -4,6 +4,7 @@ const LLVM = require('../middle/llvm.js');
 
 const types = require('./types.js');
 const { float } = require('./types.js');
+const TypeRef = require('../component/typeRef.js');
 
 class Template_Primative_Trunc extends Template {
 	constructor(ctx) {
@@ -42,7 +43,7 @@ class Template_Primative_Trunc extends Template {
 		}
 
 
-		let func = new Function_Instance(this, "Trunc", [0,variable[0][0]], signature);
+		let func = new Function_Instance(this, "Trunc", new TypeRef(0,variable[0][0]), signature);
 		func.generate = (regs, ir_args) => {
 			return {
 				preamble: new LLVM.Fragment(),
@@ -52,7 +53,7 @@ class Template_Primative_Trunc extends Template {
 					ir_args[0],
 					null
 				),
-				returnType: [ 0, variable[0][0] ]
+				type: [ 0, variable[0][0] ]
 			};
 		};
 
