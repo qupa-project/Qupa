@@ -42,7 +42,7 @@ class Template_Primative_Bitcast extends Template {
 		}
 
 
-		let func = new Function_Instance(this, "Extend", variable[0][0], signature);
+		let func = new Function_Instance(this, "Bitcast", [ 0, variable[0][0] ], signature);
 		let mode = null;
 		if (signature[0][1].cat == "int") {
 			mode = signature[0][1].signed ? 0 : 1;
@@ -58,7 +58,7 @@ class Template_Primative_Bitcast extends Template {
 					ir_args[0],
 					null
 				),
-				returnType: variable[0][0]
+				returnType: [ 0, variable[0][0] ]
 			};
 		};
 

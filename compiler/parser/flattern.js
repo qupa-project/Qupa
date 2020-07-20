@@ -37,7 +37,6 @@ function DataTypeList(node) {
 		[ node.tokens[0], node.tokens[1].tokens ]
 	];
 	for (let access of node.tokens[2]){
-		console.log(38, access);
 		if (access.tokens[0] == "[]") {
 			out.push([
 				"[]",

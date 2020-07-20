@@ -38,7 +38,7 @@ class Template_Primative_Math extends Template {
 			return false;
 		}
 
-		let func = new Function_Instance(this, this.type, signature[0], signature);
+		let func = new Function_Instance(this, this.type, [ 0, signature[0] ], signature);
 		let mode = null;
 		if (signature[0][1].cat == "int") {
 			mode = signature[0][1].signed ? 0 : 1;
@@ -54,7 +54,7 @@ class Template_Primative_Math extends Template {
 			return {
 				preamble: new LLVM.Fragment(),
 				instruction: new LLVM[action](mode, ir_args[0].type, ir_args[0].name, ir_args[1].name),
-				returnType: types[ir_args[0].type.term]
+				returnType: [ 0, types[ir_args[0].type.term] ]
 			};
 		};
 		return func;

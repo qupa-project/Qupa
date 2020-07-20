@@ -42,7 +42,7 @@ class Template_Primative_Trunc extends Template {
 		}
 
 
-		let func = new Function_Instance(this, "Trunc", variable[0][0], signature);
+		let func = new Function_Instance(this, "Trunc", [0,variable[0][0]], signature);
 		func.generate = (regs, ir_args) => {
 			return {
 				preamble: new LLVM.Fragment(),
@@ -52,7 +52,7 @@ class Template_Primative_Trunc extends Template {
 					ir_args[0],
 					null
 				),
-				returnType: variable[0][0]
+				returnType: [ 0, variable[0][0] ]
 			};
 		};
 
