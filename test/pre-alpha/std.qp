@@ -68,3 +68,7 @@ bool Equal(int a, int b) {
 bool Equal(float a, float b) {
 	return f32_equal(a, b);
 }
+
+bool Greater(int a, int b) {
+	return i32_gt(a, b);
+}

@@ -162,8 +162,11 @@ class Execution {
 				signature.push(new TypeRef(cache.register.pointer, cache.register.type));
 			} else if (arg.type == "constant") {
 				let cnst = this.compile_constant(arg);
-				args.push(cnst);
-				signature.push(new TypeRef(0, Primative.types[cnst.type.term]));
+				preamble.merge(cnst.preamble);
+				epilog.merge(cnst.epilog);
+
+				args.push(cnst.instruction);
+				signature.push(cnst.type);
 			} else {
 				this.getFile().throw(
 					`Cannot take ${arg.type} as call argument`,
@@ -451,7 +454,11 @@ class Execution {
 		/**
 		 * Prepare the condition value
 		 */
-		let cond = this.compile_expr(ast.tokens[0].tokens[0], new TypeRef(0, Primative.types.bool), true);
+		let cond = this.compile_expr(
+			ast.tokens[0].tokens[0],
+			new TypeRef(0, Primative.types.bool),
+			true
+		);
 		if (cond.epilog.stmts.length > 0) {
 			throw new Error("Cannot do an if-statement using instruction with epilog");
 		}
@@ -562,16 +569,21 @@ class Execution {
 			ast.tokens[0].tokens[0]
 		);
 
+		console.log(574);
 
 		frag.append(new LLVM.Branch_Unco(label_check));
+		console.log(582);
 		frag.append(label_check.toDefinition());
+		console.log(584, check);
 		frag.merge(check.instructions);
+		console.log(579);
 		frag.append(new LLVM.Branch(
 			check.register,
 			label_loop,
 			label_end,
 			ast.ref.start
 		));
+		console.log(586);
 		frag.append(label_loop.toDefinition());
 		frag.merge(loop);
 		frag.append(new LLVM.Branch_Unco(label_check));
@@ -586,44 +598,20 @@ class Execution {
 		return frag;
 	}
 	compile_while_condition(ast) {
-		let frag = new LLVM.Fragment();
+		let res = this.compile_expr(
+			ast,
+			new TypeRef(0, Primative.types.bool),
+			true
+		);
 
-		if (ast.type != "variable") {
-			this.getFile().throw(
-				`Error: If statements may only take variables`,
-				cond.ref.start, cond.ref.end
-			);
+		if (res === false) {
 			return false;
 		}
-		let load = this.scope.getVar(ast, true);
-		if (load.error) {
-			this.getFile().throw(
-				`Unable to access structure term "${load.ast.tokens}"`,
-				load.ast.ref.start, load.ast.ref.end
-			);
-			return false;
-		}
-		frag.merge(load.preamble);
 
-		let cache = load.register.deref(this.scope, true, 1);
-		if (!cache.register) {
-			let name = Flattern.VariableStr(ast);
-			this.getFile().throw(
-				`Error: Cannot dereference variable ${name}`,
-				cond.ref.start, cond.ref.end
-			);
-			return false;
-		}
-		frag.merge(cache.preamble);
-
-
+		res.preamble.merge(res.epilog);
 		return {
-			instructions: frag,
-			register: new LLVM.Argument(
-				new LLVM.Type(cache.register.type.represent, cache.register.pointer, cache.register.declared),
-				new LLVM.Name(cache.register.id, false, ast.ref.start),
-				ast.ref.start
-			)
+			instructions: res.preamble,
+			register: res.instruction
 		};
 	}
 
