@@ -80,17 +80,11 @@ class Structure extends TypeDef {
 				return;
 			}
 
-			let typeNode = node.tokens[0].tokens[0];
-			let pointerLvl = 0;
-			if (typeNode.type == "pointer") {
-				pointerLvl = typeNode.tokens[0];
-				typeNode = typeNode.tokens[1];
-			}
-
-			let type = this.ctx.getType(Flattern.VariableList(typeNode).slice(1));
+			let typeNode = node.tokens[0];
+			let type = this.ctx.getType(Flattern.DataTypeList(typeNode));
 			if (type === null) {
 				this.ctx.getFile().throw(
-					`Error: Unknown type ${Flattern.VariableStr(typeNode)}`,
+					`Error: Unknown type ${Flattern.DataTypeStr(typeNode)}`,
 					typeNode.ref.start,
 					typeNode.ref.end
 				);
@@ -99,7 +93,7 @@ class Structure extends TypeDef {
 			if (!type.linked) {
 				type.link([this, ...stack]);
 			}
-			let term = new Struct_Term(name, type, pointerLvl, node.tokens[0].tokens[0].ref.start);
+			let term = new Struct_Term(name, type, typeNode.tokens[0], node.ref.start);
 			this.terms.push(term);
 			this.size += term.size;
 		}
