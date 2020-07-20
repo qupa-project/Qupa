@@ -27,27 +27,57 @@ function VariableStr (node) {
 	return str;
 }
 
-function DataTypeStr (node) {
-	if (node.tokens[0].type == "variable") {
-		return VariableStr(node.tokens[0]);
+
+function DataTypeList(node) {
+	if (node.type == "constant") {
+		return [ "lit", node.tokens[0].tokens ];
 	}
 
-	let target = node.tokens[0];
-	let out = "";
-	while (target.type == "pointer" || target.type == "deref") {
-		out += target.type == "pointer" ? "@" : "$";
-		target = target.tokes[0];
+	let out = [
+		[ node.tokens[0], node.tokens[1].tokens ]
+	];
+	for (let access of node.tokens[2]){
+		console.log(38, access);
+		if (access.tokens[0] == "[]") {
+			out.push([
+				"[]",
+				access.tokens[1].tokens.map( x => DataTypeList(x) )
+			]);
+		} else {
+			out.push([access.tokens[0], access.tokens[1].tokens]);
+		}
 	}
-	out += VariableStr(target);
 
 	return out;
 }
 
-function PointerLvl(int) {
+function DataTypeStr (node) {
+	if (node.type == "constant") {
+		return node.tokens[0].tokens;
+	}
+
+	let str = DuplicateChar(node.tokens[0], "@") + node.tokens[1].tokens;
+	for (let access of node.tokens[2]){
+		if (access.tokens[0] == "[]") {
+			str += `[${access.tokens[1].tokens.map( x => DataTypeStr(x) ).join(", ")}]`;
+		} else {
+			str += access.tokens[0] + access.tokens[1].tokens;
+		}
+	}
+
+	return str;
+}
+
+/**
+ * 
+ * @param {Number} count 
+ * @param {String} char 
+ */
+function DuplicateChar(count = 1, char = "@"){
 	let str = "";
-	while (int > 0) {
-		str += "@";
-		int--;
+	while (count > 0) {
+		str += char;
+		count--;
 	}
 
 	return str;
@@ -55,11 +85,11 @@ function PointerLvl(int) {
 
 function SignatureArr(sig) {
 	return sig.map(x => {
-		return PointerLvl(x[0]) + x[1].name;
+		return DuplicateChar(x[0], "@") + x[1].name;
 	}).join(',');
 }
 
 
 module.exports = {
-	VariableList, VariableStr, DataTypeStr, PointerLvl, SignatureArr
+	VariableList, VariableStr, DataTypeList, DataTypeStr, SignatureArr, DuplicateChar
 }

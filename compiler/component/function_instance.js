@@ -66,7 +66,7 @@ class Function_Instance {
 			return null;
 		}
 
-		let ref = file.getType(Flattern.VariableList(name).slice(1));
+		let ref = file.getType(Flattern.DataTypeList(name).slice(1));
 		if (ref instanceof TypeDef) {
 			return [ptr, ref];
 		} else {
@@ -121,37 +121,19 @@ class Function_Instance {
 		}
 
 		for (let type of types){
-			let name = null;
-			let ptr = 0;
-			if (type.tokens[0].type == "variable") {
-				name = type.tokens[0];
-			} else {
-				name = type.tokens[0].tokens[1];
-				if (type.tokens[0].type == "pointer") {
-					ptr = 1;
-				}
-			}
-
-			if (name.tokens[0].length != 0) {
-				file.throw(
-					`Cannot dereference a function argument "${Flattern.VariableStr(name)}"`,
-					name.ref.start, name.ref.end
-				);
-			}
-
-			let ref = file.getType(Flattern.VariableList(name).slice(1));
+			let ref = file.getType(Flattern.DataTypeList(type));
 			if (ref instanceof TypeDef) {
-				this.signature.push([ptr, ref]);
+				this.signature.push([type.tokens[0], ref]);
 			} else {
 				if (ref == null) {
 					file.throw(
-						`Invalid type name "${Flattern.VariableStr(name)}"`,
-						name.ref.start, name.ref.end
+						`Invalid type name "${Flattern.DataTypeStr(type)}"`,
+						type.ref.start, type.ref.end
 					);
 				} else {
 					file.throw(
 						`Unexpected data type form "${typeof(ref)}"`,
-						name.ref.start, name.ref.end
+						type.ref.start, type.ref.end
 					);
 				}
 			}
