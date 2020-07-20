@@ -402,78 +402,35 @@ class Execution {
 		let returnType = null;
 		if (ast.tokens.length == 0){
 			inner = new LLVM.Type("void", false);
-			returnType = "void";
+			returnType = new TypeRef(0, Primative.types.void);
 		} else {
-			switch (ast.tokens[0].type) {
-				case "constant":
-					let res = this.compile_constant(ast.tokens[0]);
-					inner = res.instruction;
-					returnType = res.type;
-					break;
-				case "call":
-					let call = this.compile_call(ast.tokens[0]);
-					frag.merge(call.preamble);
-					if (call.epilog.stmts.length > 0){
-						throw new Error("Unhandled edge case, returning a funciton call without handeling epilog");
-					}
+			let res = this.compile_expr(ast.tokens[0], this.returnType);
+			returnType = res.type;
+			frag.merge(res.preamble);
+			inner = res.instruction;
 
-					let regID = this.scope.genID();
-					let regName = new LLVM.Name(regID.toString(), false, ast.tokens[0].ref);
-					returnType = call.instruction.rtrnType.term;
-					frag.append(new LLVM.Set(
-						regName,
-						call.instruction,
-						ast.ref
-					));
-					inner = new LLVM.Argument(
-						new LLVM.Type(call.instruction.rtrnType.term, 0),
-						regName,
-						ast.ref
-					);
-					frag.merge(call.epilog);
-					break;
-				case "variable":
-					inner = new LLVM.Fragment();
-					let name = Flattern.VariableStr(ast.tokens[0]);
-					let load = this.scope.getVar(ast.tokens[0], true);
-					if (load.error) {
-						this.getFile().throw(
-							`Unable to access structure term "${load.ast.tokens}"`,
-							load.ast.ref.start, load.ast.ref.end
-						);
-						return false;
-					}
-					frag.merge(load.preamble);
-
-					let cache = load.register.deref(this.scope, true, 1);
-					if (!cache) {
-						this.getFile().throw(
-							`Unable to dereference variable "${name}"`,
-							ast.tokens[0].ref.start, ast.tokens[0].ref.end
-						);
-						return false;
-					}
-					frag.merge(cache.preamble);
-
-					inner = new LLVM.Argument(
-						new LLVM.Type( cache.register.type.represent, cache.register.pointer, cache.register.type.ref ),
-						new LLVM.Name( cache.register.id, false, ast.tokens[0].ref )
-					);
-					returnType = cache.register.type.represent;
-					break;
-				default:
-					this.getFile().throw(
-						`Unexpected return expression type "${ast.tokens[0].type}"`,
-						ast.ref.start, ast.ref.end
-					);
+			if (res.epilog.stmts.length > 0) {
+				throw new Error("Cannot return using instruction with epilog");
 			}
 		}
 
 		if (!this.returnType.match(returnType)) {
 			this.getFile().throw(
-				`Return type miss-match, expected ${this.returnType.name}`,
+				`Return type miss-match, expected ${this.returnType.toString()} but got ${returnType.toString()}`,
 				ast.ref.start, ast.ref.end
 			);
+		}
+
+		if (inner instanceof LLVM.Call) {
+			let id = this.scope.genID();
+			let reg = new LLVM.Name(id.toString(), false, ast.ref.start);
+			let call = inner;
+			frag.append(new LLVM.Set(
+				reg,
+				call,
+				ast.ref.start
+			));
+			inner = new LLVM.Argument(call.rtrnType, reg, ast.ref.start);
 		}
 
 		// Ensure that pointers actually write their data before returning
@@ -482,6 +439,7 @@ class Execution {
 				frag.merge(this.variables[name].flushCache());
 			}
 		}
+
 		frag.append(new LLVM.Return(inner, ast.ref.start));
 		return frag;
 	}
