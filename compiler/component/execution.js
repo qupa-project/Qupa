@@ -160,19 +160,17 @@ class Execution {
 				));
 				regs.push(cache.register);
 				signature.push(new TypeRef(cache.register.pointer, cache.register.type));
-			} else if (arg.type == "constant") {
-				let cnst = this.compile_constant(arg);
-				preamble.merge(cnst.preamble);
-				epilog.merge(cnst.epilog);
-
-				args.push(cnst.instruction);
-				signature.push(cnst.type);
 			} else {
-				this.getFile().throw(
-					`Cannot take ${arg.type} as call argument`,
-					arg.ref.start, arg.ref.end
-				);
-				return false;
+				let expr = this.compile_expr(arg, false, true, ['call']);
+				if (expr === false) {
+					return false;
+				}
+
+				preamble.merge(expr.preamble);
+				epilog.merge(expr.epilog);
+
+				args.push(expr.instruction);
+				signature.push(expr.type);
 			}
 		}
 
@@ -617,7 +615,15 @@ class Execution {
 	 * @param {Array[Number, TypeDef]} expects
 	 * @param {Boolean} simple Simplifies the result to a single register when possible
 	 */
-	compile_expr (ast, expects = null, simple = false) {
+	compile_expr (ast, expects = null, simple = false, block = []) {
+		if (block.includes(ast.type)) {
+			this.getFile().throw(
+				`Error: Cannot call ${ast.type} within a nested expression`,
+				ast.ref.start, ast.ref.end
+			);
+			return false;
+		}
+
 		let res = null;
 		switch (ast.type) {
 			case "constant":
