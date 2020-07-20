@@ -14,11 +14,11 @@ class Scope {
 		this.isChild    = false;
 	}
 
-	/**
-	 * @returns {File}
-	 */
+
+
 	/**
 	 * Return the file of which this scope is within
+	 * @returns {File}
 	 */
 	getFile () {
 		return this.ctx.getFile();
@@ -123,6 +123,12 @@ class Scope {
 		}
 
 		if (this.variables[name]) {
+			if (this.variables[name].isClone && !Scope.raisedVariables) {
+				// When scoped variables are added
+				// Ensure that any changes to the original are flushed before
+				//   redeclaring
+			}
+
 			this.getFile().throw(
 				`Duplicate declaration of name ${name} in scope`,
 				this.variables[name].declared, ref
@@ -223,6 +229,11 @@ class Scope {
 		}
 	}
 
+	/**
+	 * Flush all cloned variables
+	 * @param {BNF_Reference} ref
+	 * @returns {LLVM.Fragment}
+	 */
 	flushAllClones (ref) {
 		let frag = new LLVM.Fragment();
 

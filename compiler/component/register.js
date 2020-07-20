@@ -22,6 +22,8 @@ class Register {
 		this.isConcurrent = false;
 	}
 
+
+
 	get(ast, scope, read = true) {
 		let preamble = new LLVM.Fragment();
 		let register = this;
@@ -142,6 +144,8 @@ class Register {
 		};
 	}
 
+
+
 	/**
 	 *
 	 * @param {BNF_Reference?} ref
@@ -188,6 +192,9 @@ class Register {
 		this.inner = [];
 		this.cache = replacement;
 	}
+
+
+
 
 	deref(scope, read = true, amount = 1) {
 		// Cannot dereference a value
@@ -240,6 +247,8 @@ class Register {
 		return out;
 	}
 
+
+
 	/**
 	 * Deep clone
 	 * @returns {Register}
@@ -264,6 +273,8 @@ class Register {
 			this.cache.declone();
 		}
 	}
+
+
 
 	/**
 	 * Updates any caches due to alterations in child scope
