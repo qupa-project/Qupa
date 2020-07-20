@@ -49,9 +49,14 @@ class Function_Instance {
 
 	getType (dataType) {
 		let file = this.getFile();
+		let res = file.getType(Flattern.DataTypeList(dataType));
+		if (res === null) {
+			return res;
+		}
+
 		return [
 			dataType.tokens[0], 
-			file.getType(Flattern.DataTypeList(dataType))
+			res
 		];
 	}
 
