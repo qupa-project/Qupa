@@ -432,7 +432,7 @@ class Execution {
 		}
 
 		// Ensure that pointers actually write their data before returning
-		frag.merge(this.scope.flushConcurrents(ast.ref));
+		frag.merge(this.scope.flushAllConcurrents(ast.ref));
 
 		frag.append(new LLVM.Return(inner, ast.ref.start));
 		return frag;
@@ -565,6 +565,7 @@ class Execution {
 		if (loop === false) {
 			return false;
 		}
+		loop.merge(scope_loop.flushAllClones());
 
 		let label_end = new LLVM.Label(
 			new LLVM.Name(`${this.scope.genID()}`, false, ast.tokens[0].tokens[0]),
@@ -771,7 +772,11 @@ class Execution {
 	 * Clears the cache of every
 	 */
 	clearAllCaches() {
-		this.scope.clearAllCaches();
+		return this.scope.clearAllCaches();
+	}
+
+	flushAllClones() {
+		return this.scope.flushAllClones();
 	}
 
 	/**

@@ -223,7 +223,19 @@ class Scope {
 		}
 	}
 
-	flushConcurrents(ref) {
+	flushAllClones (ref) {
+		let frag = new LLVM.Fragment();
+
+		for (let name in this.variables) {
+			if (this.variables[name].isClone) {
+				frag.merge( this.variables[name].flushCache(ref) );
+			}
+		}
+
+		return frag;
+	}
+
+	flushAllConcurrents(ref) {
 		let frag = new LLVM.Fragment();
 
 		for (let name in this.variables) {
