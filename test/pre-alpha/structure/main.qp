@@ -49,8 +49,7 @@ i32 main() {
 
 
 i32 Area(Rect rec){
-	i32 area;
-	area = Mul(rec.width, rec.height);
+	i32 area = Mul(rec.width, rec.height);
 	return area;
 }
 

@@ -47,31 +47,12 @@ class Function_Instance {
 		return this;
 	}
 
-	getTypeFrom_DataType(dataType) {
+	getType (dataType) {
 		let file = this.getFile();
-		let name = null;
-		let ptr = 0;
-
-		if (dataType.tokens[0].type == "variable") {
-			name = dataType.tokens[0];
-		} else if (dataType.tokens[0].type == "pointer") {
-			name = dataType.tokens[0].tokens[1];
-			ptr = dataType.tokens[0].tokens[0];
-		} else {
-			return null;
-		}
-
-		// Cannot dereference type
-		if (name.tokens[0].length > 0) {
-			return null;
-		}
-
-		let ref = file.getType(Flattern.DataTypeList(name).slice(1));
-		if (ref instanceof TypeDef) {
-			return [ptr, ref];
-		} else {
-			return null;
-		}
+		return [
+			dataType.tokens[0], 
+			file.getType(Flattern.DataTypeList(dataType))
+		];
 	}
 
 	/**
@@ -121,18 +102,18 @@ class Function_Instance {
 		}
 
 		for (let type of types){
-			let ref = file.getType(Flattern.DataTypeList(type));
-			if (ref instanceof TypeDef) {
-				this.signature.push([type.tokens[0], ref]);
+			let search = this.getType(type);
+			if (search[1] instanceof TypeDef) {
+				this.signature.push(search);
 			} else {
-				if (ref == null) {
+				if (search[1] == null) {
 					file.throw(
 						`Invalid type name "${Flattern.DataTypeStr(type)}"`,
 						type.ref.start, type.ref.end
 					);
 				} else {
 					file.throw(
-						`Unexpected data type form "${typeof(ref)}"`,
+						`Unexpected data type form "${typeof(search[1])}"`,
 						type.ref.start, type.ref.end
 					);
 				}

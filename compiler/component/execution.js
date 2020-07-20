@@ -236,7 +236,7 @@ class Execution {
 
 
 	compile_declare(ast){
-		let typeRef = this.getFunction().getTypeFrom_DataType(ast.tokens[0]);
+		let typeRef = this.getFunction().getType(ast.tokens[0]);
 		let	name = ast.tokens[1].tokens;
 		let frag = new LLVM.Fragment();
 
