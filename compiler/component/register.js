@@ -3,12 +3,12 @@ const TypeDef = require('./typedef.js');
 
 class Register {
 	/**
-	 * 
-	 * @param {Number} id 
-	 * @param {TypeDef|Structure} type 
-	 * @param {String} name 
-	 * @param {Number} pointerDepth 
-	 * @param {BNF_Reference} ref 
+	 *
+	 * @param {Number} id
+	 * @param {TypeDef|Structure} type
+	 * @param {String} name
+	 * @param {Number} pointerDepth
+	 * @param {BNF_Reference} ref
 	 */
 	constructor(id, type, name, pointerDepth, ref) {
 		this.id         = id;
@@ -143,8 +143,8 @@ class Register {
 	}
 
 	/**
-	 * 
-	 * @param {BNF_Reference?} ref 
+	 *
+	 * @param {BNF_Reference?} ref
 	 * @returns {void}
 	 */
 	markUpdated(ref) {
@@ -153,10 +153,10 @@ class Register {
 
 	/**
 	 * Forces caches to write data to the correct location
-	 * @param {BNF_Reference?} ref 
+	 * @param {BNF_Reference?} ref
 	 * @returns {LLVM.Fragment?}
 	 */
-	flushCache(ref, replacement = null) {
+	flushCache(ref) {
 		let frag = new LLVM.Fragment();
 
 		if (this.cache) {
@@ -175,18 +175,18 @@ class Register {
 				ref
 			));
 		}
-		this.cache = replacement;
 
 		return frag;
 	}
 
 	/**
 	 * Dumps all caches, forcing reloads
+	 * @param {Register} cache A cache that may replace this one
 	 * @returns {void}
 	 */
-	clearCache() {
+	clearCache(replacement = null) {
 		this.inner = [];
-		this.cache = null;
+		this.cache = replacement;
 	}
 
 	deref(scope, read = true, amount = 1) {

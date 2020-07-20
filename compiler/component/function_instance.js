@@ -100,6 +100,7 @@ class Function_Instance {
 
 		for (let type of types){
 			let search = this.getType(type);
+			search.pointer = type.tokens[0]; // Copy the pointer level across
 			if (search instanceof TypeRef) {
 				this.signature.push(search);
 			} else {

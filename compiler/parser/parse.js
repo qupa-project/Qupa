@@ -160,7 +160,7 @@ function Simplify_External_Body(node) {
 			out.push(next);
 		}
 	}
-	
+
 	node.tokens = out;
 	node.reached = null;
 	return node;
@@ -185,7 +185,7 @@ function Simplify_External_Term(node) {
 		default:
 			throw new TypeError(`Unexpected external statement ${node.tokens[0].type}`);
 	}
-	
+
 	return inner;
 }
 
@@ -233,7 +233,7 @@ function Simplify_Struct_Stmt (node) {
 
 function Simplify_Variable (node) {
 	let out = [
-		node.tokens[0].map(x => "$").join("")
+		node.tokens[0].length
 	];
 	out.push(Simplify_Name( node.tokens[1][0] )); // root
 
@@ -473,7 +473,7 @@ function Simplify_Function_Stmt (node) {
 		default:
 			throw new TypeError(`Unexpected function statement ${node.tokens[0].type}`);
 	}
-	
+
 	node.tokens = [inner];
 	node.reached = null;
 	return node;

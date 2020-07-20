@@ -15,7 +15,7 @@ i32 main() {
 	std.println(a);
 	println(b);
 
-	c = add(a, b);
+	c = Add(a, b);
 	println(c);
 
 	return 1;

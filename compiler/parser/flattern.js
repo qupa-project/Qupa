@@ -60,7 +60,7 @@ function DataTypeStr (node) {
 		if (access.tokens[0] == "[]") {
 			str += `[${access.tokens[1].tokens.map( x => DataTypeStr(x) ).join(", ")}]`;
 		} else {
-			str += access.tokens[0] + access.tokens[1].tokens;
+			str += DuplicateChar(access.tokens[0], "$") + access.tokens[1].tokens;
 		}
 	}
 

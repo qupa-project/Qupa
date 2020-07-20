@@ -4,6 +4,7 @@ const TypeRef = require('./typeRef.js');
 const Scope = require('./scope.js');
 const State = require('./state.js');
 const { Argument } = require('../middle/llvm.js');
+const Register = require('./register.js');
 
 const Primative = {
 	types: require('./../primative/types.js')
@@ -80,7 +81,7 @@ class Execution {
 	 * Load a variable
 	 * @param {BNF_Node} ast
 	 */
-	compile_getVariable(ast) {
+	compile_loadVariable(ast) {
 		let load = this.scope.getVar(ast, true);
 		if (load.error) {
 			this.getFile().throw(load.msg, load.ref.start, load.ref.end);
@@ -142,7 +143,7 @@ class Execution {
 				preamble.merge(load.preamble);
 
 				let cache = load.register.deref(this.scope, true, 1);
-				if (!cache.register) {
+				if (!cache || !cache.register) {
 					let name = Flattern.VariableStr(arg);
 					this.getFile().throw(
 						`Cannot dereference ${name}`,
@@ -219,8 +220,8 @@ class Execution {
 			}
 		}
 
-		// Generate the LLVM for the call
-		//   Mark any parsed pointers as now being concurrent
+
+		// Find a function with the given signature
 		let target = file.getFunction(accesses, signature);
 		if (!target) {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
@@ -231,6 +232,9 @@ class Execution {
 			return false;
 		}
 
+
+		// Generate the LLVM for the call
+		//   Mark any parsed pointers as now being concurrent
 		if (target.isInline) {
 			let inner = target.generate(regs, args);
 			preamble.merge(inner.preamble);
@@ -249,7 +253,7 @@ class Execution {
 			// Clear any lower caches
 			//   If this is a pointer the value may have changed
 			for (let arg of regs) {
-				arg.concurrent = true;
+				arg.isConcurrent = true;
 				arg.clearCache();
 			}
 
@@ -263,6 +267,7 @@ class Execution {
 	/**
 	 * Generates the LLVM for a call where the result is ignored
 	 * @param {BNF_Reference} ast
+	 * @returns {LLVM.Fragment}
 	 */
 	compile_call_procedure(ast) {
 		let frag = new LLVM.Fragment(ast);
@@ -280,6 +285,11 @@ class Execution {
 
 
 
+	/**
+	 * Generates LLVM for a variable declaration
+	 * @param {BNF_Node} ast
+	 * @returns {LLVM.Fragment}
+	 */
 	compile_declare(ast){
 		let typeRef = this.getFunction().getType(ast.tokens[0]);
 		let	name = ast.tokens[1].tokens;
@@ -289,6 +299,9 @@ class Execution {
 			this.getFile().throw(`Error: Invalid type name "${Flattern.DataTypeStr(ast.tokens[0])}"`, ast.ref.start, ast.ref.end);
 			return false;
 		}
+
+		// Update pointer level
+		typeRef.pointer = ast.tokens[0].tokens[0];
 
 		let reg = this.scope.register_Var(
 			typeRef.type,
@@ -309,6 +322,11 @@ class Execution {
 
 		return frag;
 	}
+	/**
+	 * Generates the LLVM for assigning a variable
+	 * @param {BNF_Node} ast
+	 * @returns {LLVM.Fragment}
+	 */
 	compile_assign (ast) {
 		let frag = new LLVM.Fragment();
 
@@ -319,13 +337,15 @@ class Execution {
 		}
 		frag.merge(load.preamble);
 
-		let expr = this.compile_expr(ast.tokens[1], new TypeRef(load.register.pointer-1, load.register.type));
+		let expr = this.compile_expr(ast.tokens[1], new TypeRef(load.register.pointer-1, load.register.type), true);
 		if (expr === false) {
 			return false;
 		}
 		frag.merge(expr.preamble);
 
-		if (expr.instruction instanceof LLVM.Argument) {
+		if (expr.register) {
+			load.register.clearCache(expr.register);
+		} else {
 			frag.append(new LLVM.Store(
 				new LLVM.Argument(
 					new LLVM.Type(load.register.type.represent, load.register.pointer),
@@ -338,29 +358,17 @@ class Execution {
 				ast.ref.start
 			));
 			load.register.markUpdated(); // Mark that this value was directly changed
-			                      //  and caches need to be dropped
-		} else {
-			let cache = load.register.deref(this.scope, false);
-			frag.merge(cache.preamble);
-
-			frag.append(new LLVM.Set(
-				new LLVM.Name(cache.register.id, false, ast.ref.start),
-				expr.instruction
-			));
-
-			frag.merge(load.register.flushCache(
-				ast.ref.start,
-				this.caching ? cache.register : null
-			));
-			frag.merge(cache.register.flushCache(
-				ast.ref.start,
-				this.caching && expr.store ? expr.store.cache : null
-			));
+			                             //  and caches need to be dropped
 		}
 
 		frag.merge(expr.epilog);
 		return frag;
 	}
+	/**
+	 * Generates the LLVM for the combined action of define + assign
+	 * @param {BNF_Node} ast
+	 * @returns {LLVM.Fragment}
+	 */
 	compile_declare_assign(ast) {
 		let frag = new LLVM.Fragment();
 
@@ -375,7 +383,7 @@ class Execution {
 			tokens: [
 				{
 					type: "variable",
-					tokens: ["", ast.tokens[1]],
+					tokens: [ 0, ast.tokens[1] ],
 					ref: ast.tokens[1].ref
 				},
 				ast.tokens[2]
@@ -424,11 +432,7 @@ class Execution {
 		}
 
 		// Ensure that pointers actually write their data before returning
-		for (let name in this.variables) {
-			if (this.variables[name].concurrent) {
-				frag.merge(this.variables[name].flushCache());
-			}
-		}
+		frag.merge(this.scope.flushConcurrents(ast.ref));
 
 		frag.append(new LLVM.Return(inner, ast.ref.start));
 		return frag;
@@ -633,7 +637,7 @@ class Execution {
 				res = this.compile_call(ast);
 				break;
 			case "variable":
-				res = this.compile_getVariable(ast);
+				res = this.compile_loadVariable(ast);
 				break;
 			default:
 				throw new Error(`Unexpected expression type ${ast.type}`);
@@ -665,16 +669,19 @@ class Execution {
 			!( res.instruction instanceof Argument )
 		) {
 			let id = this.scope.genID();
-			let reg = new LLVM.Name(id.toString(), false, ast.ref.start);
+
+			res.register = new Register(id, res.type.type, "temp", res.type.pointer, ast.ref.start);
+			let regIR = new LLVM.Name(id.toString(), false, ast.ref.start);
+
 			let inner = res.instruction;
 			res.preamble.append(new LLVM.Set(
-				reg,
+				regIR,
 				inner,
 				ast.ref.start
 			));
 			res.instruction = new LLVM.Argument(
 				new LLVM.Type(expects.type.represent, expects.pointer, ast.ref.start),
-				reg,
+				regIR,
 				ast.ref.start
 			);
 		}

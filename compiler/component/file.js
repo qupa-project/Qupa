@@ -223,7 +223,10 @@ class File {
 		}
 
 		if (this.names[first.tokens]) {
-			return this.names[first.tokens].getFunction(forward, signature);
+			let res = this.names[first.tokens].getFunction(forward, signature);
+			if (res !== null) {
+				return res;
+			}
 		}
 
 		// If the name isn't defined in this file in a regular name space

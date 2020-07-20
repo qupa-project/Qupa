@@ -36,8 +36,18 @@ class Scope {
 	}
 
 	/**
+	 * Generates a new register ID
+	 * @returns {Number}
+	 */
+	genID() {
+		return this.generator.next();
+	}
+
+
+
+	/**
 	 * Registers all arguments as local variables in correct order
-	 * @param {Object[]} args 
+	 * @param {Object[]} args
 	 */
 	register_Args(args) {
 		this.generator.next(); // skip one id for function entry point
@@ -61,6 +71,10 @@ class Scope {
 				arg.pointer+1,
 				arg.ref
 			);
+			if (arg.pointer > 0) {
+				this.variables[arg.name].isConcurrent = true;
+			}
+
 			let cache = new Register(
 				arg.id,
 				arg.type,
@@ -90,20 +104,14 @@ class Scope {
 		return frag;
 	}
 
-	/**
-	 * Generates a new register ID
-	 * @returns {Number}
-	 */
-	genID() {
-		return this.generator.next();
-	}
+
 
 	/**
 	 * Define a new variable
-	 * @param {TypeDef} type 
-	 * @param {Number} pointerLvl 
-	 * @param {String} name 
-	 * @param {BNF_Reference} ref 
+	 * @param {TypeDef} type
+	 * @param {Number} pointerLvl
+	 * @param {String} name
+	 * @param {BNF_Reference} ref
 	 * @returns {void}
 	 */
 	register_Var(type, pointerLvl, name, ref) {
@@ -127,7 +135,7 @@ class Scope {
 
 	/**
 	 * Get the register holding the desired value
-	 * @param {BNF_Node} ast 
+	 * @param {BNF_Node} ast
 	 * @param {Boolean} read Will this value be read? Or only written
 	 * @returns {Object}
 	 */
@@ -162,8 +170,8 @@ class Scope {
 			};
 		}
 
-		if (ast.tokens[0].length > 0) {
-			let load = target.deref(this, true, ast.tokens[0].length);
+		if (ast.tokens[0] > 0) {
+			let load = target.deref(this, true, ast.tokens[0]);
 			if (load === null) {
 				return {
 					error: true,
@@ -189,7 +197,7 @@ class Scope {
 
 
 
-	
+
 
 
 	/**
@@ -207,12 +215,24 @@ class Scope {
 	}
 
 	/**
-	 * Clears the cache of every 
+	 * Clears the cache of every
 	 */
 	clearAllCaches() {
 		for (let name in this.variables) {
 			this.variables[name].clearCache();
 		}
+	}
+
+	flushConcurrents(ref) {
+		let frag = new LLVM.Fragment();
+
+		for (let name in this.variables) {
+			if (this.variables[name].isConcurrent) {
+				frag.merge( this.variables[name].flushCache(ref) );
+			}
+		}
+
+		return frag;
 	}
 
 	/**
