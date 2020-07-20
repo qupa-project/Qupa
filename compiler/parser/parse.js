@@ -292,31 +292,61 @@ function Simplify_Name (node) {
 	return node;
 }
 
+
+
+
 function Simplify_Data_Type (node) {
-	let inner;
-	switch (node.tokens[0].type) {
-		case "variable":
-			inner = Simplify_Variable(node.tokens[0]);
-			break;
-		case "pointer":
-			inner = Simplify_Pointer(node.tokens[0]);
-			break;
-		default:
-			throw new TypeError(`Unexpected data type ${node.tokens[0].type}`);
-	}
+	let inner = [
+		node.tokens[0].length,
+		Simplify_Name(node.tokens[1][0]),
+		node.tokens[2].map(x => {
+			return Simplify_Data_Type_Access(x);
+		})
+	];
 
 	node.reached = null;
-	node.tokens = [inner];
+	node.tokens = inner;
 	return node;
 }
 
-function Simplify_Pointer (node) {	
-	node.tokens = [
-		node.tokens[0].length,
-		Simplify_Variable(node.tokens[1][0])
-	];
+function Simplify_Data_Type_Access (node) {
+	let out = [];
+	switch (node.tokens[0].type) {
+		case "datatype_access_dynamic":
+			out = [ "[]" ].concat( Simplify_Data_Type_Args(node.tokens[0].tokens[2][0]) );
+			break;
+		case "datatype_access_static":
+			out = [ ".", Simplify_Name(node.tokens[0]) ];
+			break;
+		default:
+			throw new TypeError(`Unexpected accessor type ${node.type}`);
+	}
+
+	node.tokens = out;
 	node.reached = null;
 	return node;
+}
+
+function Simplify_Data_Type_Args (node) {
+	let out = [ Simplify_Data_Type_Arg(node.tokens[0][0]) ];
+	for (let inner of node.tokens[1]) {
+		out.push( Simplify_Data_Type_Arg(inner.tokens[3][0]) );
+	}
+
+	node.tokens = out;
+	node.reached = null;
+	return node;
+}
+
+function Simplify_Data_Type_Arg (node) {
+	switch (node.tokens[0].type) {
+		case "data_type":
+			return Simplify_Data_Type(node.tokens[0]);
+		case "constant":
+			return Simplify_Constant(node.tokens[0]);
+		default:
+			throw new TypeError(`Unexpected data-type type ${node.type}`);
+	}
 }
 
 
@@ -342,12 +372,8 @@ function Simplify_Constant (node) {
 	return node;
 }
 function Simplify_Integer(node) {
-	let out = "";
-	if (node.tokens[0].length != 0) {
-		out += "-";
-	}
-
-	node.tokens = ( node.tokens[0].length != 0 ? "-" : "" ) + ( Simplify_Integer_U( node.tokens[1][0] ).tokens );
+	node.tokens = ( node.tokens[0].length != 0 ? "-" : "" ) +
+		( Simplify_Integer_U( node.tokens[1][0] ).tokens );
 	node.reached = null;
 	return node;
 }
@@ -704,7 +730,7 @@ function Parse (data, filename){
 		let cause = "Unknown";
 		if (result.tree.ref.reached) {
 			ref = result.tree.ref.reached.getReach();
-			cause = result.tree.reached.getCausation();
+			cause = result.tree.ref.reached.getCausation();
 		}
 
 		let msg = filename ? `${filename}: ` : "";
