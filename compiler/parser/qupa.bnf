@@ -1,5 +1,5 @@
 program ::= w* ( stmt_top w* )*
-	stmt_top ::= comment | library | class | template | struct | flag_definition | external | alias | function
+	stmt_top ::= comment | library | class | template | struct | flag_definition | external | function
 
 #=============================
 #  Helper patterns
@@ -155,8 +155,6 @@ program ::= w* ( stmt_top w* )*
 	import ::= import_as | import_direct
 		import_as ::= "import" w* string w* ";"
 		import_direct ::= "import" w* string w+ "as" w+ name w* ";"
-
-	alias ::= "alias" w+ name w+ variable w* ";"
 
 
 #=============================

@@ -45,9 +45,6 @@ function Simplify_Stmt_Top(node) {
 		case "flag_definition":
 			inner = Simplify_Flag_Definition(node.tokens[0]);
 			break;
-		case "alias":
-			inner = Simplify_Alias(node.tokens[0]);
-			break;
 		default:
 			throw new TypeError(`Unexpected top level statement ${node.tokens[0].type}`);
 	}
@@ -58,17 +55,6 @@ function Simplify_Stmt_Top(node) {
 }
 
 
-
-function Simplify_Alias (node) {
-	let out = [
-		Simplify_Name(node.tokens[2][0]),
-		Simplify_Variable(node.tokens[4][0])
-	];
-	
-	node.reached = null;
-	node.tokens = out;
-	return node;
-}
 
 
 
