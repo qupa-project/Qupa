@@ -8,7 +8,6 @@
 
 
 external assume {
-	i32 i32_add(i32 a, i32 b);
 	void i32_println(i32 val);
 }
 
@@ -24,8 +23,11 @@ i32 main () {
 	i32_println(a);
 	i32_println(b);
 
-	c = add(a, b);
+	c = Add(a, b);
 
+	i32_println(c);
+
+	c = b;
 	i32_println(c);
 
 	return 1;

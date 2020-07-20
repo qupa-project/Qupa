@@ -28,7 +28,7 @@ i32 main () {
 	println(b);
 
 	c = 2;
-	d = equal(a, c);
+	d = Equal(a, c);
 	if (d) {
 		a = 42;
 	}
@@ -38,13 +38,13 @@ i32 main () {
 	println(a);
 	println(b);
 
-	d = equal(a, b);
+	d = Equal(a, b);
 	if (d) {
-		b = add(a, b);
+		b = Add(a, b);
 	} else {
 		b = 1;
 	}
-	
+
 	c = 0;
 	println(c);
 	println(a);
