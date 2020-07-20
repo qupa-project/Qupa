@@ -33,8 +33,6 @@ class Template_Primative_Extend extends Template {
 			mode = 2;
 		}
 		func.generate = (regs, ir_args) => {
-			console.log(36, variable[0][0].represent, ir_args[0]);
-
 			return {
 				preamble: new LLVM.Fragment(),
 				instruction: new LLVM.Extend(
