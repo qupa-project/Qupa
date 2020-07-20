@@ -3,6 +3,7 @@ const Template = require('../component/template.js');
 const LLVM = require('../middle/llvm.js');
 
 const types = require('./types.js');
+const TypeRef = require('../component/typeRef.js');
 
 class Template_Primative_Bitcast extends Template {
 	constructor(ctx) {
@@ -42,7 +43,7 @@ class Template_Primative_Bitcast extends Template {
 		}
 
 
-		let func = new Function_Instance(this, "Bitcast", [ 0, variable[0][0] ], signature);
+		let func = new Function_Instance(this, "Bitcast", new TypeRef(0, variable[0][0]), signature);
 		let mode = null;
 		if (signature[0][1].cat == "int") {
 			mode = signature[0][1].signed ? 0 : 1;
@@ -58,7 +59,7 @@ class Template_Primative_Bitcast extends Template {
 					ir_args[0],
 					null
 				),
-				returnType: [ 0, variable[0][0] ]
+				type: new TypeRef(0, variable[0][0])
 			};
 		};
 
