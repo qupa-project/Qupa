@@ -3,6 +3,7 @@ const LLVM = require("../middle/llvm.js");
 const TypeRef = require('./typeRef.js');
 const Scope = require('./scope.js');
 const State = require('./state.js');
+const { Argument } = require('../middle/llvm.js');
 
 const Primative = {
 	types: require('./../primative/types.js')
@@ -404,7 +405,7 @@ class Execution {
 			inner = new LLVM.Type("void", false);
 			returnType = new TypeRef(0, Primative.types.void);
 		} else {
-			let res = this.compile_expr(ast.tokens[0], this.returnType);
+			let res = this.compile_expr(ast.tokens[0], this.returnType, true);
 			returnType = res.type;
 			frag.merge(res.preamble);
 			inner = res.instruction;
@@ -419,18 +420,6 @@ class Execution {
 				`Return type miss-match, expected ${this.returnType.toString()} but got ${returnType.toString()}`,
 				ast.ref.start, ast.ref.end
 			);
-		}
-
-		if (inner instanceof LLVM.Call) {
-			let id = this.scope.genID();
-			let reg = new LLVM.Name(id.toString(), false, ast.ref.start);
-			let call = inner;
-			frag.append(new LLVM.Set(
-				reg,
-				call,
-				ast.ref.start
-			));
-			inner = new LLVM.Argument(call.rtrnType, reg, ast.ref.start);
 		}
 
 		// Ensure that pointers actually write their data before returning
@@ -458,37 +447,15 @@ class Execution {
 			return frag;
 		}
 
+
 		/**
 		 * Prepare the condition value
 		 */
-		let cond = ast.tokens[0].tokens[0];
-		if (cond.type != "variable") {
-			this.getFile().throw(
-				`Error: If statements may only take variables`,
-				cond.ref.start, cond.ref.end
-			);
-			return false;
+		let cond = this.compile_expr(ast.tokens[0].tokens[0], new TypeRef(0, Primative.types.bool), true);
+		if (cond.epilog.stmts.length > 0) {
+			throw new Error("Cannot do an if-statement using instruction with epilog");
 		}
-		let load = this.scope.getVar(cond, true);
-		if (load.error) {
-			this.getFile().throw(
-				`Unable to access structure term "${load.ast.tokens}"`,
-				load.ast.ref.start, load.ast.ref.end
-			);
-			return false;
-		}
-		frag.merge(load.preamble);
-
-		let cache = load.register.deref(this.scope, true, 1);
-		if (!cache.register) {
-			let name = Flattern.VariableStr(cond);
-			this.getFile().throw(
-				`Error: Cannot dereference variable ${name}`,
-				cond.ref.start, cond.ref.end
-			);
-			return false;
-		}
-		frag.merge(cache.preamble);
+		frag.merge(cond.preamble);
 
 
 		/**
@@ -526,11 +493,7 @@ class Execution {
 		) : label_false;
 
 		frag.append(new LLVM.Branch(
-			new LLVM.Argument(
-				new LLVM.Type(cache.register.type.represent, cache.register.pointer, cache.register.declared),
-				new LLVM.Name(cache.register.id, false, ast.tokens[0].tokens[0].ref.start),
-				ast.tokens[0].tokens[0].ref.start
-			),
+			cond.instruction,
 			label_true,
 			label_false,
 			ast.ref.start
@@ -670,8 +633,9 @@ class Execution {
 	 *
 	 * @param {BNF_Node} ast
 	 * @param {Array[Number, TypeDef]} expects
+	 * @param {Boolean} simple Simplifies the result to a single register when possible
 	 */
-	compile_expr (ast, expects = null) {
+	compile_expr (ast, expects = null, simple = false) {
 		let res = null;
 		switch (ast.type) {
 			case "constant":
@@ -692,7 +656,6 @@ class Execution {
 		}
 
 		if (expects instanceof TypeRef && !expects.match(res.type)) {
-			console.log(883, res);
 			this.getFile().throw(
 				`Error: Type miss-match, ` +
 					`expected ${expects.toString()}, ` +
@@ -700,6 +663,32 @@ class Execution {
 				ast.ref.start, ast.ref.end
 			);
 			return false;
+		}
+
+		/**
+		 * Simplify result to a single register when;
+		 *   - Simplifying is specified
+		 *   - The value is not a constant
+		 *   - The expected type is known
+		 */
+		if (
+			simple &&
+			expects &&
+			!( res.instruction instanceof Argument )
+		) {
+			let id = this.scope.genID();
+			let reg = new LLVM.Name(id.toString(), false, ast.ref.start);
+			let inner = res.instruction;
+			res.preamble.append(new LLVM.Set(
+				reg,
+				inner,
+				ast.ref.start
+			));
+			res.instruction = new LLVM.Argument(
+				new LLVM.Type(expects.type.represent, expects.pointer, ast.ref.start),
+				reg,
+				ast.ref.start
+			);
 		}
 
 		return res;
