@@ -49,14 +49,13 @@ i32 main() {
 
 
 i32 Area(Rect rec){
-	i32 area;
-	area = mul(rec.width, rec.height);
+	i32 area = Mul(rec.width, rec.height);
 	return area;
 }
 
 Rect Combine(Rect a, Rect b) {
-	a.width = add(a.width, b.width);
-	a.height = add(a.height, b.height);
+	a.width = Add(a.width, b.width);
+	a.height = Add(a.height, b.height);
 	return a;
 }
 

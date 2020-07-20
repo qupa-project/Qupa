@@ -1,5 +1,5 @@
 program ::= w* ( stmt_top w* )*
-	stmt_top ::= comment | library | class | template | struct | flag_definition | external | alias | function
+	stmt_top ::= comment | library | class | template | struct | flag_definition | external | function
 
 #=============================
 #  Helper patterns
@@ -51,6 +51,10 @@ program ::= w* ( stmt_top w* )*
 #=============================
 #  Variables
 #=============================
+	assign  ::= variable w* "=" w* expr w* ";"
+	declare ::= data_type w+ name w* ";"
+	declare_assign ::= data_type w+ name w* "=" w* expr w* ";"
+
 	name ::= letter ( letter | digit | "_" )*
 	variable ::= "$"* name accessor*
 		accessor ::= accessor_dynamic | accessor_refer | accessor_static
@@ -58,14 +62,12 @@ program ::= w* ( stmt_top w* )*
 			accessor_refer   ::= "->" name
 			accessor_static  ::= "." name
 
-	data_type ::= pointer | variable
-		pointer ::= "@"+ variable
-
-	declare ::= data_type w+ name w* ";"
-
-	assign ::= variable w* "=" w* expr w* ";"
-
-	declare_assign ::= data_type w+ name w* "=" w* expr w* ";"
+	data_type ::= "@"* name data_type_access*
+		data_type_access ::= datatype_access_static | datatype_access_dynamic
+			datatype_access_static  ::= "." name
+			datatype_access_dynamic ::= "[" w* datatype_args w* "]"
+				datatype_args ::= datatype_arg ( w* "," w* datatype_arg )*
+					datatype_arg ::= data_type | constant
 
 
 #=============================
@@ -85,7 +87,7 @@ program ::= w* ( stmt_top w* )*
 				func_arg_list ::= func_arg w* ( "," w* func_arg w* )*
 				func_arg      ::= data_type w+ name ( w* "=" w* constant )?
 		function_body ::= "{" w* ( func_stmt w* )* "}"
-			func_stmt ::= comment | if | for | while | return | asm | call_procedure | declare | assign | declare_assign
+			func_stmt ::= comment | if | for | while | return | declare | assign | declare_assign | call_procedure
 
 	function_outline ::= func_head w* ";"
 
@@ -154,8 +156,6 @@ program ::= w* ( stmt_top w* )*
 		import_as ::= "import" w* string w* ";"
 		import_direct ::= "import" w* string w+ "as" w+ name w* ";"
 
-	alias ::= "alias" w+ name w+ variable w* ";"
-
 
 #=============================
 #  External
@@ -166,13 +166,6 @@ program ::= w* ( stmt_top w* )*
 		external_term ::= type_def | struct | function_outline | declare | comment
 
 	type_def ::= "type" w+ name w+ "size" w+ integer w* ";"
-
-#=============================
-#  LLVM IR manipulation
-#=============================
-  asm ::= "asm" w+ asm_param+ w* ";"
-		asm_param ::= w* asm_opperand
-		asm_opperand ::= string | variable
 
 
 #=============================

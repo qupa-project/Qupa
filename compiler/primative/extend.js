@@ -25,7 +25,7 @@ class Template_Primative_Extend extends Template {
 		}
 
 
-		let func = new Function_Instance(this, "Extend", variable[0][0], signature);
+		let func = new Function_Instance(this, "Extend", [ 0, variable[0][0] ], signature);
 		let mode = null;
 		if (signature[0][1].cat == "int") {
 			mode = signature[0][1].signed ? 0 : 1;
@@ -33,8 +33,6 @@ class Template_Primative_Extend extends Template {
 			mode = 2;
 		}
 		func.generate = (regs, ir_args) => {
-			console.log(36, variable[0][0].represent, ir_args[0]);
-
 			return {
 				preamble: new LLVM.Fragment(),
 				instruction: new LLVM.Extend(
@@ -43,7 +41,7 @@ class Template_Primative_Extend extends Template {
 					ir_args[0],
 					null
 				),
-				returnType: variable[0][0]
+				returnType: [ 0, variable[0][0] ]
 			};
 		};
 

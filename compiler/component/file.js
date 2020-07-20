@@ -6,7 +6,6 @@ const Function = require('./function.js');
 const TypeDef  = require('./typedef.js');
 const Structure = require('./struct.js');
 const Import  = require('./import.js');
-const Alias  = require('./alias.js');
 
 // const { Namespace, Namespace_Type } = require('./namespace.js');
 const Parse = require('./../parser/parse.js');
@@ -181,33 +180,30 @@ class File {
 		}
 	}
 
-	getType(variable) {
-		let target = variable[0];
-		let res = this.names[target];
-
-		if (res instanceof Alias) {
-			res = res.resolve();
-		}
-
-		if (res && variable.length > 1) {
-			if (variable[1][0] != ".") {
-				return null;
-			}
-
-			return res.getType( [ variable[1][1], ...variable.slice(2) ] );
+	getType(typeList) {
+		let res = null;
+		// File access must be direct
+		if (typeList[0][0] == "." || Number.isInteger(typeList[0][0])) {
+			res = this.names[typeList[0][1]];
+		} else {
+			return null;
 		}
 
 		if (res) {
-			return res;
-		} else {
-			// If the name isn't defined in this file
-			// Check other files
-			if (this.names["*"] instanceof Import) {
-				return this.names["*"].getType(variable);
+			if (res.length > 1) {
+				res = res.getType(typeList.slice(1));
 			}
 
-			return null;
+			return res;
 		}
+
+		// If the name isn't defined in this file
+		// Check other files
+		if (this.names["*"] instanceof Import) {
+			return this.names["*"].getType(typeList);
+		}
+
+		return null;
 	}
 
 	getFunction(variable, signature) {

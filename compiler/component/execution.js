@@ -236,7 +236,7 @@ class Execution {
 
 
 	compile_declare(ast){
-		let typeRef = this.getFunction().getTypeFrom_DataType(ast.tokens[0]);
+		let typeRef = this.getFunction().getType(ast.tokens[0]);
 		let	name = ast.tokens[1].tokens;
 		let frag = new LLVM.Fragment();
 
@@ -313,9 +313,9 @@ class Execution {
 				return false;
 			}
 
-			if (inner.returnType != target.type) {
+			if (inner.returnType[1] != target.type) {
 				this.getFile().throw(
-					`Error: Type miss-match, this functiion does not return ${target.type.name}, instead returns ${inner.returnType.name}`,
+					`Error: Type miss-match, this functiion does not return ${target.type.name}, instead returns ${inner.returnType[1].name}`,
 					ast.tokens[1].ref.start, ast.tokens[1].ref.end
 				);
 				return false;
@@ -326,12 +326,23 @@ class Execution {
 			let cache = target.deref(this.scope, false);
 			if (!cache) {
 				this.getFile().throw(
-					`Unable to dereference variable "${name}"`,
+					`Unable to dereference variable "${Flattern.VariableStr(ast.tokens[0])}"`,
 					ast.tokens[0].ref.start, ast.tokens[0].ref.end
 				);
 				return false;
 			}
 			frag.merge(cache.preamble);
+
+			// Check pointer level
+			if (inner.returnType[0] != cache.register.pointer) {
+				this.getFile().throw(
+					`Error: Type miss-match, this functiion returns a non-equal dereference. ` +
+						`Expected ${Flattern.DuplicateChar(cache.register.pointer, "@")}${cache.register.type.name}, ` +
+						`instead returns ${Flattern.DuplicateChar(inner.returnType[0], "@")}${cache.register.type.name}`,
+					ast.tokens[1].ref.start, ast.tokens[1].ref.end
+				);
+				return false;
+			}
 
 			frag.append(new LLVM.Set(new LLVM.Name(cache.register.id, false), inner.instruction));
 			frag.merge(inner.epilog); // Mark any pointers that were parsed as updated
