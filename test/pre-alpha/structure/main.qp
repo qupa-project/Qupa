@@ -1,13 +1,15 @@
 /**
 	Expect:
-	20
-	42
-	4
-	5
-	6
-	7	
-	10
-	12
+		20
+		42
+		7
+		8
+		4
+		5
+		6
+		7
+		10
+		12
 */
 
 import "../std.qp";
@@ -28,38 +30,44 @@ i32 main() {
 	b.height = 7;
 
 	// Test single structure argument function
-	i32 area;
-	area = Area(a);
+	i32 area = Area(a);
 	println(area);
 	area = Area(b);
 	println(area);
 
+	// Check parsing forward/back a structure
+	Rect c = Shift(a, 3);
+	println(c.width);
+	println(c.height);
+
 	// Test returning struct function
-	Rect c;
 	c = Combine(a, b);
+
+	// Check that a & b weren't modified
 	println(a.width);
 	println(a.height);
 	println(b.width);
 	println(b.height);
+
+	// Check the result of C
 	println(c.width);
 	println(c.height);
 
 	return 0;
 }
 
+Rect Shift(Rect a, int val) {
+	a.width = Add(a.width, val);
+	a.height = Add(a.height, val);
+	return a;
+}
 
 i32 Area(Rect rec){
-	i32 area = Mul(rec.width, rec.height);
-	return area;
+	return Mul(rec.width, rec.height);
 }
 
 Rect Combine(Rect a, Rect b) {
 	a.width = Add(a.width, b.width);
 	a.height = Add(a.height, b.height);
 	return a;
-}
-
-
-external export {
-	i32 main();
 }

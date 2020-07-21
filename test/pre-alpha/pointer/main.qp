@@ -11,8 +11,8 @@ external assume {
 	@i32 createInt();
 };
 
-void add(@i32 target, i32 val) {
-	$target = i32_add($target, val);
+void Add(@i32 target, i32 val) {
+	$target = Add($target, val);
 	return;
 }
 
@@ -24,13 +24,10 @@ i32 main() {
 	i32_println(a);
 	i32_println($b);
 
-	add(b, a);
+	Add(b, a);
 
 	i32_println(a);
 	i32_println($b);
 
 	return 0;
-}
-external export {
-	i32 main();
 }

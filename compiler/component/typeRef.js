@@ -1,4 +1,7 @@
 const Flattern = require("../parser/flattern");
+const LLVM = {
+	Type: require('./../middle/type.js')
+};
 
 class TypeRef {
 	/**
@@ -26,8 +29,12 @@ class TypeRef {
 	/**
 	 * @returns {String}
 	 */
-	toString() {
+	toString () {
 		return Flattern.DuplicateChar(this.pointer, "@")+this.type.name;
+	}
+
+	toLLVM (ref = null) {
+		return new LLVM.Type(this.type.represent, this.pointer, ref);
 	}
 }
 
