@@ -178,12 +178,12 @@ class Execution {
 
 
 		// Link any [] accessors
-		let accesses = [];
+		let accesses = [ast.tokens[0].tokens[1].tokens];
 		let file = this.getFile();
-		for (let access of ast.tokens[0].tokens.slice(1)) {
-			if (access[0] == "[]") {
+		for (let access of ast.tokens[0].tokens[2]) {
+			if (access.tokens[0] == "[]") {
 				let out = [];
-				for (let inner of access[1].tokens) {
+				for (let inner of access.tokens[1].tokens) {
 					let target = this.scope.getVar(inner, true);
 					if (target.error !== true) {
 						file.throw(
@@ -193,20 +193,40 @@ class Execution {
 						return false;
 					}
 
-					let forward = Flattern.VariableList(inner);
-					if (forward[0] != 0) {
+					let mode = inner.type;
+					let flat = null;
+					let str = null;
+					if (mode == "variable" && !this.scope.hasVariable(inner.tokens[1].tokens)) {
+						flat = Flattern.VariableList(inner);
+						str = Flattern.VariableStr(inner);
+						mode = "datatype";
+					} else if (mode == "datatype") {
+						flat = Flattern.DataTypeList(inner);
+						str = Flattern.DataTypeStr(inner);
+					}
+
+					if (mode != "datatype") {
 						file.throw(
-							`Error: Cannot dereference ${Flattern.VariableStr(inner)}`,
+							'Error: Non data-type [] arguments for function calls are not supported at this time',
 							inner.ref.start, inner.ref.end
 						);
 						return false;
 					}
 
-					target = file.getType(forward.slice(1));
+					let forward = flat;
+					if (forward[0][0] != 0) {
+						file.throw(
+							`Error: Cannot dereference ${str}`,
+							inner.ref.start, inner.ref.end
+						);
+						return false;
+					}
+
+					target = file.getType(forward);
 
 					if (!target) {
 						file.throw(
-							`Error: Unknown variable ${Flattern.VariableStr(inner)}`,
+							`Error: Unknown variable ${Flattern.DataTypeStr(inner)}`,
 							inner.ref.start, inner.ref.end
 						);
 						return false;
@@ -219,7 +239,6 @@ class Execution {
 				accesses.push(access);
 			}
 		}
-
 
 		// Find a function with the given signature
 		let target = file.getFunction(accesses, signature);

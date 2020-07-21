@@ -213,6 +213,21 @@ class Register {
 	}
 
 	/**
+	 * Clears the caches of all GEPs
+	 * This will mark this register as having no writes pending
+	 */
+	clearGEPCaches() {
+		let frag = new LLVM.Fragment();
+
+		for (let reg of this.inner) {
+			reg.clearCache();
+		}
+
+		this.writePending = false;
+		return frag;
+	}
+
+	/**
 	 * Dumps all caches, forcing reloads
 	 * @param {Register} cache A cache that may replace this one
 	 * @returns {void}
@@ -226,6 +241,13 @@ class Register {
 
 
 
+	/**
+	 * Creates a cache and loads the data from this register as a pointer
+	 * This will flush any GEPs if read is true
+	 * @param {Scope} scope
+	 * @param {Boolean} read
+	 * @param {Number} amount
+	 */
 	deref(scope, read = true, amount = 1) {
 		// Cannot dereference a value
 		// Handle error within caller
@@ -242,6 +264,8 @@ class Register {
 		//   As their data is about to be over written
 		if (read) {
 			out.preamble.merge(this.flushGEPCaches());
+		} else {
+			this.clearGEPCaches();
 		}
 
 		// If a new cache needs to be generated because:
@@ -301,6 +325,7 @@ class Register {
 
 		return out;
 	}
+
 	/**
 	 * Marks this copy as the original instead of a clone
 	 * Applies recursively

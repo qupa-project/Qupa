@@ -158,8 +158,8 @@ class Scope {
 				target.clearCache();
 			}
 
-			if (ast.tokens.length > 2) {
-				let load = target.get(ast.tokens.slice(2), this, read);
+			if (ast.tokens[2] && ast.tokens[2].length > 0) {
+				let load = target.get(ast.tokens[2], this, read);
 				if (load.error) {
 					return load;
 				}
@@ -233,6 +233,15 @@ class Scope {
 		}
 
 		return new TypeRef (target.pointer - ast.tokens[0], target.type);
+	}
+
+	/**
+	 * Returns true if this name is defined
+	 * @param {String} name
+	 * @returns {Bool}
+	 */
+	hasVariable(name) {
+		return name in this.variables;
 	}
 
 

@@ -222,8 +222,8 @@ class File {
 			}
 		}
 
-		if (this.names[first.tokens]) {
-			let res = this.names[first.tokens].getFunction(forward, signature);
+		if (this.names[first]) {
+			let res = this.names[first].getFunction(forward, signature);
 			if (res !== null) {
 				return res;
 			}

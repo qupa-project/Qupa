@@ -232,26 +232,30 @@ function Simplify_Struct_Stmt (node) {
 
 
 function Simplify_Variable (node) {
-	let out = [
-		node.tokens[0].length
+	let inner = [
+		node.tokens[0].length,
+		Simplify_Name(node.tokens[1][0]),
+		node.tokens[2].map(x => {
+			return Simplify_Variable_Access(x);
+		})
 	];
-	out.push(Simplify_Name( node.tokens[1][0] )); // root
 
-	for (let access of node.tokens[2]) {
-		access = access.tokens[0];
-		switch (access.type) {
-			case "accessor_dynamic":
-				out.push([ "[]", Simplify_Variable_Args(access.tokens[2][0]) ]);
-				break;
-			case "accessor_static":
-				out.push( [".", Simplify_Name(access.tokens[1][0])] );
-				break;
-			case "accessor_refer":
-				out.push( ["->", Simplify_Name(access.tokens[1][0])] );
-				break;
-			default:
-				throw new TypeError(`Unexpected accessor type ${access.type}`);
-		}
+	node.reached = null;
+	node.tokens = inner;
+	return node;
+}
+
+function Simplify_Variable_Access (node) {
+	let out = [];
+	switch (node.tokens[0].type) {
+		case "accessor_dynamic":
+			out = [ "[]", Simplify_Variable_Args(node.tokens[0].tokens[2][0]) ];
+			break;
+		case "accessor_static":
+			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]) ];
+			break;
+		default:
+			throw new TypeError(`Unexpected accessor type ${node.type}`);
 	}
 
 	node.tokens = out;
