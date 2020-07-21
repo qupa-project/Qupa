@@ -1,8 +1,0 @@
-external assume {
-	@void realloc(@void ptr, size_t bytes);
-	@void malloc(size_t bytes);
-	void free(@void);
-}
-expose realloc;
-expose malloc;
-expose free;
