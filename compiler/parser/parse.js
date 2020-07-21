@@ -537,9 +537,12 @@ function Simplify_Func_Flags (node) {
 }
 function Simplify_Call (node) {
 	let out = [
-		Simplify_Variable(node.tokens[0][0]),                                   // Call name
-		node.tokens[2].length > 0 ? Simplify_Template(node.tokens[2][0]) : [],  // Template
-		node.tokens[6].length > 0 ? Simplify_Call_Args(node.tokens[6][0]) : {   // Arguments
+		Simplify_Variable(node.tokens[0][0]),                                  // Call name
+		node.tokens[2].length > 0 ? Simplify_Template(node.tokens[2][0]) : {   // Template
+			type: "template",
+			tokens: []
+		},
+		node.tokens[6].length > 0 ? Simplify_Call_Args(node.tokens[6][0]) : {  // Arguments
 			type: "call_args",
 			tokens: []
 		},
