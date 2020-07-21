@@ -3,8 +3,6 @@ const Project = require('../component/project.js');
 
 const Static_Cast = require('./static_cast.js');
 const Bitcast = require('./bitcast.js');
-const Extend = require('./extend.js');
-const Trunc = require('./trunc.js');
 const types = require('./types.js');
 const Math = require('./math.js');
 
