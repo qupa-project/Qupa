@@ -241,7 +241,7 @@ function Simplify_Variable (node) {
 		access = access.tokens[0];
 		switch (access.type) {
 			case "accessor_dynamic":
-				out.push([ "[]", Simplify_Call_Args(access.tokens[2][0]) ]);
+				out.push([ "[]", Simplify_Variable_Args(access.tokens[2][0]) ]);
 				break;
 			case "accessor_static":
 				out.push( [".", Simplify_Name(access.tokens[1][0])] );
@@ -258,6 +258,32 @@ function Simplify_Variable (node) {
 	node.reached = null;
 	return node;
 }
+
+function Simplify_Variable_Args (node) {
+	let out = [ Simplify_Variable_Arg(node.tokens[0][0]) ];
+	for (let inner of node.tokens[1]) {
+		out.push( Simplify_Variable_Arg(inner.tokens[3][0]) );
+	}
+
+	node.tokens = out;
+	node.reached = null;
+	return node;
+}
+
+function Simplify_Variable_Arg (node) {
+	switch (node.tokens[0][0].type) {
+		case "data_type":
+			return Simplify_Data_Type(node.tokens[0][0]);
+		case "constant":
+			return Simplify_Constant(node.tokens[0][0]);
+		case "variable":
+			return Simplify_Variable(node.tokens[0][0]);
+		default:
+			throw new TypeError(`Unexpected variable access type ${node.tokens[0].type}`);
+	}
+}
+
+
 
 function Simplify_Name (node) {
 	let out = node.tokens[0][0].tokens[0].tokens;
@@ -331,7 +357,7 @@ function Simplify_Data_Type_Arg (node) {
 		case "constant":
 			return Simplify_Constant(node.tokens[0]);
 		default:
-			throw new TypeError(`Unexpected data-type type ${node.type}`);
+			throw new TypeError(`Unexpected data-type type ${node.tokens[0].type}`);
 	}
 }
 

@@ -45,7 +45,7 @@ program ::= w* ( stmt_top w* )*
 	integer ::= "-"? integer_u
 		integer_u ::= ( digit_nz digit* ) | zero
 		zero ::= "0"
-	float   ::= integer "." integer_u ( "e" integer )?	
+	float   ::= integer "." integer_u ( "e" integer )?
 
 
 #=============================
@@ -58,16 +58,18 @@ program ::= w* ( stmt_top w* )*
 	name ::= letter ( letter | digit | "_" )*
 	variable ::= "$"* name accessor*
 		accessor ::= accessor_dynamic | accessor_refer | accessor_static
-			accessor_dynamic ::= "[" w* call_args w* "]"
+			accessor_dynamic ::= "[" w* variable_args w* "]"
 			accessor_refer   ::= "->" name
 			accessor_static  ::= "." name
+		variable_args ::= variable_arg ( w* "," w* variable_arg )*
+			variable_arg ::= constant | variable | data_type
 
 	data_type ::= "@"* name data_type_access*
 		data_type_access ::= datatype_access_static | datatype_access_dynamic
 			datatype_access_static  ::= "." name
 			datatype_access_dynamic ::= "[" w* datatype_args w* "]"
 				datatype_args ::= datatype_arg ( w* "," w* datatype_arg )*
-					datatype_arg ::= data_type | constant
+					datatype_arg ::= constant | data_type
 
 
 #=============================
