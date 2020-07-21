@@ -1,5 +1,5 @@
 program ::= w* ( stmt_top w* )*
-	stmt_top ::= comment | library | class | template | struct | flag_definition | external | function
+	stmt_top ::= comment | library | class | template_def | struct | flag_definition | external | function
 
 #=============================
 #  Helper patterns
@@ -45,7 +45,7 @@ program ::= w* ( stmt_top w* )*
 	integer ::= "-"? integer_u
 		integer_u ::= ( digit_nz digit* ) | zero
 		zero ::= "0"
-	float   ::= integer "." integer_u ( "e" integer )?	
+	float   ::= integer "." integer_u ( "e" integer )?
 
 
 #=============================
@@ -58,16 +58,15 @@ program ::= w* ( stmt_top w* )*
 	name ::= letter ( letter | digit | "_" )*
 	variable ::= "$"* name accessor*
 		accessor ::= accessor_dynamic | accessor_refer | accessor_static
-			accessor_dynamic ::= "[" w* call_args w* "]"
+			accessor_dynamic ::= "[" w* variable_args w* "]"
 			accessor_refer   ::= "->" name
 			accessor_static  ::= "." name
+		variable_args ::= variable_arg ( w* "," w* variable_arg )*
+			variable_arg ::= constant | variable
 
 	data_type ::= "@"* name data_type_access*
-		data_type_access ::= datatype_access_static | datatype_access_dynamic
+		data_type_access ::= datatype_access_static | template
 			datatype_access_static  ::= "." name
-			datatype_access_dynamic ::= "[" w* datatype_args w* "]"
-				datatype_args ::= datatype_arg ( w* "," w* datatype_arg )*
-					datatype_arg ::= data_type | constant
 
 
 #=============================
@@ -91,9 +90,9 @@ program ::= w* ( stmt_top w* )*
 
 	function_outline ::= func_head w* ";"
 
-	call ::= variable w* "(" w* call_args? w* ")"
+	call ::= variable w* template? w* "(" w* call_args? w* ")"
 		call_args ::= expr ( w* "," w* expr )*
-	call_procedure ::= variable w* "(" w* call_args? w* ")" w* ";"
+	call_procedure ::= variable w* template? w* "(" w* call_args? w* ")" w* ";"
 
 	return ::= "return" ( w+ expr )? w* ";"
 
@@ -119,10 +118,14 @@ program ::= w* ( stmt_top w* )*
 #=============================
 #  Template
 #=============================
-	template ::= "template" w* template_arguments w* template_opperand
-		template_arguments ::= "(" w* ( template_arg w* )? ( "," w* template_arg w* )* ")"
-			template_arg ::= "^"? data_type w+ name flags?
+	template_def ::= "template" w* template_arguments w* template_opperand
+		template_def_arguments ::= "(" w* ( template_arg w* )? ( "," w* template_arg w* )* ")"
+			template_def_arg ::= "^"? data_type w+ name flags?
 		template_opperand ::= function_outline | function | class
+
+	template ::= "#[" w* template_args w* "]"
+		template_args ::= template_arg ( w* "," w* template_arg )*
+		template_arg  ::= constant | data_type
 
 
 #=============================

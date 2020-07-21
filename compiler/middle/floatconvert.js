@@ -1,7 +1,7 @@
 const Instruction = require("./instruction.js");
 const LLVM = require('./llvm.js');
 
-class Extend extends Instruction {
+class FloatConvert extends Instruction {
 	/**
 	 *
 	 * @param {LLVM.Type} type
@@ -9,21 +9,21 @@ class Extend extends Instruction {
 	 * @param {LLVM.Constant[]} cnst_term
 	 * @param {BNF_Reference} ref
 	 */
-	constructor(mode, type, target, ref) {
+	constructor(a, b, type, target, ref) {
 		super (ref);
-		this.mode   = mode;
+		this.a      = a;
+		this.b      = b;
 		this.type   = type;
 		this.target = target;
 	}
 
 	toLLVM() {
 		return super.toLLVM(
-			( this.mode == 2 ? "f" : ( this.mode == 1 ? "s" : "z" ) ) +
-			`ext ` +
+			`${this.a}to${this.b} ` +
 			`${this.target.toLLVM()} to ` +
 			`${this.type.toLLVM()} `,
 		0);
 	}
 }
 
-module.exports = Extend;
+module.exports = FloatConvert;

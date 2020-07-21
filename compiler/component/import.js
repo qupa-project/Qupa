@@ -18,8 +18,8 @@ class Import {
 	}
 
 	/**
-	 * 
-	 * @param {File} file 
+	 *
+	 * @param {File} file
 	 */
 	inject(file) {
 		this.files.push({
@@ -64,9 +64,9 @@ class Import {
 		return null;
 	}
 
-	getFunction(variable, signature) {
+	getFunction(access, signature, template) {
 		for (let lib of this.files) {
-			let opt = lib.file.getFunction(variable, signature);
+			let opt = lib.file.getFunction(access, signature, template);
 			if (opt) {
 				return opt;
 			}

@@ -22,8 +22,8 @@ class Structure extends TypeDef {
 	}
 
 	/**
-	 * 
-	 * @param {String} name 
+	 *
+	 * @param {String} name
 	 * @returns {Object}
 	 */
 	getTerm(name) {
@@ -81,8 +81,8 @@ class Structure extends TypeDef {
 			}
 
 			let typeNode = node.tokens[0];
-			let type = this.ctx.getType(Flattern.DataTypeList(typeNode));
-			if (type === null) {
+			let typeRef = this.ctx.getType(Flattern.DataTypeList(typeNode));
+			if (typeRef === null) {
 				this.ctx.getFile().throw(
 					`Error: Unknown type ${Flattern.DataTypeStr(typeNode)}`,
 					typeNode.ref.start,
@@ -90,10 +90,10 @@ class Structure extends TypeDef {
 				);
 				return;
 			}
-			if (!type.linked) {
+			if (!typeRef.type.linked) {
 				type.link([this, ...stack]);
 			}
-			let term = new Struct_Term(name, type, typeNode.tokens[0], node.ref.start);
+			let term = new Struct_Term(name, typeRef.type, typeNode.tokens[0], node.ref.start);
 			this.terms.push(term);
 			this.size += term.size;
 		}
@@ -114,7 +114,7 @@ class Structure extends TypeDef {
 			types,
 			this.ref
 		);
-	};
+	}
 }
 
 module.exports = Structure;

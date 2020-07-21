@@ -2,6 +2,7 @@ const { Generator_ID } = require('./generate.js');
 const LLVM = require("../middle/llvm.js");
 const Flattern = require('../parser/flattern.js');
 const Register = require('./register.js');
+const TypeRef = require('./typeRef.js');
 
 class Scope {
 	static raisedVariables = true; // whether or not a variable can be redefined within a new scope
@@ -14,11 +15,11 @@ class Scope {
 		this.isChild    = false;
 	}
 
-	/**
-	 * @returns {File}
-	 */
+
+
 	/**
 	 * Return the file of which this scope is within
+	 * @returns {File}
 	 */
 	getFile () {
 		return this.ctx.getFile();
@@ -36,8 +37,18 @@ class Scope {
 	}
 
 	/**
+	 * Generates a new register ID
+	 * @returns {Number}
+	 */
+	genID() {
+		return this.generator.next();
+	}
+
+
+
+	/**
 	 * Registers all arguments as local variables in correct order
-	 * @param {Object[]} args 
+	 * @param {Object[]} args
 	 */
 	register_Args(args) {
 		this.generator.next(); // skip one id for function entry point
@@ -61,6 +72,10 @@ class Scope {
 				arg.pointer+1,
 				arg.ref
 			);
+			if (arg.pointer > 0) {
+				this.variables[arg.name].isConcurrent = true;
+			}
+
 			let cache = new Register(
 				arg.id,
 				arg.type,
@@ -84,26 +99,20 @@ class Scope {
 				),
 				arg.ref
 			));
-			frag.merge(this.variables[arg.name].flushCache(arg.ref, cache));
+			this.variables[arg.name].markUpdated();
 		}
 
 		return frag;
 	}
 
-	/**
-	 * Generates a new register ID
-	 * @returns {Number}
-	 */
-	genID() {
-		return this.generator.next();
-	}
+
 
 	/**
 	 * Define a new variable
-	 * @param {TypeDef} type 
-	 * @param {Number} pointerLvl 
-	 * @param {String} name 
-	 * @param {BNF_Reference} ref 
+	 * @param {TypeDef} type
+	 * @param {Number} pointerLvl
+	 * @param {String} name
+	 * @param {BNF_Reference} ref
 	 * @returns {void}
 	 */
 	register_Var(type, pointerLvl, name, ref) {
@@ -115,6 +124,12 @@ class Scope {
 		}
 
 		if (this.variables[name]) {
+			if (this.variables[name].isClone && !Scope.raisedVariables) {
+				// When scoped variables are added
+				// Ensure that any changes to the original are flushed before
+				//   redeclaring
+			}
+
 			this.getFile().throw(
 				`Duplicate declaration of name ${name} in scope`,
 				this.variables[name].declared, ref
@@ -127,7 +142,7 @@ class Scope {
 
 	/**
 	 * Get the register holding the desired value
-	 * @param {BNF_Node} ast 
+	 * @param {BNF_Node} ast
 	 * @param {Boolean} read Will this value be read? Or only written
 	 * @returns {Object}
 	 */
@@ -143,8 +158,8 @@ class Scope {
 				target.clearCache();
 			}
 
-			if (ast.tokens.length > 2) {
-				let load = target.get(ast.tokens.slice(2), this, read);
+			if (ast.tokens[2] && ast.tokens[2].length > 0) {
+				let load = target.get(ast.tokens[2], this, read);
 				if (load.error) {
 					return load;
 				}
@@ -162,8 +177,8 @@ class Scope {
 			};
 		}
 
-		if (ast.tokens[0].length > 0) {
-			let load = target.deref(this, true, ast.tokens[0].length);
+		if (ast.tokens[0] > 0) {
+			let load = target.deref(this, true, ast.tokens[0]);
 			if (load === null) {
 				return {
 					error: true,
@@ -179,17 +194,61 @@ class Scope {
 			target = load.register;
 		}
 
+		if (!read) {
+			target.markUpdated();
+		}
 		return {
 			register: target,
 			preamble: preamble
 		};
 	}
 
+	/**
+	 * Get the type of a given variable
+	 * @param {BNF_Node} ast
+	 */
+	getVarType(ast) {
+		if (ast.type != "variable") {
+			throw new TypeError(`Parsed AST must be a branch of type variable, not "${ast.type}"`);
+		}
+
+		let target = this.variables[ast.tokens[1].tokens];
+		if (target) {
+			if (ast.tokens.length > 2) {
+				let load = target.getTypeOf(ast.tokens.slice(2));
+				if (load.error) {
+					return load;
+				}
+				target = load.register;
+			}
+		} else {
+			return {
+				error: true,
+				msg: `Unknown variable name ${ast.tokens[1].tokens}`,
+				ref: {
+					start: ast.tokens[1].ref.start,
+					end: ast.tokens[1].ref.end
+				}
+			};
+		}
+
+		return new TypeRef (target.pointer - ast.tokens[0], target.type);
+	}
+
+	/**
+	 * Returns true if this name is defined
+	 * @param {String} name
+	 * @returns {Bool}
+	 */
+	hasVariable(name) {
+		return name in this.variables;
+	}
 
 
 
 
-	
+
+
 
 
 	/**
@@ -207,12 +266,41 @@ class Scope {
 	}
 
 	/**
-	 * Clears the cache of every 
+	 * Clears the cache of every
 	 */
 	clearAllCaches() {
 		for (let name in this.variables) {
 			this.variables[name].clearCache();
 		}
+	}
+
+	/**
+	 * Flush all cloned variables
+	 * @param {BNF_Reference} ref
+	 * @returns {LLVM.Fragment}
+	 */
+	flushAllClones (ref) {
+		let frag = new LLVM.Fragment();
+
+		for (let name in this.variables) {
+			if (this.variables[name].isClone) {
+				frag.merge( this.variables[name].flushCache(ref) );
+			}
+		}
+
+		return frag;
+	}
+
+	flushAllConcurrents(ref) {
+		let frag = new LLVM.Fragment();
+
+		for (let name in this.variables) {
+			if (this.variables[name].isConcurrent) {
+				frag.merge( this.variables[name].flushCache(ref) );
+			}
+		}
+
+		return frag;
 	}
 
 	/**

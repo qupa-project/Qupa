@@ -1,5 +1,0 @@
-import './primatives.qp';
-import './integer.qp';
-import './number.qp';
-
-expose *;

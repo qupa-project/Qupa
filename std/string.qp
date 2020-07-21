@@ -1,7 +1,0 @@
-import "vector.qp";
-
-class String extends Vector {
-	// TODO
-	// Unimplemented, simply here for inheritance
-};
-expose String;

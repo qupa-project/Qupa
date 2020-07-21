@@ -6,6 +6,7 @@ const LLVM = require('../middle/llvm.js');
 const Scope = require('./scope.js');
 const Execution = require('./execution.js');
 const State = require('./state.js');
+const TypeRef = require('./typeRef.js');
 
 
 let funcIDGen = new Generator_ID();
@@ -48,21 +49,12 @@ class Function_Instance {
 	}
 
 	getType (dataType) {
-		let file = this.getFile();
-		let res = file.getType(Flattern.DataTypeList(dataType));
-		if (res === null) {
-			return res;
-		}
-
-		return [
-			dataType.tokens[0], 
-			res
-		];
+		return this.getFile().getType(Flattern.DataTypeList(dataType));
 	}
 
 	/**
 	 * Marks this function as being called from this function
-	 * @param {Function_Instance} func 
+	 * @param {Function_Instance} func
 	 * @param {State} state
 	 * @returns {Boolean} whether this was a new call or not
 	 */
@@ -108,20 +100,14 @@ class Function_Instance {
 
 		for (let type of types){
 			let search = this.getType(type);
-			if (search[1] instanceof TypeDef) {
+			search.pointer = type.tokens[0]; // Copy the pointer level across
+			if (search instanceof TypeRef) {
 				this.signature.push(search);
 			} else {
-				if (search[1] == null) {
-					file.throw(
-						`Invalid type name "${Flattern.DataTypeStr(type)}"`,
-						type.ref.start, type.ref.end
-					);
-				} else {
-					file.throw(
-						`Unexpected data type form "${typeof(search[1])}"`,
-						type.ref.start, type.ref.end
-					);
-				}
+				file.throw(
+					`Invalid type name "${Flattern.DataTypeStr(type)}"`,
+					type.ref.start, type.ref.end
+				);
 			}
 		}
 
@@ -141,25 +127,20 @@ class Function_Instance {
 	}
 	matchSignature (sig) {
 		this.link();
-		
+
 		if (this.signature.length != sig.length) {
 			return false;
 		}
 
 		for (let i=0; i<sig.length; i++) {
-			if (this.signature[i][0] != sig[i][0]) {
-				return false;
-			}
-			let a = this.signature[i][1].represent || this.signature[i][1];
-			let b = sig[i][1].represent || sig[i][1];
-			if (a != b) {
+			if (!this.signature[i].match(sig[i])) {
 				return false;
 			}
 		}
 
 		return true;
 	}
-	
+
 
 
 	compile() {
@@ -169,22 +150,22 @@ class Function_Instance {
 
 		let generator = new Generator_ID(0);
 		let head = this.ast.tokens[0];
-		let argReg = [];
-		let args = [];
+		let argRegs = [];
+		let irArgs = [];
 		for (let i=0; i<this.signature.length; i++) {
 			let regID = generator.next();
-			argReg.push({
+			argRegs.push({
 				id      : regID,
-				type    : this.signature[i][1],                  // type
-				pointer : this.signature[i][0],                  // pointerLvl
+				type    : this.signature[i].type,                // type
+				pointer : this.signature[i].pointer,             // pointerLvl
 				name    : head.tokens[2].tokens[i][1].tokens,    // name
 				ref     : head.tokens[2].tokens[i][0].ref.start  // ln ref
 			});
 
-			args.push(new LLVM.Argument(
+			irArgs.push(new LLVM.Argument(
 				new LLVM.Type(
-					this.signature[i][1].represent,
-					this.signature[i][0],
+					this.signature[i].type.represent,
+					this.signature[i].pointer,
 					head.tokens[2].tokens[i][0].ref.start
 				),
 				new LLVM.Name(
@@ -198,9 +179,9 @@ class Function_Instance {
 		}
 
 		let frag = new LLVM.Procedure(
-			new LLVM.Type(this.returnType[1].represent, this.returnType[0], head.tokens[0].ref),
+			new LLVM.Type(this.returnType.type.represent, this.returnType.pointer, head.tokens[0].ref),
 			new LLVM.Name(this.represent, true, head.tokens[1].ref),
-			args,
+			irArgs,
 			"#1",
 			this.external,
 			this.ref
@@ -211,11 +192,11 @@ class Function_Instance {
 			this.getFile().project.config.caching,
 			generator
 		);
-		let setup = scope.register_Args(argReg);
+		let setup = scope.register_Args(argRegs);
 		if (setup !== null) {
 			if (!this.abstract && !this.external) {
 				frag.merge(setup);
-				let exec = new Execution(this, this.returnType[1], scope);
+				let exec = new Execution(this, this.returnType, scope);
 				frag.merge(exec.compile(this.ast.tokens[1]));
 			}
 		}
