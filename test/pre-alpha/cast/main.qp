@@ -1,0 +1,6 @@
+int main () {
+	@i32 a;
+	@i8 b;
+
+	a = static_cast#[i32](a, b);
+}
