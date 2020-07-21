@@ -3,24 +3,27 @@ const TypeDef = require('./typedef.js');
 
 class Register {
 	/**
-	 * 
-	 * @param {Number} id 
-	 * @param {TypeDef|Structure} type 
-	 * @param {String} name 
-	 * @param {Number} pointerDepth 
-	 * @param {BNF_Reference} ref 
+	 *
+	 * @param {Number} id
+	 * @param {TypeDef|Structure} type
+	 * @param {String} name
+	 * @param {Number} pointerDepth
+	 * @param {BNF_Reference} ref
 	 */
 	constructor(id, type, name, pointerDepth, ref) {
-		this.id         = id;
-		this.type       = type;
-		this.name       = name;
-		this.pointer    = pointerDepth;
-		this.declared   = ref;
-		this.inner      = [];
-		this.cache      = null;
-		this.isClone    = false;
+		this.id           = id;
+		this.type         = type;
+		this.name         = name;
+		this.pointer      = pointerDepth;
+		this.declared     = ref;
+		this.inner        = [];
+		this.cache        = null;
+		this.isClone      = false;
 		this.isConcurrent = false;
+		this.writePending = false;
 	}
+
+
 
 	get(ast, scope, read = true) {
 		let preamble = new LLVM.Fragment();
@@ -73,15 +76,6 @@ class Register {
 			};
 		}
 
-		// Remove the dereference of this structure
-		//   as it's elements has been changed
-		if (!read) {
-			if (register.cache) {
-				register.cache.clearCache();
-			}
-			register.cache = null;
-		}
-
 		// Check the index of the term
 		let search = register.type.getTerm(ast[0][1].tokens);
 		if (search === null) {
@@ -95,6 +89,8 @@ class Register {
 			};
 		}
 
+		// Flush any waiting updates
+		preamble.merge(this.flushCache(null, false));
 
 		// Create an address cache if needed
 		if (!register.inner[search.index]) {
@@ -113,8 +109,15 @@ class Register {
 					new LLVM.Type(register.type.represent, register.pointer-1, reg.declared),
 					new LLVM.Name(register.id, false, ast[0][1].ref),
 					[
-						new LLVM.Constant(new LLVM.Type("i32", 0), "0"),
-						new LLVM.Constant(new LLVM.Type("i32", 0), search.index.toString())
+						new LLVM.Argument(
+							new LLVM.Type("i32", 0, ast[0][1].ref),
+							new LLVM.Constant("0", ast[0][1].ref),
+							ast[0][1].ref
+						),
+						new LLVM.Argument(
+							new LLVM.Type("i32", 0, ast[0][1].ref),
+							new LLVM.Constant(search.index.toString(), ast[0][1].ref)
+						)
 					],
 					ast[0][1].ref
 				),
@@ -122,6 +125,13 @@ class Register {
 			));
 		}
 		register = register.inner[search.index];
+
+
+		// If a GEP has been updated the cache will need to be reloaded
+		if (!read && this.cache) {
+			this.cache.clearCache();
+			this.cache = null;
+		}
 
 
 		// If further access is required
@@ -136,59 +146,108 @@ class Register {
 			}
 		}
 
+
+		if (!read) {
+			register.markUpdated();
+		}
 		return {
 			register,
 			preamble
 		};
 	}
 
+
+
 	/**
-	 * 
-	 * @param {BNF_Reference?} ref 
+	 *
+	 * @param {BNF_Reference?} ref
 	 * @returns {void}
 	 */
 	markUpdated(ref) {
-		return this.clearCache(ref);
+		this.writePending = true;
 	}
 
 	/**
 	 * Forces caches to write data to the correct location
-	 * @param {BNF_Reference?} ref 
+	 * @param {BNF_Reference?} ref
 	 * @returns {LLVM.Fragment?}
 	 */
-	flushCache(ref, replacement = null) {
+	flushCache(ref, allowGEP = true) {
 		let frag = new LLVM.Fragment();
 
 		if (this.cache) {
 			frag.merge(this.cache.flushCache());
 
-			frag.append(new LLVM.Store(
-				new LLVM.Argument(
-					new LLVM.Type(this.type.represent, this.pointer),
-					new LLVM.Name(this.id, false)
-				),
-				new LLVM.Argument(
-					new LLVM.Type(this.type.represent, this.cache.pointer),
-					new LLVM.Name(this.cache.id, false)
-				),
-				this.type.size,
-				ref
-			));
+			if (this.writePending) {
+				frag.append(new LLVM.Store(
+					new LLVM.Argument(
+						new LLVM.Type(this.type.represent, this.pointer),
+						new LLVM.Name(this.id, false)
+					),
+					new LLVM.Argument(
+						new LLVM.Type(this.type.represent, this.cache.pointer),
+						new LLVM.Name(this.cache.id, false)
+					),
+					this.type.size,
+					ref
+				));
+				this.cache.writePending = false;
+			}
+		} else if (allowGEP) {
+			this.flushGEPCaches(ref);
 		}
-		this.cache = replacement;
 
+		this.writePending = false;
+		return frag;
+	}
+
+	flushGEPCaches(ref) {
+		let frag = new LLVM.Fragment();
+
+		for (let reg of this.inner) {
+			frag.merge(reg.flushCache(ref));
+		}
+
+		this.writePending = false;
+		return frag;
+	}
+
+	/**
+	 * Clears the caches of all GEPs
+	 * This will mark this register as having no writes pending
+	 */
+	clearGEPCaches() {
+		let frag = new LLVM.Fragment();
+
+		for (let reg of this.inner) {
+			reg.clearCache();
+		}
+
+		this.writePending = false;
 		return frag;
 	}
 
 	/**
 	 * Dumps all caches, forcing reloads
+	 * @param {Register} cache A cache that may replace this one
 	 * @returns {void}
 	 */
-	clearCache() {
+	clearCache(replacement = null) {
 		this.inner = [];
-		this.cache = null;
+		this.cache = replacement;
+		this.writePending = false;
 	}
 
+
+
+
+	/**
+	 * Creates a cache and loads the data from this register as a pointer
+	 * This will flush any GEPs if read is true
+	 * @param {Scope} scope
+	 * @param {Boolean} read
+	 * @param {Number} amount
+	 */
 	deref(scope, read = true, amount = 1) {
 		// Cannot dereference a value
 		// Handle error within caller
@@ -200,6 +259,14 @@ class Register {
 			preamble: new LLVM.Fragment(),
 			register: this.cache
 		};
+
+		// Wipe all GEP's caches
+		//   As their data is about to be over written
+		if (read) {
+			out.preamble.merge(this.flushGEPCaches());
+		} else {
+			this.clearGEPCaches();
+		}
 
 		// If a new cache needs to be generated because:
 		//  a) something needs to be written and LLVM registers are constant value
@@ -237,8 +304,13 @@ class Register {
 			out.preamble.merge(next.preamble);
 		}
 
+		if (!read) {
+			this.markUpdated();
+		}
 		return out;
 	}
+
+
 
 	/**
 	 * Deep clone
@@ -253,6 +325,7 @@ class Register {
 
 		return out;
 	}
+
 	/**
 	 * Marks this copy as the original instead of a clone
 	 * Applies recursively
@@ -264,6 +337,8 @@ class Register {
 			this.cache.declone();
 		}
 	}
+
+
 
 	/**
 	 * Updates any caches due to alterations in child scope

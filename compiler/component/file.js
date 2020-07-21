@@ -5,6 +5,7 @@ const LLVM = require('./../middle/llvm.js');
 const Function = require('./function.js');
 const TypeDef  = require('./typedef.js');
 const Structure = require('./struct.js');
+const TypeRef = require('./typeRef.js');
 const Import  = require('./import.js');
 
 // const { Namespace, Namespace_Type } = require('./namespace.js');
@@ -32,7 +33,7 @@ class File {
 		this.imports = [];
 	}
 
-	
+
 
 	parse() {
 		console.info("Parsing:", this.path);
@@ -155,7 +156,7 @@ class File {
 
 	/**
 	 * Must be ran after main linking
-	 * @param {BNF_SyntaxNode} element 
+	 * @param {BNF_SyntaxNode} element
 	 */
 	registerExport(element) {
 		if (element.type != "function_outline") {
@@ -185,16 +186,16 @@ class File {
 		// File access must be direct
 		if (typeList[0][0] == "." || Number.isInteger(typeList[0][0])) {
 			res = this.names[typeList[0][1]];
+
+			if (res) {
+				if (typeList.length > 1) {
+					return res.getType(typeList.slice(1));
+				} else {
+					return new TypeRef(0, res);
+				}
+			}
 		} else {
 			return null;
-		}
-
-		if (res) {
-			if (res.length > 1) {
-				res = res.getType(typeList.slice(1));
-			}
-
-			return res;
 		}
 
 		// If the name isn't defined in this file
@@ -221,8 +222,11 @@ class File {
 			}
 		}
 
-		if (this.names[first.tokens]) {
-			return this.names[first.tokens].getFunction(forward, signature);
+		if (this.names[first]) {
+			let res = this.names[first].getFunction(forward, signature);
+			if (res !== null) {
+				return res;
+			}
 		}
 
 		// If the name isn't defined in this file in a regular name space

@@ -29,10 +29,9 @@ i32 main() {
 	i32 a = 20;
 
 	bool d = true;
-	while (d) {
+	while (Greater(a, 0)) {
 		println(a);
-		a = sub(a, 1);
-		d = gt(a, 0);
+		a = Sub(a, 1);
 	}
 
 	println(a);

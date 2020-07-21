@@ -34,7 +34,7 @@ external assume {
 
 
 
-void print(i32 val) {
+void print(int val) {
 	i32_print(val);
 	return;
 }
@@ -48,7 +48,7 @@ void print(bool val) {
 }
 
 
-void println(i32 val) {
+void println(int val) {
 	i32_println(val);
 	return;
 }
@@ -59,4 +59,16 @@ void println(float val) {
 void println(bool val) {
 	i1_println(val);
 	return;
+}
+
+
+bool Equal(int a, int b) {
+	return i32_equal(a, b);
+}
+bool Equal(float a, float b) {
+	return f32_equal(a, b);
+}
+
+bool Greater(int a, int b) {
+	return i32_gt(a, b);
 }
