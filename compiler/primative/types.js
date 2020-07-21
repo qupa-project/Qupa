@@ -106,7 +106,8 @@ for (let i=1; i<=8; i+=i) {
 			end: null
 		}
 	}, true);
-	types[u_name].cat = "uint";
+	types[u_name].name   = u_name;
+	types[u_name].cat    = "int";
 	types[u_name].signed = false;
 }
 

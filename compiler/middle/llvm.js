@@ -9,6 +9,7 @@ const Comment = require('./comment.js');
 const Constant = require('./constant.js');
 const Div = require('./div.js');
 const Extend = require('./extend.js');
+const FloatConvert = require('./floatconvert.js');
 const Fragment = require('./fragment.js');
 const GEP = require('./gep.js');
 const Instruction = require('./instruction');
@@ -34,7 +35,7 @@ module.exports = {
 	Call, Comment, Constant,
 	Div,
 	Extend,
-	Fragment,
+	FloatConvert,	Fragment,
 	GEP,
 	Instruction,
 	Label, Load,
