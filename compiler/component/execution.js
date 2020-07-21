@@ -3,7 +3,7 @@ const LLVM = require("../middle/llvm.js");
 const TypeRef = require('./typeRef.js');
 const Scope = require('./scope.js');
 const State = require('./state.js');
-const { Argument } = require('../middle/llvm.js');
+const { Argument, Type } = require('../middle/llvm.js');
 const Register = require('./register.js');
 
 const Primative = {
@@ -330,6 +330,17 @@ class Execution {
 	compile_assign (ast) {
 		let frag = new LLVM.Fragment();
 
+		// Resolve the expression
+		let expr = this.compile_expr(ast.tokens[1], false, true);
+		if (expr === false) {
+			return false;
+		}
+		frag.merge(expr.preamble);
+
+		// Load the target variable
+		//   This must occur after the expression is resolve
+		//   because this variable now needs to be accessed for writing
+		//   after any reads that might have taken place in the expresion
 		let load = this.scope.getVar(ast.tokens[0], false);
 		if (load.error) {
 			this.getFile().throw( load.msg, load.ref.start, load.ref.end );
@@ -337,14 +348,20 @@ class Execution {
 		}
 		frag.merge(load.preamble);
 
-		let expr = this.compile_expr(ast.tokens[1], new TypeRef(load.register.pointer-1, load.register.type), true);
-		if (expr === false) {
+		let targetType = new TypeRef(load.register.pointer-1, load.register.type);
+		if (!expr.type.match(targetType)) {
+			this.getFile().throw(
+				`Error: Assignment type mis-match` +
+				` cannot assign ${targetType.toString()}` +
+				` to ${expr.type.toString()}`,
+				ast.ref.start, ast.ref.end
+			);
 			return false;
 		}
-		frag.merge(expr.preamble);
 
 		if (expr.register) {
 			load.register.clearCache(expr.register);
+			load.register.markUpdated();
 		} else {
 			frag.append(new LLVM.Store(
 				new LLVM.Argument(
@@ -357,8 +374,7 @@ class Execution {
 				load.register.type.size,
 				ast.ref.start
 			));
-			load.register.markUpdated(); // Mark that this value was directly changed
-			                             //  and caches need to be dropped
+			load.register.clearCache();
 		}
 
 		frag.merge(expr.epilog);
@@ -666,22 +682,31 @@ class Execution {
 		 */
 		if (
 			simple &&
-			expects &&
 			!( res.instruction instanceof Argument )
 		) {
+			let inner = res.instruction;
+			let irType = null;
+			if (expects) {
+				irType = new LLVM.Type(expects.type.represent, expects.pointer, ast.ref.start)
+			} else {
+				if (!inner.type) {
+					throw new Error("Error: Cannot simplify due to undeduceable type");
+				}
+				irType = inner.type;
+			}
+
 			let id = this.scope.genID();
 
 			res.register = new Register(id, res.type.type, "temp", res.type.pointer, ast.ref.start);
 			let regIR = new LLVM.Name(id.toString(), false, ast.ref.start);
 
-			let inner = res.instruction;
 			res.preamble.append(new LLVM.Set(
 				regIR,
 				inner,
 				ast.ref.start
 			));
 			res.instruction = new LLVM.Argument(
-				new LLVM.Type(expects.type.represent, expects.pointer, ast.ref.start),
+				irType,
 				regIR,
 				ast.ref.start
 			);

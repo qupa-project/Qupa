@@ -2,6 +2,7 @@ const { Generator_ID } = require('./generate.js');
 const LLVM = require("../middle/llvm.js");
 const Flattern = require('../parser/flattern.js');
 const Register = require('./register.js');
+const TypeRef = require('./typeRef.js');
 
 class Scope {
 	static raisedVariables = true; // whether or not a variable can be redefined within a new scope
@@ -98,7 +99,7 @@ class Scope {
 				),
 				arg.ref
 			));
-			frag.merge(this.variables[arg.name].flushCache(arg.ref, cache));
+			this.variables[arg.name].markUpdated();
 		}
 
 		return frag;
@@ -193,10 +194,45 @@ class Scope {
 			target = load.register;
 		}
 
+		if (!read) {
+			target.markUpdated();
+		}
 		return {
 			register: target,
 			preamble: preamble
 		};
+	}
+
+	/**
+	 * Get the type of a given variable
+	 * @param {BNF_Node} ast
+	 */
+	getVarType(ast) {
+		if (ast.type != "variable") {
+			throw new TypeError(`Parsed AST must be a branch of type variable, not "${ast.type}"`);
+		}
+
+		let target = this.variables[ast.tokens[1].tokens];
+		if (target) {
+			if (ast.tokens.length > 2) {
+				let load = target.getTypeOf(ast.tokens.slice(2));
+				if (load.error) {
+					return load;
+				}
+				target = load.register;
+			}
+		} else {
+			return {
+				error: true,
+				msg: `Unknown variable name ${ast.tokens[1].tokens}`,
+				ref: {
+					start: ast.tokens[1].ref.start,
+					end: ast.tokens[1].ref.end
+				}
+			};
+		}
+
+		return new TypeRef (target.pointer - ast.tokens[0], target.type);
 	}
 
 
