@@ -207,7 +207,7 @@ class File {
 		return null;
 	}
 
-	getFunction(variable, signature) {
+	getFunction(variable, signature, template) {
 		if (variable.length < 1) {
 			return null;
 		}
@@ -223,7 +223,7 @@ class File {
 		}
 
 		if (this.names[first]) {
-			let res = this.names[first].getFunction(forward, signature);
+			let res = this.names[first].getFunction(forward, signature, template);
 			if (res !== null) {
 				return res;
 			}
@@ -232,7 +232,7 @@ class File {
 		// If the name isn't defined in this file in a regular name space
 		//   Check namespace imports
 		if (this.names["*"] instanceof Import) {
-			return this.names["*"].getFunction(variable, signature);
+			return this.names["*"].getFunction(variable, signature, template);
 		}
 
 		return null;

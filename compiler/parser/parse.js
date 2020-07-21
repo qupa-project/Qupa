@@ -131,7 +131,7 @@ function Simplify_Class(node) {
 
 
 function Simplify_Template(node) {
-	node.tokens = Simplify_Template_Args(node.tokens[2][0]);
+	node.tokens = Simplify_Template_Args(node.tokens[2][0]).tokens;
 	node.reached = null;
 	return node;
 }
@@ -301,13 +301,13 @@ function Simplify_Variable_Args (node) {
 }
 
 function Simplify_Variable_Arg (node) {
-	switch (node.tokens[0][0].type) {
+	switch (node.tokens[0].type) {
 		case "data_type":
-			return Simplify_Data_Type(node.tokens[0][0]);
+			return Simplify_Data_Type(node.tokens[0]);
 		case "constant":
-			return Simplify_Constant(node.tokens[0][0]);
+			return Simplify_Constant(node.tokens[0]);
 		case "variable":
-			return Simplify_Variable(node.tokens[0][0]);
+			return Simplify_Variable(node.tokens[0]);
 		default:
 			throw new TypeError(`Unexpected variable access type ${node.tokens[0].type}`);
 	}
