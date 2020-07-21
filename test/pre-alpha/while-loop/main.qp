@@ -37,6 +37,3 @@ i32 main() {
 	println(a);
 	return 0;
 }
-external export {
-	i32 main();
-}
