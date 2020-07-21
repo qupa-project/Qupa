@@ -133,7 +133,7 @@ class Execution {
 		let signature = [];
 		let args = [];
 		let regs = [];
-		for (let arg of ast.tokens[1].tokens) {
+		for (let arg of ast.tokens[2].tokens) {
 			if (arg.type == "variable") {
 				let load = this.scope.getVar(arg, true);
 				if (load.error) {
@@ -184,6 +184,14 @@ class Execution {
 			if (access.tokens[0] == "[]") {
 				let out = [];
 				for (let inner of access.tokens[1].tokens) {
+					if (inner.type != "variable") {
+						file.throw (
+							`Error: Non-variable accessors are not allowed at this time`,
+							inner.ref.start, inner.ref.end
+						);
+						return false;
+					}
+
 					let target = this.scope.getVar(inner, true);
 					if (target.error !== true) {
 						file.throw(
@@ -193,30 +201,10 @@ class Execution {
 						return false;
 					}
 
-					let mode = inner.type;
-					let flat = null;
-					let str = null;
-					if (mode == "variable" && !this.scope.hasVariable(inner.tokens[1].tokens)) {
-						flat = Flattern.VariableList(inner);
-						str = Flattern.VariableStr(inner);
-						mode = "datatype";
-					} else if (mode == "datatype") {
-						flat = Flattern.DataTypeList(inner);
-						str = Flattern.DataTypeStr(inner);
-					}
-
-					if (mode != "datatype") {
-						file.throw(
-							'Error: Non data-type [] arguments for function calls are not supported at this time',
-							inner.ref.start, inner.ref.end
-						);
-						return false;
-					}
-
-					let forward = flat;
+					let forward = Flattern.VariableList(inner);
 					if (forward[0][0] != 0) {
 						file.throw(
-							`Error: Cannot dereference ${str}`,
+							`Error: Cannot dereference function call ${Flattern.VariableStr(inner)}`,
 							inner.ref.start, inner.ref.end
 						);
 						return false;
@@ -226,7 +214,7 @@ class Execution {
 
 					if (!target) {
 						file.throw(
-							`Error: Unknown variable ${Flattern.DataTypeStr(inner)}`,
+							`Error: Unknown variable ${Flattern.VariableStr(inner)}`,
 							inner.ref.start, inner.ref.end
 						);
 						return false;
@@ -240,12 +228,37 @@ class Execution {
 			}
 		}
 
+		// Link any template access
+		let template = [];
+		for (let arg of ast.tokens[1].tokens) {
+			switch (arg.type) {
+				case "data_type":
+					let type = this.getFunction().getType(arg);
+					if (type === null) {
+						file.throw(
+							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
+							arg.ref.start, arg.ref.end
+						);
+						return false;
+					}
+
+					template.push(type);
+					break;
+				default:
+					file.throw(
+						`Error: ${arg.type} are currently unsupported in template arguments`,
+						arg.ref.start, arg.ref.end
+					);
+					return false;
+			}
+		}
+
 		// Find a function with the given signature
-		let target = file.getFunction(accesses, signature);
+		let target = file.getFunction(accesses, signature, template);
 		if (!target) {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
 			file.throw(
-				`Unable to find function "${funcName}" with signature ${signature.join(", ")}`,
+				`Error: Unable to find function "${funcName}" with signature ${signature.join(", ")}`,
 				ast.ref.start, ast.ref.end
 			);
 			return false;

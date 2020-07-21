@@ -1,6 +1,7 @@
 const File = require('./../component/file.js');
 const Project = require('../component/project.js');
 
+const Static_Cast = require('./static_cast.js');
 const Bitcast = require('./bitcast.js');
 const Extend = require('./extend.js');
 const Trunc = require('./trunc.js');
@@ -11,8 +12,8 @@ const Math = require('./math.js');
 
 
 /**
- * 
- * @param {Project} ctx 
+ *
+ * @param {Project} ctx
  */
 function Generate (ctx) {
 	let file = new File(ctx, 0, "primative");
@@ -27,8 +28,7 @@ function Generate (ctx) {
 	file.names.Rem = new Math(file, "Rem");
 	file.names.Sub = new Math(file, "Sub");
 	file.names.BitCast = new Bitcast(file);
-	file.names.Extend  = new Extend(file);
-	file.names.Trunc   = new Trunc(file);
+	file.names.static_cast = new Static_Cast(file);
 
 	ctx.inject(file);
 }

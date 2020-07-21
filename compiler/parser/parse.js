@@ -131,8 +131,31 @@ function Simplify_Class(node) {
 
 
 function Simplify_Template(node) {
-	// TODO
+	node.tokens = Simplify_Template_Args(node.tokens[2][0]).tokens;
+	node.reached = null;
 	return node;
+}
+
+function Simplify_Template_Args (node) {
+	let out = [ Simplify_Template_Arg(node.tokens[0][0]) ];
+	for (let inner of node.tokens[1]) {
+		out.push( Simplify_Template_Arg(inner.tokens[3][0]) );
+	}
+
+	node.tokens = out;
+	node.reached = null;
+	return node;
+}
+
+function Simplify_Template_Arg (node) {
+	switch (node.tokens[0].type) {
+		case "data_type":
+			return Simplify_Data_Type(node.tokens[0]);
+		case "constant":
+			return Simplify_Constant(node.tokens[0]);
+		default:
+			throw new TypeError(`Unexpected data-type type ${node.tokens[0].type}`);
+	}
 }
 
 
@@ -251,6 +274,9 @@ function Simplify_Variable_Access (node) {
 		case "accessor_dynamic":
 			out = [ "[]", Simplify_Variable_Args(node.tokens[0].tokens[2][0]) ];
 			break;
+		case "accessor_refer":
+			out = [ "->", Simplify_Name(node.tokens[0].tokens[1][0]) ];
+			break;
 		case "accessor_static":
 			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]) ];
 			break;
@@ -275,13 +301,13 @@ function Simplify_Variable_Args (node) {
 }
 
 function Simplify_Variable_Arg (node) {
-	switch (node.tokens[0][0].type) {
+	switch (node.tokens[0].type) {
 		case "data_type":
-			return Simplify_Data_Type(node.tokens[0][0]);
+			return Simplify_Data_Type(node.tokens[0]);
 		case "constant":
-			return Simplify_Constant(node.tokens[0][0]);
+			return Simplify_Constant(node.tokens[0]);
 		case "variable":
-			return Simplify_Variable(node.tokens[0][0]);
+			return Simplify_Variable(node.tokens[0]);
 		default:
 			throw new TypeError(`Unexpected variable access type ${node.tokens[0].type}`);
 	}
@@ -328,11 +354,11 @@ function Simplify_Data_Type (node) {
 function Simplify_Data_Type_Access (node) {
 	let out = [];
 	switch (node.tokens[0].type) {
-		case "datatype_access_dynamic":
-			out = [ "[]", Simplify_Data_Type_Args(node.tokens[0].tokens[2][0]) ];
-			break;
 		case "datatype_access_static":
 			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]) ];
+			break;
+		case "template":
+			out = [ "[]", Simplify_Template(node.tokens[0].tokens[2][0]) ];
 			break;
 		default:
 			throw new TypeError(`Unexpected accessor type ${node.type}`);
@@ -341,28 +367,6 @@ function Simplify_Data_Type_Access (node) {
 	node.tokens = out;
 	node.reached = null;
 	return node;
-}
-
-function Simplify_Data_Type_Args (node) {
-	let out = [ Simplify_Data_Type_Arg(node.tokens[0][0]) ];
-	for (let inner of node.tokens[1]) {
-		out.push( Simplify_Data_Type_Arg(inner.tokens[3][0]) );
-	}
-
-	node.tokens = out;
-	node.reached = null;
-	return node;
-}
-
-function Simplify_Data_Type_Arg (node) {
-	switch (node.tokens[0].type) {
-		case "data_type":
-			return Simplify_Data_Type(node.tokens[0]);
-		case "constant":
-			return Simplify_Constant(node.tokens[0]);
-		default:
-			throw new TypeError(`Unexpected data-type type ${node.tokens[0].type}`);
-	}
 }
 
 
@@ -533,8 +537,12 @@ function Simplify_Func_Flags (node) {
 }
 function Simplify_Call (node) {
 	let out = [
-		Simplify_Variable(node.tokens[0][0]),
-		node.tokens[4].length > 0 ? Simplify_Call_Args(node.tokens[4][0]) : {
+		Simplify_Variable(node.tokens[0][0]),                                  // Call name
+		node.tokens[2].length > 0 ? Simplify_Template(node.tokens[2][0]) : {   // Template
+			type: "template",
+			tokens: []
+		},
+		node.tokens[6].length > 0 ? Simplify_Call_Args(node.tokens[6][0]) : {  // Arguments
 			type: "call_args",
 			tokens: []
 		},

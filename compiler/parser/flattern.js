@@ -31,7 +31,7 @@ function DataTypeStr (node, char = "@") {
 			if (access.tokens[0] == "[]") {
 				str += `[${access.tokens[1].tokens.map( x => DataTypeStr(x) ).join(", ")}]`;
 			} else {
-				str += DuplicateChar(access.tokens[0], char) + access.tokens[1].tokens;
+				str += access.tokens[0] + access.tokens[1].tokens;
 			}
 		}
 	}
