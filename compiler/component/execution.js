@@ -51,6 +51,36 @@ class Execution {
 
 
 
+	resolveTemplate(node) {
+		let template = [];
+		for (let arg of node.tokens) {
+			switch (arg.type) {
+				case "data_type":
+					let type = this.getFunction().getType(arg);
+					if (type === null) {
+						file.throw(
+							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
+							arg.ref.start, arg.ref.end
+						);
+						return false;
+					}
+
+					template.push(type);
+					break;
+				default:
+					file.throw(
+						`Error: ${arg.type} are currently unsupported in template arguments`,
+						arg.ref.start, arg.ref.end
+					);
+					return false;
+			}
+		}
+
+		return template;
+	}
+
+
+
 	/**
 	 * Generates the LLVM for a constant
 	 * Used in other compile functions
@@ -229,28 +259,9 @@ class Execution {
 		}
 
 		// Link any template access
-		let template = [];
-		for (let arg of ast.tokens[1].tokens) {
-			switch (arg.type) {
-				case "data_type":
-					let type = this.getFunction().getType(arg);
-					if (type === null) {
-						file.throw(
-							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
-							arg.ref.start, arg.ref.end
-						);
-						return false;
-					}
-
-					template.push(type);
-					break;
-				default:
-					file.throw(
-						`Error: ${arg.type} are currently unsupported in template arguments`,
-						arg.ref.start, arg.ref.end
-					);
-					return false;
-			}
+		let template = this.resolveTemplate(ast.tokens[1]);
+		if (template === false) {
+			return false;
 		}
 
 		// Find a function with the given signature
