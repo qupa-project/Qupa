@@ -91,7 +91,7 @@ program ::= w* ( stmt_top w* )*
 
 	call ::= variable template? w* "(" w* call_args? w* ")"
 		call_args ::= expr ( w* "," w* expr )*
-	call_procedure ::= variable w* template? w* "(" w* call_args? w* ")" w* ";"
+	call_procedure ::= call ";"
 
 	return ::= "return" ( w+ expr )? w* ";"
 

@@ -486,7 +486,7 @@ function Simplify_Function_Stmt (node) {
 			inner = Simplify_Return(node.tokens[0]);
 			break;
 		case "call_procedure":
-			inner = Simplify_Call(node.tokens[0]);
+			inner = Simplify_Call(node.tokens[0].tokens[0][0]);
 			break;
 		case "if":
 			inner = Simplify_If(node.tokens[0]);

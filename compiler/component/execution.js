@@ -259,7 +259,7 @@ class Execution {
 
 				accesses.push(out);
 			} else {
-				accesses.push(access);
+				accesses.push([access.tokens[0], access.tokens[1].tokens]);
 			}
 		}
 
@@ -797,7 +797,7 @@ class Execution {
 				case "return":
 					inner = this.compile_return(token);
 					break;
-				case "call_procedure":
+				case "call":
 					inner = this.compile_call_procedure(token);
 					break;
 				case "if":
