@@ -48,10 +48,6 @@ class Function_Instance {
 		return this;
 	}
 
-	getType (dataType, template) {
-		return this.getFile().getType(Flattern.DataTypeList(dataType, template));
-	}
-
 	/**
 	 * Marks this function as being called from this function
 	 * @param {Function_Instance} func
@@ -86,7 +82,7 @@ class Function_Instance {
 			return;
 		}
 
-		let file = this.ctx.ctx;
+		let file = this.getFile();
 		let head = this.ast.tokens[0];
 		let args = head.tokens[2].tokens;
 
@@ -99,7 +95,7 @@ class Function_Instance {
 		}
 
 		for (let type of types){
-			let search = this.getType(type);
+			let search = file.getType(Flattern.DataTypeList(type), []);
 			search.pointer = type.tokens[0]; // Copy the pointer level across
 			if (search instanceof TypeRef) {
 				this.signature.push(search);

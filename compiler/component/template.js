@@ -5,14 +5,14 @@ class Template {
 		this.ctx = ctx;
 
 		this.name = "Unknown";
-		this.instances = [];
+		this.instances = {};
 	}
 
 	getType() {
-		return false;
+		return null;
 	}
 	getFunction() {
-		return false;
+		return null;
 	}
 
 	merge(other) {

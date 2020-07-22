@@ -61,7 +61,10 @@ class Execution {
 		for (let arg of node.tokens) {
 			switch (arg.type) {
 				case "data_type":
-					let type = this.getFunction().getType(arg, this.resolveTemplate(arg.tokens[3]));
+					let type = this.getFile().getType(
+						Flattern.DataTypeList(arg),
+						this.resolveTemplate(arg.tokens[3])
+					);
 					if (type === null) {
 						this.getFile().throw(
 							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
@@ -71,6 +74,9 @@ class Execution {
 					}
 
 					template.push(type);
+					break;
+				case "constant":
+					template.push(this.compile_constant(arg));
 					break;
 				default:
 					this.getFile().throw(
@@ -342,11 +348,16 @@ class Execution {
 		let	name = ast.tokens[1].tokens;
 		let frag = new LLVM.Fragment();
 
-		let typeRef = this.getFunction().getType(
-			ast.tokens[0],
-			this.resolveTemplate(ast.tokens[0].tokens[3])
+		let template = this.resolveTemplate(ast.tokens[0].tokens[3]);
+		if (template === false) {
+			return false;
+		}
+
+		let typeRef = this.getFile().getType(
+			Flattern.DataTypeList(ast.tokens[0]),
+			template
 		);
-		if (typeRef == null) {
+		if (!(typeRef instanceof TypeRef)) {
 			this.getFile().throw(`Error: Invalid type name "${Flattern.DataTypeStr(ast.tokens[0])}"`, ast.ref.start, ast.ref.end);
 			return false;
 		}
@@ -365,7 +376,6 @@ class Execution {
 			new LLVM.Name(reg.id, false, ast.tokens[1].ref.start),
 			new LLVM.Alloc(
 				new LLVM.Type(reg.type.represent, typeRef.pointer, ast.tokens[0].ref.start),
-				reg.type.size,
 				ast.ref.start
 			),
 			ast.ref.start
@@ -422,7 +432,6 @@ class Execution {
 					Flattern.VariableStr(ast.tokens[0])
 				),
 				expr.instruction,
-				load.register.type.size,
 				ast.ref.start
 			));
 			load.register.clearCache();

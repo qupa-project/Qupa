@@ -188,7 +188,6 @@ class Register {
 						new LLVM.Type(this.type.represent, this.cache.pointer),
 						new LLVM.Name(this.cache.id, false)
 					),
-					this.type.size,
 					ref
 				));
 				this.cache.writePending = false;
@@ -287,8 +286,7 @@ class Register {
 					new LLVM.Name(`${this.cache.id}`, false),
 					new LLVM.Load(
 						new LLVM.Type(this.type.represent, this.pointer-1),
-						new LLVM.Name(`${this.id}`, false),
-						this.type.size
+						new LLVM.Name(`${this.id}`, false)
 					)
 				));
 			}

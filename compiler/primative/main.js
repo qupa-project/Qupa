@@ -1,6 +1,7 @@
 const File = require('./../component/file.js');
 const Project = require('../component/project.js');
 
+const Array_Template = require('./array.js');
 const Static_Cast = require('./static_cast.js');
 const Bitcast = require('./bitcast.js');
 const types = require('./types.js');
@@ -27,6 +28,7 @@ function Generate (ctx) {
 	file.names.Sub = new Math(file, "Sub");
 	file.names.BitCast = new Bitcast(file);
 	file.names.static_cast = new Static_Cast(file);
+	file.names.Array = new Array_Template(file);
 
 	ctx.inject(file);
 }

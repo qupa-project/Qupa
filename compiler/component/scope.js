@@ -94,7 +94,6 @@ class Scope {
 				),
 				new LLVM.Alloc(
 					new LLVM.Type(arg.type.represent, arg.pointer, arg.ref),
-					arg.type.size,
 					arg.ref
 				),
 				arg.ref
