@@ -27,6 +27,7 @@ class Execution {
 
 	/**
 	 * Return the function this scope is within
+	 * @returns {Function_Instance}
 	 */
 	getFunction() {
 		return this.ctx.getFunction();
@@ -51,14 +52,18 @@ class Execution {
 
 
 
+	/**
+	 *
+	 * @param {BNF_Node} node
+	 */
 	resolveTemplate(node) {
 		let template = [];
 		for (let arg of node.tokens) {
 			switch (arg.type) {
 				case "data_type":
-					let type = this.getFunction().getType(arg);
+					let type = this.getFunction().getType(arg, this.resolveTemplate(arg.tokens[3]));
 					if (type === null) {
-						file.throw(
+						this.getFile().throw(
 							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
 							arg.ref.start, arg.ref.end
 						);
@@ -68,7 +73,7 @@ class Execution {
 					template.push(type);
 					break;
 				default:
-					file.throw(
+					this.getFile().throw(
 						`Error: ${arg.type} are currently unsupported in template arguments`,
 						arg.ref.start, arg.ref.end
 					);
@@ -208,7 +213,7 @@ class Execution {
 
 
 		// Link any [] accessors
-		let accesses = [ast.tokens[0].tokens[1].tokens];
+		let accesses = [ ast.tokens[0].tokens[1].tokens ];
 		let file = this.getFile();
 		for (let access of ast.tokens[0].tokens[2]) {
 			if (access.tokens[0] == "[]") {
@@ -334,10 +339,13 @@ class Execution {
 	 * @returns {LLVM.Fragment}
 	 */
 	compile_declare(ast){
-		let typeRef = this.getFunction().getType(ast.tokens[0]);
 		let	name = ast.tokens[1].tokens;
 		let frag = new LLVM.Fragment();
 
+		let typeRef = this.getFunction().getType(
+			ast.tokens[0],
+			this.resolveTemplate(ast.tokens[0].tokens[3])
+		);
 		if (typeRef == null) {
 			this.getFile().throw(`Error: Invalid type name "${Flattern.DataTypeStr(ast.tokens[0])}"`, ast.ref.start, ast.ref.end);
 			return false;

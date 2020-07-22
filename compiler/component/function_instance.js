@@ -48,8 +48,8 @@ class Function_Instance {
 		return this;
 	}
 
-	getType (dataType) {
-		return this.getFile().getType(Flattern.DataTypeList(dataType));
+	getType (dataType, template) {
+		return this.getFile().getType(Flattern.DataTypeList(dataType, template));
 	}
 
 	/**

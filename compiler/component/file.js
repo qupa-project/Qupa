@@ -181,7 +181,7 @@ class File {
 		}
 	}
 
-	getType(typeList) {
+	getType(typeList, template) {
 		let res = null;
 		// File access must be direct
 		if (typeList[0][0] == "." || Number.isInteger(typeList[0][0])) {
