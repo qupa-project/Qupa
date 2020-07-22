@@ -358,7 +358,7 @@ function Simplify_Data_Type_Access (node) {
 			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]) ];
 			break;
 		case "template":
-			out = [ "[]", Simplify_Template(node.tokens[0].tokens[2][0]) ];
+			out = [ "[]", Simplify_Template(node.tokens[0]) ];
 			break;
 		default:
 			throw new TypeError(`Unexpected accessor type ${node.type}`);
