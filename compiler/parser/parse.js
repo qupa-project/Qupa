@@ -259,7 +259,7 @@ function Simplify_Variable (node) {
 		node.tokens[0].length,
 		Simplify_Name(node.tokens[1][0]),
 		node.tokens[2].map(x => {
-			return Simplify_Variable_Access(x);
+			return Simplify_Variable_Access(x).tokens;
 		})
 	];
 
@@ -272,13 +272,13 @@ function Simplify_Variable_Access (node) {
 	let out = [];
 	switch (node.tokens[0].type) {
 		case "accessor_dynamic":
-			out = [ "[]", Simplify_Variable_Args(node.tokens[0].tokens[2][0]) ];
+			out = [ "[]", Simplify_Variable_Args(node.tokens[0].tokens[2][0]).tokens ];
 			break;
 		case "accessor_refer":
-			out = [ "->", Simplify_Name(node.tokens[0].tokens[1][0]) ];
+			out = [ "->", Simplify_Name(node.tokens[0].tokens[1][0]).tokens ];
 			break;
 		case "accessor_static":
-			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]) ];
+			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]).tokens ];
 			break;
 		default:
 			throw new TypeError(`Unexpected accessor type ${node.type}`);

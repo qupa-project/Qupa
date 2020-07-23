@@ -1,11 +1,19 @@
-import "../std.qp";
+// import "../std.qp";
+
+struct Rect {
+	int width;
+	int height;
+};
 
 i32 main() {
-	Array[i32, 3] arr;
+	Array#[int, 3] arr;
+
+	arr[0] = 42;
+	arr[1] = 12;
+	arr[2] = -56;
+
+	int i = 1;
+	arr[i] = 3;
 
 	return 0;
-}
-
-external export {
-	i32 main();
 }

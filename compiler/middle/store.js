@@ -13,7 +13,6 @@ class Store extends Instruction {
 		super (ref);
 		this.register = reg;
 		this.data     = data;
-		this.width    = width;
 	}
 
 	toLLVM(indent) {

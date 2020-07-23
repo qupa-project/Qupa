@@ -156,26 +156,26 @@ class Scope {
 			if (!this.caching) {
 				target.clearCache();
 			}
-
-			if (ast.tokens[2] && ast.tokens[2].length > 0) {
-				let load = target.get(ast.tokens[2], this, read);
-				if (load.error) {
-					return load;
-				}
-				preamble.merge(load.preamble);
-				target = load.register;
-			}
 		} else {
 			return {
 				error: true,
 				msg: `Unknown variable name ${ast.tokens[1].tokens}`,
-				ref: {
-					start: ast.tokens[1].ref.start,
-					end: ast.tokens[1].ref.end
-				}
+				ref: ast.tokens[1].ref
 			};
 		}
 
+		// Fulfill accessors
+		if (ast.tokens[2].length > 0) {
+			let load = target.get(ast.tokens[2], this, read);
+			if (load.error) {
+				return load;
+			}
+			preamble.merge(load.preamble);
+			target = load.register;
+		}
+
+
+		// Fulfill dereferencing
 		if (ast.tokens[0] > 0) {
 			let load = target.deref(this, true, ast.tokens[0]);
 			if (load === null) {
@@ -193,9 +193,8 @@ class Scope {
 			target = load.register;
 		}
 
-		if (!read) {
-			target.markUpdated();
-		}
+
+		if (!read) target.markUpdated();
 		return {
 			register: target,
 			preamble: preamble
