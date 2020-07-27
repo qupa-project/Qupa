@@ -53,9 +53,9 @@ class Import {
 		}
 	}
 
-	getType(variable) {
+	getType(variable, template) {
 		for (let extern of this.files) {
-			let opt = extern.file.getType(variable);
+			let opt = extern.file.getType(variable, template);
 			if (opt) {
 				return opt;
 			}

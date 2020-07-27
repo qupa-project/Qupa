@@ -10,7 +10,7 @@ class Function {
 		this.ctx = ctx;
 
 		this.ref = ast.ref.start;
-		
+
 		this.instances = [];
 		this.register(ast, external, abstract);
 	}
@@ -21,6 +21,10 @@ class Function {
 
 	getFile() {
 		return this.ctx.getFile();
+	}
+
+	getFunctionGroup() {
+		return this;
 	}
 
 	register(ast, external = false, abstract = false) {

@@ -38,5 +38,9 @@ class TypeDef {
 	compile() {
 		return new LLVM.Comment(`Assume Typedef: ${this.name} ${this.represent}, ${this.size}`, this.ref);
 	}
+
+	toLLVM() {
+		return new LLVM.Type(this.represent, 0, this.declared || null);
+	}
 }
 module.exports = TypeDef;

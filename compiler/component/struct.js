@@ -1,15 +1,23 @@
 const LLVM = require('./../middle/llvm.js');
 const TypeDef = require('./typedef.js');
 const Flattern = require('../parser/flattern.js');
+const TypeRef = require('./typeRef.js');
+
+const Primative = {
+	types: require('./../primative/types.js')
+};
 
 
 class Struct_Term {
-	constructor(name, type, pointerLvl, ref) {
+	constructor(name, typeRef, ref) {
 		this.name = name;
-		this.type = type;
-		this.pointer = pointerLvl;
+		this.typeRef = typeRef;
 		this.declared = ref;
-		this.size = pointerLvl > 0 ? 4 : type.size;
+		this.size = typeRef.pointer > 0 ? 4 : typeRef.type.size;
+	}
+
+	toLLVM() {
+		return this.typeRef.toLLVM(this.declared);
 	}
 }
 
@@ -26,7 +34,7 @@ class Structure extends TypeDef {
 	 * @param {String} name
 	 * @returns {Object}
 	 */
-	getTerm(name) {
+	getTerm(name, register) {
 		let found = false;
 		let i = 0;
 		for (; i<this.terms.length && !found; i++) {
@@ -35,15 +43,34 @@ class Structure extends TypeDef {
 				break;
 			}
 		}
-
 		if (!found) {
 			return null;
 		}
 
-		return {
-			index: i,
-			term: this.terms[i]
-		};
+		let preamble = new LLVM.Fragment();
+		let signature = `.${i}`;
+		let instruction = new LLVM.GEP(
+			new LLVM.Type(register.type.represent, register.pointer-1, register.declared),
+			new LLVM.Argument(
+				new LLVM.Type(register.type.represent, register.pointer, register.declared),
+				new LLVM.Name(register.id, false, null),
+				null
+			),
+			[
+				new LLVM.Argument(
+					Primative.types.i32.toLLVM(),
+					new LLVM.Constant("0", null),
+					null
+				),
+				new LLVM.Argument(
+					new LLVM.Type("i32", 0, null),
+					new LLVM.Constant(i.toString(), null)
+				)
+			],
+			null
+		);
+
+		return { preamble, instruction, signature, typeRef: this.terms[i].typeRef };
 	}
 
 	parse() {
@@ -93,7 +120,11 @@ class Structure extends TypeDef {
 			if (!typeRef.type.linked) {
 				type.link([this, ...stack]);
 			}
-			let term = new Struct_Term(name, typeRef.type, typeNode.tokens[0], node.ref.start);
+			let term = new Struct_Term(
+				name,
+				new TypeRef(typeNode.tokens[0], typeRef.type),
+				node.ref.start
+			);
 			this.terms.push(term);
 			this.size += term.size;
 		}
@@ -102,11 +133,7 @@ class Structure extends TypeDef {
 	compile() {
 		let types = [];
 		for (let name in this.terms) {
-			types.push(new LLVM.Type(
-				this.terms[name].type.represent,
-				this.terms[name].pointer,
-				this.terms[name].declared
-			));
+			types.push(this.terms[name].toLLVM());
 		}
 
 		return new LLVM.Struct(

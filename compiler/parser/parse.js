@@ -259,7 +259,7 @@ function Simplify_Variable (node) {
 		node.tokens[0].length,
 		Simplify_Name(node.tokens[1][0]),
 		node.tokens[2].map(x => {
-			return Simplify_Variable_Access(x);
+			return Simplify_Variable_Access(x).tokens;
 		})
 	];
 
@@ -272,13 +272,13 @@ function Simplify_Variable_Access (node) {
 	let out = [];
 	switch (node.tokens[0].type) {
 		case "accessor_dynamic":
-			out = [ "[]", Simplify_Variable_Args(node.tokens[0].tokens[2][0]) ];
+			out = [ "[]", Simplify_Variable_Args(node.tokens[0].tokens[2][0]).tokens ];
 			break;
 		case "accessor_refer":
-			out = [ "->", Simplify_Name(node.tokens[0].tokens[1][0]) ];
+			out = [ "->", Simplify_Name(node.tokens[0].tokens[1][0]).tokens ];
 			break;
 		case "accessor_static":
-			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]) ];
+			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]).tokens ];
 			break;
 		default:
 			throw new TypeError(`Unexpected accessor type ${node.type}`);
@@ -343,7 +343,11 @@ function Simplify_Data_Type (node) {
 		Simplify_Name(node.tokens[1][0]),
 		node.tokens[2].map(x => {
 			return Simplify_Data_Type_Access(x);
-		})
+		}),
+		node.tokens[3].length > 0 ? Simplify_Template(node.tokens[3][0]) : {   // Template
+			type: "template",
+			tokens: []
+		},
 	];
 
 	node.reached = null;
@@ -352,19 +356,7 @@ function Simplify_Data_Type (node) {
 }
 
 function Simplify_Data_Type_Access (node) {
-	let out = [];
-	switch (node.tokens[0].type) {
-		case "datatype_access_static":
-			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]) ];
-			break;
-		case "template":
-			out = [ "[]", Simplify_Template(node.tokens[0].tokens[2][0]) ];
-			break;
-		default:
-			throw new TypeError(`Unexpected accessor type ${node.type}`);
-	}
-
-	node.tokens = out;
+	node.tokens = [ ".", Simplify_Name(node.tokens[1][0]) ];
 	node.reached = null;
 	return node;
 }
@@ -494,7 +486,7 @@ function Simplify_Function_Stmt (node) {
 			inner = Simplify_Return(node.tokens[0]);
 			break;
 		case "call_procedure":
-			inner = Simplify_Call(node.tokens[0]);
+			inner = Simplify_Call(node.tokens[0].tokens[0][0]);
 			break;
 		case "if":
 			inner = Simplify_If(node.tokens[0]);
@@ -538,11 +530,11 @@ function Simplify_Func_Flags (node) {
 function Simplify_Call (node) {
 	let out = [
 		Simplify_Variable(node.tokens[0][0]),                                  // Call name
-		node.tokens[2].length > 0 ? Simplify_Template(node.tokens[2][0]) : {   // Template
+		node.tokens[1].length > 0 ? Simplify_Template(node.tokens[1][0]) : {   // Template
 			type: "template",
 			tokens: []
 		},
-		node.tokens[6].length > 0 ? Simplify_Call_Args(node.tokens[6][0]) : {  // Arguments
+		node.tokens[5].length > 0 ? Simplify_Call_Args(node.tokens[5][0]) : {  // Arguments
 			type: "call_args",
 			tokens: []
 		},

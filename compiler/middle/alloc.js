@@ -2,18 +2,17 @@ const Instruction = require("./instruction.js");
 
 class Alloc extends Instruction {
 	/**
-	 * 
-	 * @param {Type} type 
-	 * @param {BNF_Reference} ref 
+	 *
+	 * @param {Type} type
+	 * @param {BNF_Reference} ref
 	 */
-	constructor(type, size, ref) {
+	constructor(type, ref) {
 		super (ref);
 		this.type = type;
-		this.size = size;
 	}
 
 	toLLVM(indent) {
-		return super.toLLVM(`alloca ${this.type.toLLVM()}, align ${this.size}`, indent);
+		return super.toLLVM(`alloca ${this.type.toLLVM()}, align 4`, indent);
 	}
 }
 
