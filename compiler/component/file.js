@@ -11,6 +11,7 @@ const Import  = require('./import.js');
 // const { Namespace, Namespace_Type } = require('./namespace.js');
 const Parse = require('./../parser/parse.js');
 const fs = require('fs');
+const Template = require('./template.js');
 
 class File {
 	constructor (project, id, filepath) {
@@ -181,15 +182,15 @@ class File {
 		}
 	}
 
-	getType(typeList) {
+	getType(typeList, template = []) {
 		let res = null;
 		// File access must be direct
 		if (typeList[0][0] == "." || Number.isInteger(typeList[0][0])) {
 			res = this.names[typeList[0][1]];
 
 			if (res) {
-				if (typeList.length > 1) {
-					return res.getType(typeList.slice(1));
+				if (res instanceof Template || typeList.length > 1) {
+					return res.getType(typeList.slice(1), template);
 				} else {
 					return new TypeRef(0, res);
 				}
@@ -201,7 +202,7 @@ class File {
 		// If the name isn't defined in this file
 		// Check other files
 		if (this.names["*"] instanceof Import) {
-			return this.names["*"].getType(typeList);
+			return this.names["*"].getType(typeList, template);
 		}
 
 		return null;

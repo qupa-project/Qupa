@@ -64,9 +64,8 @@ program ::= w* ( stmt_top w* )*
 		variable_args ::= variable_arg ( w* "," w* variable_arg )*
 			variable_arg ::= constant | variable
 
-	data_type ::= "@"* name data_type_access*
-		data_type_access ::= datatype_access_static | template
-			datatype_access_static  ::= "." name
+	data_type ::= "@"* name data_type_access* template?
+		data_type_access ::= "." name
 
 
 #=============================
@@ -90,9 +89,9 @@ program ::= w* ( stmt_top w* )*
 
 	function_outline ::= func_head w* ";"
 
-	call ::= variable w* template? w* "(" w* call_args? w* ")"
+	call ::= variable template? w* "(" w* call_args? w* ")"
 		call_args ::= expr ( w* "," w* expr )*
-	call_procedure ::= variable w* template? w* "(" w* call_args? w* ")" w* ";"
+	call_procedure ::= call ";"
 
 	return ::= "return" ( w+ expr )? w* ";"
 

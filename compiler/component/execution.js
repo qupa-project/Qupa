@@ -27,9 +27,17 @@ class Execution {
 
 	/**
 	 * Return the function this scope is within
+	 * @returns {Function_Instance}
 	 */
-	getFunction() {
-		return this.ctx.getFunction();
+	getFunction(access, signature, template) {
+		return this.getFile().getFunction(access, signature, template);
+	}
+
+	getFunctionGroup () {
+		return this.ctx.getFunctionGroup();
+	}
+	getFunctionInstance() {
+		return this.ctx.getFunctionInstance();
 	}
 
 	/**
@@ -47,6 +55,92 @@ class Execution {
 			return this.ctx;
 		}
 		return null;
+	}
+
+
+
+	getVar(ast, read = true) {
+		// Link dynamic access arguments
+		for (let access of ast.tokens[2]) {
+			if (access[0] == "[]") {
+				for (let i in access[1]) {
+					let res = this.compile_expr(access[1][i], null, true);
+					if (res === null) {
+						return {
+							error: true,
+							msg: `Error: Unexpected dynamic access opperand type ${arg.type}`,
+							ref: arg.ref
+						};
+					}
+
+					access[1][i] = res;
+				}
+			}
+		}
+
+		let res = this.scope.getVar(ast, read);
+
+		// Inject reference if it is missing
+		if (res.error) {
+			res.ref = res.ref || ast.ref;
+		}
+
+		return res;
+	}
+
+
+
+	/**
+	 *
+	 * @param {BNF_Node} node
+	 */
+	resolveTemplate(node) {
+		let template = [];
+		for (let arg of node.tokens) {
+			switch (arg.type) {
+				case "data_type":
+					let type = this.getFile().getType(
+						Flattern.DataTypeList(arg),
+						this.resolveTemplate(arg.tokens[3])
+					);
+					if (type === null) {
+						this.getFile().throw(
+							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
+							arg.ref.start, arg.ref.end
+						);
+						return null;
+					}
+
+					template.push(type);
+					break;
+				case "constant":
+					template.push(this.compile_constant(arg));
+					break;
+				default:
+					this.getFile().throw(
+						`Error: ${arg.type} are currently unsupported in template arguments`,
+						arg.ref.start, arg.ref.end
+					);
+					return null;
+			}
+		}
+
+		return template;
+	}
+	/**
+	 *
+	 * @param {BNF_Node} node
+	 */
+	resolveType (node) {
+		let template = this.resolveTemplate(node.tokens[3]);
+		if (template === null) {
+			return null;
+		}
+
+		return this.getFile().getType(
+			Flattern.DataTypeList(node),
+			template
+		);
 	}
 
 
@@ -69,7 +163,8 @@ class Execution {
 		return {
 			instruction: new LLVM.Argument(
 				new LLVM.Type(type.represent, 0, ast.ref.start),
-				new LLVM.Constant(val, ast.ref.start)
+				new LLVM.Constant(val, ast.ref.start),
+				ast.ref
 			),
 			preamble: new LLVM.Fragment(),
 			epilog: new LLVM.Fragment(),
@@ -82,12 +177,14 @@ class Execution {
 	 * @param {BNF_Node} ast
 	 */
 	compile_loadVariable(ast) {
-		let load = this.scope.getVar(ast, true);
+		let frag = new LLVM.Fragment();
+
+		let load = this.getVar(ast, true);
 		if (load.error) {
 			this.getFile().throw(load.msg, load.ref.start, load.ref.end);
-			return false;
+			return null;
 		}
-
+		frag.merge(load.preamble);
 
 		let count = ast.tokens[0]+1;
 		let cache = load.register.deref(this.scope, true, count);
@@ -97,20 +194,21 @@ class Execution {
 				`Error: Cannot dereference ${Flattern.DuplicateChar(count, "$")}${name}`,
 				ast.ref.start, ast.ref.end
 			);
-			return false;
+			return null;
 		}
-		load.preamble.merge(cache.preamble);
+		frag.merge(cache.preamble);
 
 		return {
 			instruction: new LLVM.Argument(
 				new LLVM.Type(cache.register.type.represent, cache.register.pointer),
-				new LLVM.Name(cache.register.id, false),
+				new LLVM.Name(cache.register.id, null),
 				null,
 				load.register.name
 			),
-			preamble: load.preamble,
+			preamble: frag,
 			epilog: new LLVM.Fragment(),
-			type: new TypeRef(cache.register.pointer, cache.register.type)
+			type: new TypeRef(cache.register.pointer, cache.register.type),
+			register: cache.register
 		};
 	}
 
@@ -135,36 +233,20 @@ class Execution {
 		let regs = [];
 		for (let arg of ast.tokens[2].tokens) {
 			if (arg.type == "variable") {
-				let load = this.scope.getVar(arg, true);
-				if (load.error) {
-					this.getFile().throw(load.msg, load.ref.start, load.ref.end);
-					return false;
+				let load = this.compile_loadVariable(arg);
+				if (load === null) {
+					return null;
 				}
-				preamble.merge(load.preamble);
+				preamble.merge (load.preamble);
+				epilog.merge   (load.epilog);
 
-				let cache = load.register.deref(this.scope, true, 1);
-				if (!cache || !cache.register) {
-					let name = Flattern.VariableStr(arg);
-					this.getFile().throw(
-						`Cannot dereference ${name}`,
-						arg.ref.start, arg.ref.end
-					);
-					return false;
-				}
-				preamble.merge(cache.preamble);
-
-				args.push(new LLVM.Argument(
-					new LLVM.Type(cache.register.type.represent, cache.register.pointer),
-					new LLVM.Name(cache.register.id, false),
-					null,
-					arg.name
-				));
-				regs.push(cache.register);
-				signature.push(new TypeRef(cache.register.pointer, cache.register.type));
+				args.push(load.instruction);
+				regs.push(load.register);
+				signature.push(load.type);
 			} else {
-				let expr = this.compile_expr(arg, false, true, ['call']);
-				if (expr === false) {
-					return false;
+				let expr = this.compile_expr(arg, null, true, ['call']);
+				if (expr === null) {
+					return null;
 				}
 
 				preamble.merge(expr.preamble);
@@ -178,7 +260,7 @@ class Execution {
 
 
 		// Link any [] accessors
-		let accesses = [ast.tokens[0].tokens[1].tokens];
+		let accesses = [ ast.tokens[0].tokens[1].tokens ];
 		let file = this.getFile();
 		for (let access of ast.tokens[0].tokens[2]) {
 			if (access.tokens[0] == "[]") {
@@ -189,16 +271,16 @@ class Execution {
 							`Error: Non-variable accessors are not allowed at this time`,
 							inner.ref.start, inner.ref.end
 						);
-						return false;
+						return null;
 					}
 
-					let target = this.scope.getVar(inner, true);
+					let target = this.getVar(inner, true);
 					if (target.error !== true) {
 						file.throw(
 							`Error: Cannot processed variables withiin [] for function access`,
 							inner.ref.start, inner.ref.end
 						);
-						return false;
+						return null;
 					}
 
 					let forward = Flattern.VariableList(inner);
@@ -207,7 +289,7 @@ class Execution {
 							`Error: Cannot dereference function call ${Flattern.VariableStr(inner)}`,
 							inner.ref.start, inner.ref.end
 						);
-						return false;
+						return null;
 					}
 
 					target = file.getType(forward);
@@ -217,51 +299,32 @@ class Execution {
 							`Error: Unknown variable ${Flattern.VariableStr(inner)}`,
 							inner.ref.start, inner.ref.end
 						);
-						return false;
+						return null;
 					}
 					out.push(target);
 				}
 
 				accesses.push(out);
 			} else {
-				accesses.push(access);
+				accesses.push([access.tokens[0], access.tokens[1].tokens]);
 			}
 		}
 
 		// Link any template access
-		let template = [];
-		for (let arg of ast.tokens[1].tokens) {
-			switch (arg.type) {
-				case "data_type":
-					let type = this.getFunction().getType(arg);
-					if (type === null) {
-						file.throw(
-							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
-							arg.ref.start, arg.ref.end
-						);
-						return false;
-					}
-
-					template.push(type);
-					break;
-				default:
-					file.throw(
-						`Error: ${arg.type} are currently unsupported in template arguments`,
-						arg.ref.start, arg.ref.end
-					);
-					return false;
-			}
+		let template = this.resolveTemplate(ast.tokens[1]);
+		if (template === null) {
+			return null;
 		}
 
 		// Find a function with the given signature
-		let target = file.getFunction(accesses, signature, template);
+		let target = this.getFunction(accesses, signature, template);
 		if (!target) {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
 			file.throw(
 				`Error: Unable to find function "${funcName}" with signature ${signature.join(", ")}`,
 				ast.ref.start, ast.ref.end
 			);
-			return false;
+			return null;
 		}
 
 
@@ -290,7 +353,7 @@ class Execution {
 			}
 
 			// Mark this function as being called for the callgraph
-			this.getFunction().addCall(target);
+			this.getFunctionInstance().addCall(target);
 		}
 
 		return { preamble, instruction, epilog, type: returnType };
@@ -304,8 +367,8 @@ class Execution {
 	compile_call_procedure(ast) {
 		let frag = new LLVM.Fragment(ast);
 		let out = this.compile_call(ast);
-		if (out === false) {
-			return false;
+		if (out === null) {
+			return null;
 		}
 
 		// Merge the preable, execution, and epilog into one fragment
@@ -323,13 +386,13 @@ class Execution {
 	 * @returns {LLVM.Fragment}
 	 */
 	compile_declare(ast){
-		let typeRef = this.getFunction().getType(ast.tokens[0]);
 		let	name = ast.tokens[1].tokens;
 		let frag = new LLVM.Fragment();
 
-		if (typeRef == null) {
+		let typeRef = this.resolveType(ast.tokens[0]);
+		if (!(typeRef instanceof TypeRef)) {
 			this.getFile().throw(`Error: Invalid type name "${Flattern.DataTypeStr(ast.tokens[0])}"`, ast.ref.start, ast.ref.end);
-			return false;
+			return null;
 		}
 
 		// Update pointer level
@@ -346,7 +409,6 @@ class Execution {
 			new LLVM.Name(reg.id, false, ast.tokens[1].ref.start),
 			new LLVM.Alloc(
 				new LLVM.Type(reg.type.represent, typeRef.pointer, ast.tokens[0].ref.start),
-				reg.type.size,
 				ast.ref.start
 			),
 			ast.ref.start
@@ -364,8 +426,8 @@ class Execution {
 
 		// Resolve the expression
 		let expr = this.compile_expr(ast.tokens[1], false, true);
-		if (expr === false) {
-			return false;
+		if (expr === null) {
+			return null;
 		}
 		frag.merge(expr.preamble);
 
@@ -373,10 +435,10 @@ class Execution {
 		//   This must occur after the expression is resolve
 		//   because this variable now needs to be accessed for writing
 		//   after any reads that might have taken place in the expresion
-		let load = this.scope.getVar(ast.tokens[0], false);
+		let load = this.getVar(ast.tokens[0], false);
 		if (load.error) {
 			this.getFile().throw( load.msg, load.ref.start, load.ref.end );
-			return false;
+			return null;
 		}
 		frag.merge(load.preamble);
 
@@ -388,7 +450,7 @@ class Execution {
 				` to ${expr.type.toString()}`,
 				ast.ref.start, ast.ref.end
 			);
-			return false;
+			return null;
 		}
 
 		if (expr.register) {
@@ -400,10 +462,9 @@ class Execution {
 					new LLVM.Type(load.register.type.represent, load.register.pointer),
 					new LLVM.Name(`${load.register.id}`, false),
 					ast.tokens[0].ref,
-					Flattern.VariableStr(ast.tokens[0])
+					// Flattern.VariableStr(ast.tokens[0]) TODO fix
 				),
 				expr.instruction,
-				load.register.type.size,
 				ast.ref.start
 			));
 			load.register.clearCache();
@@ -421,8 +482,8 @@ class Execution {
 		let frag = new LLVM.Fragment();
 
 		let declare = this.compile_declare(ast);
-		if (declare == false) {
-			return false;
+		if (declare == null) {
+			return null;
 		}
 		frag.merge(declare);
 
@@ -431,7 +492,7 @@ class Execution {
 			tokens: [
 				{
 					type: "variable",
-					tokens: [ 0, ast.tokens[1] ],
+					tokens: [ 0, ast.tokens[1], [] ],
 					ref: ast.tokens[1].ref
 				},
 				ast.tokens[2]
@@ -442,8 +503,8 @@ class Execution {
 			}
 		};
 		let assign = this.compile_assign(forward);
-		if (assign === false) {
-			return false;
+		if (assign === null) {
+			return null;
 		}
 		frag.merge(assign);
 
@@ -463,6 +524,9 @@ class Execution {
 			returnType = new TypeRef(0, Primative.types.void);
 		} else {
 			let res = this.compile_expr(ast.tokens[0], this.returnType, true);
+			if (res === null) {
+				return null;
+			}
 			returnType = res.type;
 			frag.merge(res.preamble);
 			inner = res.instruction;
@@ -599,8 +663,8 @@ class Execution {
 			ast.tokens[0].tokens[0]
 		);
 		let check = scope_check.compile_while_condition(ast.tokens[0]);
-		if (check === false) {
-			return false;
+		if (check === null) {
+			return null;
 		}
 
 		let scope_loop = this.clone();
@@ -610,8 +674,8 @@ class Execution {
 			ast.tokens[0].tokens[0]
 		);
 		let loop = scope_loop.compile(ast.tokens[1]);
-		if (loop === false) {
-			return false;
+		if (loop === null) {
+			return null;
 		}
 		loop.merge(scope_loop.flushAllClones());
 
@@ -649,8 +713,8 @@ class Execution {
 			true
 		);
 
-		if (res === false) {
-			return false;
+		if (res === null) {
+			return null;
 		}
 
 		res.preamble.merge(res.epilog);
@@ -674,7 +738,7 @@ class Execution {
 				`Error: Cannot call ${ast.type} within a nested expression`,
 				ast.ref.start, ast.ref.end
 			);
-			return false;
+			return null;
 		}
 
 		let res = null;
@@ -692,8 +756,8 @@ class Execution {
 				throw new Error(`Unexpected expression type ${ast.type}`);
 		}
 
-		if (res === false) {
-			return false;
+		if (res === null) {
+			return null;
 		}
 
 		if (expects instanceof TypeRef && !expects.match(res.type)) {
@@ -703,7 +767,7 @@ class Execution {
 					`instead got ${res.type.toString()}`,
 				ast.ref.start, ast.ref.end
 			);
-			return false;
+			return null;
 		}
 
 		/**
@@ -744,6 +808,7 @@ class Execution {
 			);
 		}
 
+		res.ref = ast.ref;
 		return res;
 	}
 
@@ -778,7 +843,7 @@ class Execution {
 				case "return":
 					inner = this.compile_return(token);
 					break;
-				case "call_procedure":
+				case "call":
 					inner = this.compile_call_procedure(token);
 					break;
 				case "if":

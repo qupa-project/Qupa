@@ -5,7 +5,7 @@ class GEP extends Instruction {
 	/**
 	 *
 	 * @param {LLVM.Type} type
-	 * @param {LLVM.Name} reg_address
+	 * @param {LLVM.Argument} reg_address
 	 * @param {LLVM.Constant[]} cnst_term
 	 * @param {BNF_Reference} ref
 	 */
@@ -20,7 +20,8 @@ class GEP extends Instruction {
 		return super.toLLVM(
 			`getelementptr inbounds ` +
 			`${this.type.toLLVM()}, ` +
-			`${this.type.toLLVM()}* ${this.address.toLLVM()}, ` +
+			// `${this.type.toLLVM()}* ` +
+			`${this.address.toLLVM()}, ` +
 			`${this.term.map( x => x.toLLVM() ).join(', ')}`,
 		indent);
 	}

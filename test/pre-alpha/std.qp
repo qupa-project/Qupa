@@ -72,3 +72,6 @@ bool Equal(float a, float b) {
 bool Greater(int a, int b) {
 	return i32_gt(a, b);
 }
+bool Lesser(int a, int b) {
+	return i32_lt(a, b);
+}
