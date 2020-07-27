@@ -85,7 +85,7 @@ class Register {
 		// Check the index of the term
 		let search = dynamic ?
 			register.type.getElement(ast[0][1], register) :
-			register.type.getTerm(ast[0][1].tokens, ast[0][1].ref);
+			register.type.getTerm(ast[0][1], register);
 		if (search === null) {
 			return {
 				error: true,
@@ -93,7 +93,6 @@ class Register {
 				ref
 			};
 		}
-
 
 		preamble.merge(search.preamble);
 
@@ -145,7 +144,7 @@ class Register {
 		}
 
 		if (read) {
-			// preamble.merge( register.flushCache(ast.ref, true) );
+			preamble.merge( register.flushCache(ast.ref) );
 		} else {
 			register.markUpdated();
 		}
@@ -238,10 +237,20 @@ class Register {
 	 * @param {Register} cache A cache that may replace this one
 	 * @returns {void}
 	 */
-	clearCache(replacement = null) {
-		this.inner = [];
+	clearCache(replacement = null, allowGEP = true) {
 		this.cache = replacement;
 		this.writePending = false;
+
+		if (allowGEP) {
+			this.inner = [];
+
+			for (let sig in this.inner) {
+				if (this.inner[sig].writePending) {
+					this.writePending = true;
+					break;
+				}
+			}
+		}
 	}
 
 
@@ -271,6 +280,9 @@ class Register {
 		if (read) {
 			let data = this.flushGEPCaches();
 			out.preamble.merge(data);
+			if (data.stmts.length > 0) {
+				this.clearCache(null, false);
+			}
 		} else {
 			this.clearGEPCaches();
 		}

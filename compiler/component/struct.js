@@ -3,6 +3,10 @@ const TypeDef = require('./typedef.js');
 const Flattern = require('../parser/flattern.js');
 const TypeRef = require('./typeRef.js');
 
+const Primative = {
+	types: require('./../primative/types.js')
+};
+
 
 class Struct_Term {
 	constructor(name, typeRef, ref) {
@@ -30,7 +34,7 @@ class Structure extends TypeDef {
 	 * @param {String} name
 	 * @returns {Object}
 	 */
-	getTerm(name, ref) {
+	getTerm(name, register) {
 		let found = false;
 		let i = 0;
 		for (; i<this.terms.length && !found; i++) {
@@ -46,24 +50,24 @@ class Structure extends TypeDef {
 		let preamble = new LLVM.Fragment();
 		let signature = `.${i}`;
 		let instruction = new LLVM.GEP(
-			new LLVM.Type(register.type.represent, register.pointer-1, reg.declared),
+			new LLVM.Type(register.type.represent, register.pointer-1, register.declared),
 			new LLVM.Argument(
-				new LLVM.Type(register.type.represent, register.pointer, reg.declared),
-				new LLVM.Name(register.id, false, ast[0][1].ref),
-				ast[0][1].ref
+				new LLVM.Type(register.type.represent, register.pointer, register.declared),
+				new LLVM.Name(register.id, false, null),
+				null
 			),
 			[
 				new LLVM.Argument(
 					Primative.types.i32.toLLVM(),
-					new LLVM.Constant("0", ref),
-					ref
+					new LLVM.Constant("0", null),
+					null
 				),
 				new LLVM.Argument(
-					new LLVM.Type("i32", 0, ref),
-					new LLVM.Constant(i.toString(), ref)
+					new LLVM.Type("i32", 0, null),
+					new LLVM.Constant(i.toString(), null)
 				)
 			],
-			ref
+			null
 		);
 
 		return { preamble, instruction, signature, typeRef: this.terms[i].typeRef };
