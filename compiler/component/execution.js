@@ -29,8 +29,15 @@ class Execution {
 	 * Return the function this scope is within
 	 * @returns {Function_Instance}
 	 */
-	getFunction(assess, signature, template) {
-		return this.getFile().getFunction(assess, signature, template);
+	getFunction(access, signature, template) {
+		return this.getFile().getFunction(access, signature, template);
+	}
+
+	getFunctionGroup () {
+		return this.ctx.getFunctionGroup();
+	}
+	getFunctionInstance() {
+		return this.ctx.getFunctionInstance();
 	}
 
 	/**
@@ -120,6 +127,21 @@ class Execution {
 
 		return template;
 	}
+	/**
+	 *
+	 * @param {BNF_Node} node
+	 */
+	resolveType (node) {
+		let template = this.resolveTemplate(node.tokens[3]);
+		if (template === null) {
+			return null;
+		}
+
+		return this.getFile().getType(
+			Flattern.DataTypeList(node),
+			template
+		);
+	}
 
 
 
@@ -155,12 +177,14 @@ class Execution {
 	 * @param {BNF_Node} ast
 	 */
 	compile_loadVariable(ast) {
+		let frag = new LLVM.Fragment();
+
 		let load = this.getVar(ast, true);
 		if (load.error) {
 			this.getFile().throw(load.msg, load.ref.start, load.ref.end);
 			return null;
 		}
-
+		frag.merge(load.preamble);
 
 		let count = ast.tokens[0]+1;
 		let cache = load.register.deref(this.scope, true, count);
@@ -172,7 +196,7 @@ class Execution {
 			);
 			return null;
 		}
-		load.preamble.merge(cache.preamble);
+		frag.merge(cache.preamble);
 
 		return {
 			instruction: new LLVM.Argument(
@@ -181,9 +205,10 @@ class Execution {
 				null,
 				load.register.name
 			),
-			preamble: load.preamble,
+			preamble: frag,
 			epilog: new LLVM.Fragment(),
-			type: new TypeRef(cache.register.pointer, cache.register.type)
+			type: new TypeRef(cache.register.pointer, cache.register.type),
+			register: cache.register
 		};
 	}
 
@@ -208,32 +233,16 @@ class Execution {
 		let regs = [];
 		for (let arg of ast.tokens[2].tokens) {
 			if (arg.type == "variable") {
-				let load = this.getVar(arg, true);
-				if (load.error) {
-					this.getFile().throw(load.msg, load.ref.start, load.ref.end);
+				let load = this.compile_loadVariable(arg);
+				if (load === null) {
 					return null;
 				}
-				preamble.merge(load.preamble);
+				preamble.merge (load.preamble);
+				epilog.merge   (load.epilog);
 
-				let cache = load.register.deref(this.scope, true, 1);
-				if (!cache || !cache.register) {
-					let name = Flattern.VariableStr(arg);
-					this.getFile().throw(
-						`Cannot dereference ${name}`,
-						arg.ref.start, arg.ref.end
-					);
-					return null;
-				}
-				preamble.merge(cache.preamble);
-
-				args.push(new LLVM.Argument(
-					new LLVM.Type(cache.register.type.represent, cache.register.pointer),
-					new LLVM.Name(cache.register.id, false),
-					null,
-					arg.name
-				));
-				regs.push(cache.register);
-				signature.push(new TypeRef(cache.register.pointer, cache.register.type));
+				args.push(load.instruction);
+				regs.push(load.register);
+				signature.push(load.type);
 			} else {
 				let expr = this.compile_expr(arg, null, true, ['call']);
 				if (expr === null) {
@@ -344,7 +353,7 @@ class Execution {
 			}
 
 			// Mark this function as being called for the callgraph
-			this.getFunction().addCall(target);
+			this.getFunctionInstance().addCall(target);
 		}
 
 		return { preamble, instruction, epilog, type: returnType };
@@ -380,15 +389,7 @@ class Execution {
 		let	name = ast.tokens[1].tokens;
 		let frag = new LLVM.Fragment();
 
-		let template = this.resolveTemplate(ast.tokens[0].tokens[3]);
-		if (template === null) {
-			return null;
-		}
-
-		let typeRef = this.getFile().getType(
-			Flattern.DataTypeList(ast.tokens[0]),
-			template
-		);
+		let typeRef = this.resolveType(ast.tokens[0]);
 		if (!(typeRef instanceof TypeRef)) {
 			this.getFile().throw(`Error: Invalid type name "${Flattern.DataTypeStr(ast.tokens[0])}"`, ast.ref.start, ast.ref.end);
 			return null;

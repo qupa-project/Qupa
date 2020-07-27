@@ -81,10 +81,6 @@ class Register {
 		}
 
 
-		// Flush any waiting updates
-		preamble.merge(this.flushCache(null, false));
-
-
 
 		// Check the index of the term
 		let search = dynamic ?
@@ -105,6 +101,13 @@ class Register {
 		if (!read) {
 			preamble.merge( this.flushGEPCaches( ast[0][1].ref, search.signature) );
 			this.clearGEPCaches(search.signature);
+
+			// If a GEP has been updated the cache will need to be reloaded
+			if (this.cache) {
+				this.cache.clearCache();
+			}
+		} else if (this.cache) {
+			preamble.merge(this.flushCache(ast[0][1].ref, false));
 		}
 
 
@@ -129,13 +132,6 @@ class Register {
 
 
 
-		// If a GEP has been updated the cache will need to be reloaded
-		if (!read && this.cache) {
-			this.cache.clearCache();
-			this.cache = null;
-		}
-
-
 		// If further access is required
 		//  Re-occure
 		if (ast.length > 1) {
@@ -149,7 +145,7 @@ class Register {
 		}
 
 		if (read) {
-			preamble.merge( register.flushCache(ast.ref, true) );
+			// preamble.merge( register.flushCache(ast.ref, true) );
 		} else {
 			register.markUpdated();
 		}
@@ -273,7 +269,8 @@ class Register {
 		// Wipe all GEP's caches
 		//   As their data is about to be over written
 		if (read) {
-			out.preamble.merge(this.flushGEPCaches());
+			let data = this.flushGEPCaches();
+			out.preamble.merge(data);
 		} else {
 			this.clearGEPCaches();
 		}

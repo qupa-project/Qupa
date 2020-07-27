@@ -44,7 +44,10 @@ class Function_Instance {
 		return this.ctx.getFile();
 	}
 
-	getFunction() {
+	getFunctionGroup() {
+		return this.ctx.getFunctionGroup();
+	}
+	getFunctionInstance() {
 		return this;
 	}
 
@@ -94,10 +97,17 @@ class Function_Instance {
 			}));
 		}
 
+		// Generate an execution instance for type resolving
+		let exec = new Execution(
+			this,
+			null,
+			new Scope(this, this.getFile().project.config.caching)
+		);
+
 		for (let type of types){
-			let search = file.getType(Flattern.DataTypeList(type), []);
-			search.pointer = type.tokens[0]; // Copy the pointer level across
+			let search = exec.resolveType(type);
 			if (search instanceof TypeRef) {
+				search.pointer = type.tokens[0]; // Copy the pointer level across
 				this.signature.push(search);
 			} else {
 				file.throw(

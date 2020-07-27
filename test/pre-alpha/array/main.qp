@@ -1,19 +1,85 @@
-// import "../std.qp";
+/*
+Expected:
+42
+12
+-56
+-44
+42
+12
+-56
+42
+42
+12
+-56
+42
+12
+-56
+*/
 
-struct Rect {
-	int width;
-	int height;
-};
+import "../std.qp";
 
 i32 main() {
-	Array#[int, 3] arr;
+	Test1();
 
+	Array#[int, 3] arr;
+	arr[0] = 42;
+	arr[1] = 12;
+	arr[2] = -56;
+	Test2(arr);
+
+	Test3(arr);
+	printArr(arr);
+
+	return 0;
+}
+
+void Test1() {
+	// Construct the array locally to check caching
+	Array#[int, 3] arr;
 	arr[0] = 42;
 	arr[1] = 12;
 	arr[2] = -56;
 
-	int i = 1;
-	arr[i] = 3;
+	printArr(arr);
 
-	return 0;
+	int i = 1;
+	int j = 2;
+	arr[i] = Add(arr[i], arr[j]);
+
+	println(arr[i]);
+	printArr(arr);
+
+	return;
+}
+
+void Test2(Array#[int, 3] arr) {
+	// Allow the array to be constructed else where
+	// Since loop caching is what we're looking for
+
+	// Manual loop check
+	int i = 0;
+	println(arr[i]);
+
+	while ( Lesser(i, 3) ) {
+		println(arr[i]);
+		i = Add(i, 1);
+	}
+
+	return;
+}
+
+void Test3(Array#[int, 3] arr) {
+	arr[0] = Add(arr[0], 3);
+	arr[1] = Add(arr[1], 3);
+	arr[2] = Add(arr[2], 3);
+
+	return;
+}
+
+void printArr(Array#[int, 3] arr) {
+	println(arr[0]);
+	println(arr[1]);
+	println(arr[2]);
+
+	return;
 }

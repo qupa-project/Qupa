@@ -90,8 +90,6 @@ class Array_Gen extends TypeDef {
 		let preamble = opperands[0].preamble;
 
 		let signature = `[${opperands.map( x=> x.instruction.toLLVM() )}]`;
-		console.log(93, this.typeRef.toLLVM(opperands[0].ref).toLLVM());
-		console.log(94, target.toLLVM().toLLVM());
 		let instruction = new LLVM.GEP(
 			new LLVM.Type(this.represent, 0),
 			target.toLLVM(),
