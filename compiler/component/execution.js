@@ -524,6 +524,9 @@ class Execution {
 			returnType = new TypeRef(0, Primative.types.void);
 		} else {
 			let res = this.compile_expr(ast.tokens[0], this.returnType, true);
+			if (res === null) {
+				return null;
+			}
 			returnType = res.type;
 			frag.merge(res.preamble);
 			inner = res.instruction;
