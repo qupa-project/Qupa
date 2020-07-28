@@ -15,6 +15,10 @@ class Template {
 		return null;
 	}
 
+	getFile () {
+		return this.ctx.getFile();
+	}
+
 	merge(other) {
 		return false;
 	}

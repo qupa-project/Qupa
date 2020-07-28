@@ -1,9 +1,12 @@
 const File = require('./../component/file.js');
 const Project = require('../component/project.js');
 
+const Function = require('./../component/function.js');
+
 const Array_Template = require('./array.js');
 const Static_Cast = require('./static_cast.js');
 const SizeOf = require('./sizeof.js');
+const Malloc = require('./malloc.js');
 const types = require('./types.js');
 const Math = require('./math.js');
 

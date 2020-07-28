@@ -19,23 +19,27 @@ class Template_Primative_Size_Of extends Template {
 			return false;
 		}
 
-		if (signature.length > 0) {
+		if (signature.length != 1) {
 			return false;
 		}
 
-		if (template.length != 1) {
+		if (template.length != 0) {
 			return false;
 		}
 
-		let func = new Function_Instance(this, "SizeOf", types.i32.toLLVM(), []);
+		console.log(34, signature);
+
+		let func = new Function_Instance(this, "Malloc", types.i32.toLLVM(), []);
 		func.generate = (regs, ir_args) => {
 			return {
 				preamble: new LLVM.Fragment(),
-				instruction: new LLVM.Argument(
-					types.i32.toLLVM(),
-					new LLVM.Constant(template[0].pointer > 0 ? 4 : template[0].type.size, null)
+				instruction: new LLVM.Call(
+					types.i8.toLLVM(),
+					new LLVM.Name("malloc", true, null),
+					ir_args,
+					null
 				),
-				type: new TypeRef(0, types.i32)
+				type: new TypeRef(1, types.i8)
 			};
 		};
 

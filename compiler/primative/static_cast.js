@@ -10,10 +10,6 @@ class Template_Primative_Static_Cast extends Template {
 		super(ctx, null);
 	}
 
-	getFile () {
-		return this.ctx.getFile();
-	}
-
 	getFunction(access, signature, template) {
 		return this.generate(access, signature, template);
 	}

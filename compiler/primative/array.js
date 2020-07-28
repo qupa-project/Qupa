@@ -14,10 +14,6 @@ class Template_Array extends Template {
 		this.instances = {};
 	}
 
-	getFile () {
-		return this.ctx.getFile();
-	}
-
 	getType (typeList, template) {
 		if (typeList.length != 0) {
 			return null;
@@ -47,10 +43,6 @@ class Template_Array extends Template {
 		}
 
 		return new TypeRef(0, inst);
-	}
-
-	getFunction(variable, signature) {
-		return null;
 	}
 }
 
