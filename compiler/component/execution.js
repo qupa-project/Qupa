@@ -59,24 +59,17 @@ class Execution {
 
 
 
+
+
+
+	/**
+	 * Get a register
+	 * @param {*} ast
+	 * @param {Boolean} read
+	 */
 	getVar(ast, read = true) {
 		// Link dynamic access arguments
-		for (let access of ast.tokens[2]) {
-			if (access[0] == "[]") {
-				for (let i in access[1]) {
-					let res = this.compile_expr(access[1][i], null, true);
-					if (res === null) {
-						return {
-							error: true,
-							msg: `Error: Unexpected dynamic access opperand type ${arg.type}`,
-							ref: arg.ref
-						};
-					}
-
-					access[1][i] = res;
-				}
-			}
-		}
+		ast = this.resolveAccess(ast);
 
 		let res = this.scope.getVar(ast, read);
 
@@ -88,92 +81,8 @@ class Execution {
 		return res;
 	}
 
-
-
 	/**
-	 *
-	 * @param {BNF_Node} node
-	 */
-	resolveTemplate(node) {
-		let template = [];
-		for (let arg of node.tokens) {
-			switch (arg.type) {
-				case "data_type":
-					let type = this.getFile().getType(
-						Flattern.DataTypeList(arg),
-						this.resolveTemplate(arg.tokens[3])
-					);
-					if (type === null) {
-						this.getFile().throw(
-							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
-							arg.ref.start, arg.ref.end
-						);
-						return null;
-					}
-
-					template.push(type);
-					break;
-				case "constant":
-					template.push(this.compile_constant(arg));
-					break;
-				default:
-					this.getFile().throw(
-						`Error: ${arg.type} are currently unsupported in template arguments`,
-						arg.ref.start, arg.ref.end
-					);
-					return null;
-			}
-		}
-
-		return template;
-	}
-	/**
-	 *
-	 * @param {BNF_Node} node
-	 */
-	resolveType (node) {
-		let template = this.resolveTemplate(node.tokens[3]);
-		if (template === null) {
-			return null;
-		}
-
-		return this.getFile().getType(
-			Flattern.DataTypeList(node),
-			template
-		);
-	}
-
-
-
-	/**
-	 * Generates the LLVM for a constant
-	 * Used in other compile functions
-	 * @param {BNF_Node} ast
-	 */
-	compile_constant(ast) {
-		let type = Primative.types.i32;
-		let val = ast.tokens[0].tokens;
-		if (ast.tokens[0].type == "float") {
-			type = Primative.types.float;
-		} else if (ast.tokens[0].type == "boolean") {
-			type = Primative.types.bool;
-			val = val == "true" ? 1 : 0;
-		}
-
-		return {
-			instruction: new LLVM.Argument(
-				new LLVM.Type(type.represent, 0, ast.ref.start),
-				new LLVM.Constant(val, ast.ref.start),
-				ast.ref
-			),
-			preamble: new LLVM.Fragment(),
-			epilog: new LLVM.Fragment(),
-			type: new TypeRef(0, type),
-		};
-	}
-
-	/**
-	 * Load a variable
+	 * Load a variable ready for access
 	 * @param {BNF_Node} ast
 	 */
 	compile_loadVariable(ast) {
@@ -209,6 +118,126 @@ class Execution {
 			epilog: new LLVM.Fragment(),
 			type: new TypeRef(cache.register.pointer, cache.register.type),
 			register: cache.register
+		};
+	}
+
+
+
+
+
+
+	/**
+	 *
+	 * @param {BNF_Node} node
+	 */
+	resolveTemplate(node) {
+		let template = [];
+		for (let arg of node.tokens) {
+			switch (arg.type) {
+				case "data_type":
+					let type = this.getFile().getType(
+						Flattern.DataTypeList(arg),
+						this.resolveTemplate(arg.tokens[3])
+					);
+					if (type === null) {
+						this.getFile().throw(
+							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
+							arg.ref.start, arg.ref.end
+						);
+						return null;
+					}
+
+					// Update pointer size
+					type.pointer = arg.tokens[0];
+
+					template.push(type);
+					break;
+				case "constant":
+					template.push(this.compile_constant(arg));
+					break;
+				default:
+					this.getFile().throw(
+						`Error: ${arg.type} are currently unsupported in template arguments`,
+						arg.ref.start, arg.ref.end
+					);
+					return null;
+			}
+		}
+
+		return template;
+	}
+
+	/**
+	 *
+	 * @param {BNF_Node} node
+	 */
+	resolveType (node) {
+		let template = this.resolveTemplate(node.tokens[3]);
+		if (template === null) {
+			return null;
+		}
+
+		return this.getFile().getType(
+			Flattern.DataTypeList(node),
+			template
+		);
+	}
+
+	/**
+	 * Resolves any dynamic access for the variable
+	 * ALTERS original AST
+	 * @param {*} ast
+	 */
+	resolveAccess (ast) {
+		for (let access of ast.tokens[2]) {
+			if (access[0] == "[]") {
+				for (let i in access[1]) {
+					let res = this.compile_expr(access[1][i], null, true);
+					if (res === null) {
+						return {
+							error: true,
+							msg: `Error: Unexpected dynamic access opperand type ${arg.type}`,
+							ref: arg.ref
+						};
+					}
+
+					access[1][i] = res;
+				}
+			}
+		}
+
+		return ast;
+	}
+
+
+
+
+
+
+	/**
+	 * Generates the LLVM for a constant
+	 * Used in other compile functions
+	 * @param {BNF_Node} ast
+	 */
+	compile_constant(ast) {
+		let type = Primative.types.i32;
+		let val = ast.tokens[0].tokens;
+		if (ast.tokens[0].type == "float") {
+			type = Primative.types.float;
+		} else if (ast.tokens[0].type == "boolean") {
+			type = Primative.types.bool;
+			val = val == "true" ? 1 : 0;
+		}
+
+		return {
+			instruction: new LLVM.Argument(
+				new LLVM.Type(type.represent, 0, ast.ref.start),
+				new LLVM.Constant(val, ast.ref.start),
+				ast.ref
+			),
+			preamble: new LLVM.Fragment(),
+			epilog: new LLVM.Fragment(),
+			type: new TypeRef(0, type),
 		};
 	}
 
@@ -264,47 +293,11 @@ class Execution {
 		let file = this.getFile();
 		for (let access of ast.tokens[0].tokens[2]) {
 			if (access.tokens[0] == "[]") {
-				let out = [];
-				for (let inner of access.tokens[1].tokens) {
-					if (inner.type != "variable") {
-						file.throw (
-							`Error: Non-variable accessors are not allowed at this time`,
-							inner.ref.start, inner.ref.end
-						);
-						return null;
-					}
-
-					let target = this.getVar(inner, true);
-					if (target.error !== true) {
-						file.throw(
-							`Error: Cannot processed variables withiin [] for function access`,
-							inner.ref.start, inner.ref.end
-						);
-						return null;
-					}
-
-					let forward = Flattern.VariableList(inner);
-					if (forward[0][0] != 0) {
-						file.throw(
-							`Error: Cannot dereference function call ${Flattern.VariableStr(inner)}`,
-							inner.ref.start, inner.ref.end
-						);
-						return null;
-					}
-
-					target = file.getType(forward);
-
-					if (!target) {
-						file.throw(
-							`Error: Unknown variable ${Flattern.VariableStr(inner)}`,
-							inner.ref.start, inner.ref.end
-						);
-						return null;
-					}
-					out.push(target);
-				}
-
-				accesses.push(out);
+				file.throw (
+					`Error: Class base function execution is currently unsupported`,
+					inner.ref.start, inner.ref.end
+				);
+				return null;
 			} else {
 				accesses.push([access.tokens[0], access.tokens[1].tokens]);
 			}
@@ -416,6 +409,7 @@ class Execution {
 
 		return frag;
 	}
+
 	/**
 	 * Generates the LLVM for assigning a variable
 	 * @param {BNF_Node} ast
@@ -473,6 +467,7 @@ class Execution {
 		frag.merge(expr.epilog);
 		return frag;
 	}
+
 	/**
 	 * Generates the LLVM for the combined action of define + assign
 	 * @param {BNF_Node} ast
@@ -733,14 +728,6 @@ class Execution {
 	 * @param {Boolean} simple Simplifies the result to a single register when possible
 	 */
 	compile_expr (ast, expects = null, simple = false, block = false) {
-		if (block) {
-			this.getFile().throw(
-				`Error: Nested expressions are not allowed nested expression`,
-				ast.ref.start, ast.ref.end
-			);
-			return null;
-		}
-
 		let recursiveFail = false;
 		let res = null;
 		switch (ast.type) {
