@@ -84,8 +84,19 @@ class Template_Primative_Static_Cast extends Template {
 			}
 		} else {
 			// Address cast
+			console.log(87, signature, template)
 
-			return false;
+			func.generate = (regs, ir_args) => {
+				return {
+					preamble: new LLVM.Fragment(),
+					instruction: new LLVM.Bitcast(
+						template[0].toLLVM(),
+						ir_args[0],
+						null
+					),
+					type: template[0]
+				};
+			};
 		}
 
 		return func;
