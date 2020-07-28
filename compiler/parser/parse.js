@@ -770,8 +770,6 @@ function Simplify_Expr_p2 (node) {
 	return out;
 }
 function Simplify_Expr_p1 (node) {
-	console.log(714, node);
-
 	switch (node.tokens[0].type) {
 		case "expr_opperand":
 			node = Simplify_Expr_opperand(node.tokens[0]);
