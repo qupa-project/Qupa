@@ -7,8 +7,8 @@ program ::= w* ( stmt_top w* )*
 	w ::= " " | "\t" | nl
 	nl ::= "\r\n" | "\n"
 
-	digit ::= "0" | "1" | "2" | "3" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
-		digit_nz ::= "1" | "2" | "3" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+	digit ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+		digit_nz ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 	letter ::= letter_upper | letter_lower
 		letter_lower ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "t" | "s" | "u" | "v" | "w" | "x" | "y" | "z"
 		letter_upper ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "T" | "S" | "U" | "V" | "W" | "X" | "Y" | "Z"
@@ -130,22 +130,30 @@ program ::= w* ( stmt_top w* )*
 #=============================
 #  Expression
 #=============================
-	expr ::= expr_p5
+	expr ::= w* expr_opperand
 
-	expr_p5       ::= expr_p5_and | expr_p5_or | expr_p4
-		expr_p5_and      ::= w* expr_p4 w* "&&" w* expr_p5
-		expr_p5_or       ::= w* expr_p4 w* "||" w* expr_p5
-	expr_p4       ::= expr_p4_modulus | expr_p3
-		expr_p4_modulus  ::= w* expr_p3 w* "%" w*  expr_p4
-	expr_p3       ::= expr_p3_multiply | expr_p3_divide | expr_p2
-		expr_p3_multiply ::= w* expr_p2 w* "*" w* expr_p3
-		expr_p3_divide   ::= w* expr_p2 w* "/" w* expr_p3
+	expr_p8       ::= expr_p8_ternary | expr_p7
+		expr_p8_ternary ::= expr_p7 w* "?" w* expr_p8 w* ":" w* expr_p8
+	expr_p7       ::= expr_p7_and | expr_p7_or | expr_p5
+		expr_p7_and     ::= expr_p6 w* "&&" w* expr_p7
+		expr_p7_or      ::= expr_p6 w* "||" w* expr_p7
+	expr_p6       ::= expr_p6_eq | expr_p6_neq | expr_p5
+		expr_p6_eq      ::= expr_p5 w* "==" w* expr_p6
+		expr_p6_neq     ::= expr_p5 w* "!=" w* expr_p6
+	expr_p5       ::= expr_p5_gt | expr_p5_lt | expr_p4
+		expr_p5_gt      ::= expr_p4 w* ">" "="? w* expr_p5
+		expr_p5_lt      ::= expr_p4 w* "<" "="? w* expr_p5
+	expr_p4       ::= expr_p4_mod | expr_p3
+		expr_p4_mod     ::= expr_p3 w* "%" w*  expr_p4
+	expr_p3       ::= expr_p3_mul | expr_p3_div | expr_p2
+		expr_p3_mul     ::= expr_p2 w* "*" w* expr_p3
+		expr_p3_div     ::= expr_p2 w* "/" w* expr_p3
 	expr_p2       ::= expr_p2_add | expr_p2_sub | expr_p1
-		expr_p2_add      ::= w* expr_p1 w* "+" w* expr_p2
-		expr_p2_sub      ::= w* expr_p1 w* "-" w* expr_p2
+		expr_p2_add     ::= expr_p1 w* "+" w* expr_p2
+		expr_p2_sub     ::= expr_p1 w* "-" w* expr_p2
 	expr_p1       ::= expr_p1_invert | expr_opperand
-		expr_p1_invert   ::= w* "~" w* expr_opperand
-	expr_opperand ::= call | expr_brackets | constant | variable
+		expr_p1_invert ::= "!" w* expr_opperand
+	expr_opperand ::= expr_brackets | constant | call | variable
 		expr_brackets    ::= "(" w* expr w* ")"
 
 

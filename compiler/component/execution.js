@@ -244,7 +244,7 @@ class Execution {
 				regs.push(load.register);
 				signature.push(load.type);
 			} else {
-				let expr = this.compile_expr(arg, null, true, ['call']);
+				let expr = this.compile_expr(arg, null, true, true);
 				if (expr === null) {
 					return null;
 				}
@@ -732,21 +732,27 @@ class Execution {
 	 * @param {Array[Number, TypeDef]} expects
 	 * @param {Boolean} simple Simplifies the result to a single register when possible
 	 */
-	compile_expr (ast, expects = null, simple = false, block = []) {
-		if (block.includes(ast.type)) {
+	compile_expr (ast, expects = null, simple = false, block = false) {
+		if (block) {
 			this.getFile().throw(
-				`Error: Cannot call ${ast.type} within a nested expression`,
+				`Error: Nested expressions are not allowed nested expression`,
 				ast.ref.start, ast.ref.end
 			);
 			return null;
 		}
 
+		let recursiveFail = false;
 		let res = null;
 		switch (ast.type) {
 			case "constant":
 				res = this.compile_constant(ast);
 				break;
 			case "call":
+				if (block) {
+					recursiveFail = true;
+					break;
+				}
+
 				res = this.compile_call(ast);
 				break;
 			case "variable":
@@ -754,6 +760,14 @@ class Execution {
 				break;
 			default:
 				throw new Error(`Unexpected expression type ${ast.type}`);
+		}
+
+		if (recursiveFail) {
+			this.getFile().throw(
+				`Error: Recursive expression are not allowed at this stage`,
+				ast.ref.start, ast.ref.end
+			);
+			return null;
 		}
 
 		if (res === null) {
