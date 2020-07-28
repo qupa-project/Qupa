@@ -23,6 +23,9 @@ external assume {
 	void i32_println(i32 val);
 	void f32_print(float val);
 	void f32_println(float val);
+
+	@char malloc(i32 bytes);
+	void free(@char addr);
 }
 
 
