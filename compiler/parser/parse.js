@@ -275,7 +275,7 @@ function Simplify_Variable_Access (node) {
 			out = [ "[]", Simplify_Variable_Args(node.tokens[0].tokens[2][0]).tokens ];
 			break;
 		case "accessor_refer":
-			out = [ "->", Simplify_Name(node.tokens[0].tokens[1][0]).tokens ];
+			out = [ "->" ];
 			break;
 		case "accessor_static":
 			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]).tokens ];
