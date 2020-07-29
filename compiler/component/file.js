@@ -39,29 +39,6 @@ class File {
 	parse() {
 		console.info("Parsing:", this.path);
 
-		// Check the file exists
-		if (!fs.existsSync(this.path)) {
-			let msg = "\n";
-			msg += `Error: Cannot import file, as it does not exist\n`;
-			msg += `  absolute: ${this.path}\n`;
-			msg += `  relative: ${this.getRelative()}\n`;
-
-			console.error(msg);
-			this.project.markError(msg);
-			return;
-		}
-
-		if (!fs.lstatSync(this.path).isFile()) {
-			let msg = "\n";
-			msg += `Error: Cannot import directory as a file\n`;
-			msg += `  absolute: ${this.path}\n`;
-			msg += `  relative: ${this.getRelative()}\n`;
-
-			console.error(msg);
-			this.project.markError(msg);
-			return;
-		}
-
 		this.data = fs.readFileSync(this.path, 'utf8').replace(/\n\r/g, '\n');
 		let syntax = Parse(this.data, this.path);
 
@@ -88,10 +65,7 @@ class File {
 				let inner = element.tokens[0];
 				if (inner.type == "import") {
 					inner.tokens = [
-						path.resolve(
-							path.dirname(this.path),
-							inner.tokens[0].tokens[1]
-						),
+						inner.tokens[0].tokens[1],
 						inner.tokens[1]
 					];
 					this.register(inner);
@@ -263,7 +237,7 @@ class File {
 		return this;
 	}
 	import(filename) {
-		return this.project.import(filename);
+		return this.project.import(filename, false, this.path);
 	}
 
 	throw (msg, refStart, refEnd) {
