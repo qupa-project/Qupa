@@ -652,6 +652,9 @@ function Simplify_Expr (node) {
 }
 function Simplify_Expr_NoPrecedence (node) {
 	switch (node.tokens[0].type) {
+		case "call":
+			node = Simplify_Call(node.tokens[0]);
+			break;
 		case "expr_compare":
 			return Simplify_Expr_Compare(node.tokens[0]);
 		case "expr_arithmetic":
@@ -663,6 +666,8 @@ function Simplify_Expr_NoPrecedence (node) {
 	}
 }
 function Simplify_Expr_Compare (node) {
+	let out = null;
+
 	switch (node.tokens[0].type) {
 		case "expr_and":
 		case "expr_or":
@@ -672,24 +677,36 @@ function Simplify_Expr_Compare (node) {
 		case "expr_lt":
 		case "expr_gt_eq":
 		case "expr_lt_eq":
-			return Simplify_Expr_Binary(node.tokens[0]);
+			out = Simplify_Expr_Binary(node.tokens[0]);
+			break;
 		default:
 			throw new TypeError(`Unexpected arrithmetic expression statement ${node.tokens[0].type}`);
 	}
+
+	node.tokens = [out];
+	node.reached = null;
 }
 function Simplify_Expr_Arithmetic (node) {
+	let out = null;
+
 	switch (node.tokens[0].type) {
 		case "expr_mod":
 		case "expr_mul":
 		case "expr_div":
 		case "expr_add":
 		case "expr_sub":
-			return Simplify_Expr_Binary(node.tokens[0]);
+			out = Simplify_Expr_Binary(node.tokens[0]);
+			break;
 		case "expr_invert":
-			return Simplify_Expr_Unary(node.tokens[0]);
+			out = Simplify_Expr_Unary(node.tokens[0]);
+			break;
 		default:
 			throw new TypeError(`Unexpected arrithmetic expression statement ${node.tokens[0].type}`);
 	}
+
+
+	node.tokens = [out];
+	node.reached = null;
 }
 function Simplify_Expr_Unary (node) {
 	let out = [
