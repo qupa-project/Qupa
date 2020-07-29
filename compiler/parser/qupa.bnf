@@ -132,20 +132,20 @@ program ::= w* ( stmt_top w* )*
 #=============================
 	expr ::= w* expr_np
 
-	expr_np       ::= expr_compare | expr_arithmetic | call | expr_op
+	expr_np       ::= expr_compare | expr_arithmetic | expr_bool | call | expr_op
 		expr_ternary ::= expr_op w* "?" w* expr_op w* ":" w* expr_op
 	expr_bool ::= expr_and | expr_or | expr_not
 		expr_and     ::= expr_op w* "&&" w* expr_op
 		expr_or      ::= expr_op w* "||" w* expr_op
-		expr_invert  ::= "!" w* expr_op
-	expr_compare ::= expr_and | expr_or | expr_eq | expr_neq | expr_gt | expr_lt | expr_gt_eq | expr_lt_eq
+		expr_not  ::= "!" w* expr_op
+	expr_compare ::= expr_eq | expr_neq | expr_gt | expr_lt | expr_gt_eq | expr_lt_eq
 		expr_eq      ::= expr_op w* "==" w* expr_op
 		expr_neq     ::= expr_op w* "!=" w* expr_op
 		expr_gt      ::= expr_op w* ">" w* expr_op
 		expr_lt      ::= expr_op w* "<" w* expr_op
 		expr_gt_eq   ::= expr_op w* ">=" w* expr_op
 		expr_lt_eq   ::= expr_op w* "<=" w* expr_op
-	expr_arithmetic ::= expr_mod | expr_mul | expr_div | expr_add | expr_sub | expr_invert
+	expr_arithmetic ::= expr_mod | expr_mul | expr_div | expr_add | expr_sub
 		expr_mod     ::= expr_op w* "%" w*  expr_op
 		expr_mul     ::= expr_op w* "*" w* expr_op
 		expr_div     ::= expr_op w* "/" w* expr_op
