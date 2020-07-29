@@ -745,6 +745,10 @@ class Execution {
 			case "variable":
 				res = this.compile_loadVariable(ast);
 				break;
+			case "expr_arithmetic":
+				res = this.compile_expr_arithmetic(ast.tokens[0]);
+				break;
+			case "expr_compare":
 			default:
 				throw new Error(`Unexpected expression type ${ast.type}`);
 		}
@@ -786,10 +790,10 @@ class Execution {
 			if (expects) {
 				irType = new LLVM.Type(expects.type.represent, expects.pointer, ast.ref.start)
 			} else {
-				if (!inner.type) {
+				if (!res.type) {
 					throw new Error("Error: Cannot simplify due to undeduceable type");
 				}
-				irType = inner.type;
+				irType = res.type;
 			}
 
 			let id = this.scope.genID();
@@ -812,6 +816,107 @@ class Execution {
 		res.ref = ast.ref;
 		return res;
 	}
+
+	compile_expr_arithmetic(ast) {
+		let action = null;
+		switch (ast.type) {
+			case "expr_add":
+				action = "Add";
+				break;
+			case "expr_sub":
+				action = "Sub";
+				break;
+			case "expr_mul":
+				action = "Mul";
+				break;
+			case "expr_div":
+				action = "Div";
+				break;
+			case "expr_mod":
+				action = "Rem";
+				break;
+			default:
+				throw new Error(`Unexpected arithmetic expression type ${ast.type}`);
+		}
+
+
+
+		let preamble = new LLVM.Fragment();
+		let epilog = new LLVM.Fragment();
+
+		// Load the two operands ready for operation
+		let opperands = [
+			this.compile_loadVariable(ast.tokens[0]),
+			this.compile_loadVariable(ast.tokens[2])
+		];
+
+		// Append the load instructions
+		preamble.merge(opperands[0].preamble);
+		preamble.merge(opperands[1].preamble);
+
+		// Append the cleanup instructions
+		epilog.merge(opperands[0].epilog);
+		epilog.merge(opperands[1].epilog);
+
+
+
+		// Check opperands are primatives
+		if (!opperands[0].type.type.primative) {
+			this.getFile().throw(
+				`Error: Cannot run arithmetic opperation on non-primative type`,
+				ast.tokens[0].ref.start, ast.tokens[0].ref.end
+			);
+			return null;
+		}
+		if (!opperands[1].type.type.primative) {
+			this.getFile().throw(
+				`Error: Cannot run arithmetic opperation on non-primative type`,
+				ast.tokens[2].ref.start, ast.tokens[2].ref.end
+			);
+			return null;
+		}
+
+
+		// Check opperands are the same type
+		if (!opperands[0].type.match(opperands[1].type)) {
+			this.getFile().throw(
+				`Error: Cannot perform arithmetic opperation on unequal types`,
+				ast.tokens[1].ref.start, ast.tokens[2].ref.end
+			);
+			return null;
+		}
+
+
+		// Get the arrithmetic mode
+		let mode = null;
+		if (opperands[0].type.type.cat == "int") {
+			mode = opperands[0].type.type.signed ? 0 : 1;
+		} else if (opperands[0].type.type.cat == "float") {
+			mode = 2;
+		}
+		if (mode === null) {
+			this.getFile().throw(
+				`Error: Unable to perform arithmetic opperation for unknown reason`,
+				ast.tokens[1].ref.start, ast.tokens[1].ref.end
+			);
+			return null;
+		}
+
+
+
+		return {
+			preamble, epilog,
+			instruction: new LLVM[action](
+				mode,
+				opperands[0].instruction.type,
+				opperands[0].instruction.name,
+				opperands[1].instruction.name
+			),
+			type: opperands[0].type
+		};
+	}
+
+
 
 
 
@@ -877,6 +982,8 @@ class Execution {
 
 		return fragment;
 	}
+
+
 
 
 

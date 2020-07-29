@@ -3,11 +3,11 @@ const LLVM = require('./llvm.js');
 
 class Add extends Instruction {
 	/**
-	 * 
-	 * @param {LLVM.Type} type 
-	 * @param {LLVM.Name} reg_address 
-	 * @param {LLVM.Constant[]} cnst_term 
-	 * @param {BNF_Reference} ref 
+	 *
+	 * @param {LLVM.Type} type
+	 * @param {LLVM.Name} reg_address
+	 * @param {LLVM.Constant[]} cnst_term
+	 * @param {BNF_Reference} ref
 	 */
 	constructor(mode, type, opperand_a, opperand_b, ref) {
 		super (ref);
