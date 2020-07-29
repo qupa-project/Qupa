@@ -881,7 +881,7 @@ class Execution {
 		if (!opperands[0].type.match(opperands[1].type)) {
 			this.getFile().throw(
 				`Error: Cannot perform arithmetic opperation on unequal types`,
-				ast.tokens[1].ref.start, ast.tokens[2].ref.end
+				ast.tokens[0].ref.start, ast.tokens[2].ref.end
 			);
 			return null;
 		}
