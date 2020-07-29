@@ -1,22 +1,4 @@
 external assume {
-	i32 i32_add(i32 a, i32 b);
-	i32 i32_sub(i32 a, i32 b);
-	i32 i32_mul(i32 a, i32 b);
-	i32 i32_div(i32 a, i32 b);
-	i32 i32_rem(i32 a, i32 b);
-	bool i32_equal(i32 a, i32 b);
-	bool i32_gt(i32 a, i32 b);
-	bool i32_ge(i32 a, i32 b);
-	bool i32_lt(i32 a, i32 b);
-	bool i32_le(i32 a, i32 b);
-
-	float f32_add(float a, float b);
-	bool f32_equal(float a, float b);
-
-	bool i1_not(bool a);
-	bool i1_and(bool a, bool b);
-	bool i1_or(bool a, bool b);
-
 	void i1_print(bool val);
 	void i1_println(bool val);
 	void i32_print(i32 val);
@@ -72,19 +54,4 @@ void println(float val) {
 void println(bool val) {
 	i1_println(val);
 	return;
-}
-
-
-bool Equal(int a, int b) {
-	return i32_equal(a, b);
-}
-bool Equal(float a, float b) {
-	return f32_equal(a, b);
-}
-
-bool Greater(int a, int b) {
-	return i32_gt(a, b);
-}
-bool Lesser(int a, int b) {
-	return i32_lt(a, b);
 }
