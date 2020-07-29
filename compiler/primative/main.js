@@ -6,9 +6,7 @@ const Function = require('./../component/function.js');
 const Array_Template = require('./array.js');
 const Static_Cast = require('./static_cast.js');
 const SizeOf = require('./sizeof.js');
-const Malloc = require('./malloc.js');
 const types = require('./types.js');
-const Math = require('./math.js');
 
 
 
@@ -24,11 +22,6 @@ function Generate (ctx) {
 		file.names[name] = types[name];
 	}
 
-	file.names.Add = new Math(file, "Add");
-	file.names.Div = new Math(file, "Div");
-	file.names.Mul = new Math(file, "Mul");
-	file.names.Rem = new Math(file, "Rem");
-	file.names.Sub = new Math(file, "Sub");
 	file.names.static_cast = new Static_Cast(file);
 	file.names.SizeOf = new SizeOf(file);
 
