@@ -1,7 +1,7 @@
 const Instruction = require("./instruction.js");
 const LLVM = require('./llvm.js');
 
-class Add extends Instruction {
+class XOr extends Instruction {
 	/**
 	 *
 	 * @param {LLVM.Type} type
@@ -9,9 +9,8 @@ class Add extends Instruction {
 	 * @param {LLVM.Constant[]} cnst_term
 	 * @param {BNF_Reference} ref
 	 */
-	constructor(mode, type, opperand_a, opperand_b, ref) {
+	constructor(type, opperand_a, opperand_b, ref) {
 		super (ref);
-		this.mode = mode;
 		this.type = type;
 		this.a = opperand_a;
 		this.b = opperand_b;
@@ -19,8 +18,7 @@ class Add extends Instruction {
 
 	toLLVM() {
 		return super.toLLVM(
-			( this.mode == 2 ? "f" : "" ) +
-			`add ` +
+			`xor ` +
 			`${this.type.toLLVM()} ` +
 			`${this.a.toLLVM()}, ` +
 			`${this.b.toLLVM()}`,
@@ -28,4 +26,4 @@ class Add extends Instruction {
 	}
 }
 
-module.exports = Add;
+module.exports = XOr;

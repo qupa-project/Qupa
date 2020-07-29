@@ -115,7 +115,19 @@ for (let i=1; i<=8; i+=i) {
 types.float.cat  = "float";
 types.double.cat = "float";
 
-types.int = types.i32;
+types.char  = types.i8;
+types.short = types.i16;
+types.int   = types.i32;
+types.long  = types.i64;
+types.uchar  = types.u8;
+types.ushort = types.u16;
+types.uint   = types.u32;
+types.ulong  = types.u64;
+
+
+for (let key in types) {
+	types[key].primative = true;
+}
 
 
 module.exports = types;

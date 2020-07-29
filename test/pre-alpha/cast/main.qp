@@ -1,4 +1,4 @@
-import "./../std.qp";
+import "print.qp";
 
 void TestSignatureWrap() {
 	u8 a = static_cast#[u8](-3);

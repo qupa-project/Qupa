@@ -5,20 +5,18 @@
 	20
 	22
 */
-import "../std.qp";
-
-external assume {
-	@i32 createInt();
-};
+import "alloc.qp";
+import "print.qp";
 
 void Add(@i32 target, i32 val) {
-	$target = Add($target, val);
+	$target = $target + val;
 	return;
 }
 
 i32 main() {
 	i32 a = 20;
-	@i32 b = createInt();
+	@char addr = malloc( 1 );
+	@i32 b = static_cast#[@i32](addr);
 	$b = 2;
 
 	i32_println(a);

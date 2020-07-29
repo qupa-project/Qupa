@@ -27,9 +27,17 @@ class Execution {
 
 	/**
 	 * Return the function this scope is within
+	 * @returns {Function_Instance}
 	 */
-	getFunction() {
-		return this.ctx.getFunction();
+	getFunction(access, signature, template) {
+		return this.getFile().getFunction(access, signature, template);
+	}
+
+	getFunctionGroup () {
+		return this.ctx.getFunctionGroup();
+	}
+	getFunctionInstance() {
+		return this.ctx.getFunctionInstance();
 	}
 
 	/**
@@ -51,6 +59,159 @@ class Execution {
 
 
 
+
+
+
+	/**
+	 * Get a register
+	 * @param {*} ast
+	 * @param {Boolean} read
+	 */
+	getVar(ast, read = true) {
+		// Link dynamic access arguments
+		ast = this.resolveAccess(ast);
+
+		let res = this.scope.getVar(ast, read);
+
+		// Inject reference if it is missing
+		if (res.error) {
+			res.ref = res.ref || ast.ref;
+		}
+
+		return res;
+	}
+
+	/**
+	 * Load a variable ready for access
+	 * @param {BNF_Node} ast
+	 */
+	compile_loadVariable(ast) {
+		let frag = new LLVM.Fragment();
+
+		let load = this.getVar(ast, true);
+		if (load.error) {
+			this.getFile().throw(load.msg, load.ref.start, load.ref.end);
+			return null;
+		}
+		frag.merge(load.preamble);
+
+		let cache = load.register.deref(this.scope, true, 1);
+		if (cache === null || !cache.register) {
+			this.getFile().throw(
+				`Error: Cannot dereference ${Flattern.VariableStr(ast)}`,
+				ast.ref.start, ast.ref.end
+			);
+			return null;
+		}
+		frag.merge(cache.preamble);
+
+		return {
+			instruction: new LLVM.Argument(
+				new LLVM.Type(cache.register.type.represent, cache.register.pointer),
+				new LLVM.Name(cache.register.id, null),
+				null,
+				load.register.name
+			),
+			preamble: frag,
+			epilog: new LLVM.Fragment(),
+			type: new TypeRef(cache.register.pointer, cache.register.type),
+			register: cache.register
+		};
+	}
+
+
+
+
+
+
+	/**
+	 *
+	 * @param {BNF_Node} node
+	 */
+	resolveTemplate(node) {
+		let template = [];
+		for (let arg of node.tokens) {
+			switch (arg.type) {
+				case "data_type":
+					let type = this.getFile().getType(
+						Flattern.DataTypeList(arg),
+						this.resolveTemplate(arg.tokens[3])
+					);
+					if (type === null) {
+						this.getFile().throw(
+							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
+							arg.ref.start, arg.ref.end
+						);
+						return null;
+					}
+
+					// Update pointer size
+					type.pointer = arg.tokens[0];
+
+					template.push(type);
+					break;
+				case "constant":
+					template.push(this.compile_constant(arg));
+					break;
+				default:
+					this.getFile().throw(
+						`Error: ${arg.type} are currently unsupported in template arguments`,
+						arg.ref.start, arg.ref.end
+					);
+					return null;
+			}
+		}
+
+		return template;
+	}
+
+	/**
+	 *
+	 * @param {BNF_Node} node
+	 */
+	resolveType (node) {
+		let template = this.resolveTemplate(node.tokens[3]);
+		if (template === null) {
+			return null;
+		}
+
+		return this.getFile().getType(
+			Flattern.DataTypeList(node),
+			template
+		);
+	}
+
+	/**
+	 * Resolves any dynamic access for the variable
+	 * ALTERS original AST
+	 * @param {*} ast
+	 */
+	resolveAccess (ast) {
+		for (let access of ast.tokens[2]) {
+			if (access[0] == "[]") {
+				for (let i in access[1]) {
+					let res = this.compile_expr(access[1][i], null, true);
+					if (res === null) {
+						return {
+							error: true,
+							msg: `Error: Unexpected dynamic access opperand type ${arg.type}`,
+							ref: arg.ref
+						};
+					}
+
+					access[1][i] = res;
+				}
+			}
+		}
+
+		return ast;
+	}
+
+
+
+
+
+
 	/**
 	 * Generates the LLVM for a constant
 	 * Used in other compile functions
@@ -69,48 +230,12 @@ class Execution {
 		return {
 			instruction: new LLVM.Argument(
 				new LLVM.Type(type.represent, 0, ast.ref.start),
-				new LLVM.Constant(val, ast.ref.start)
+				new LLVM.Constant(val, ast.ref.start),
+				ast.ref
 			),
 			preamble: new LLVM.Fragment(),
 			epilog: new LLVM.Fragment(),
 			type: new TypeRef(0, type),
-		};
-	}
-
-	/**
-	 * Load a variable
-	 * @param {BNF_Node} ast
-	 */
-	compile_loadVariable(ast) {
-		let load = this.scope.getVar(ast, true);
-		if (load.error) {
-			this.getFile().throw(load.msg, load.ref.start, load.ref.end);
-			return false;
-		}
-
-
-		let count = ast.tokens[0]+1;
-		let cache = load.register.deref(this.scope, true, count);
-		if (!cache.register) {
-			let name = Flattern.VariableStr(ast);
-			this.getFile().throw(
-				`Error: Cannot dereference ${Flattern.DuplicateChar(count, "$")}${name}`,
-				ast.ref.start, ast.ref.end
-			);
-			return false;
-		}
-		load.preamble.merge(cache.preamble);
-
-		return {
-			instruction: new LLVM.Argument(
-				new LLVM.Type(cache.register.type.represent, cache.register.pointer),
-				new LLVM.Name(cache.register.id, false),
-				null,
-				load.register.name
-			),
-			preamble: load.preamble,
-			epilog: new LLVM.Fragment(),
-			type: new TypeRef(cache.register.pointer, cache.register.type)
 		};
 	}
 
@@ -134,134 +259,54 @@ class Execution {
 		let args = [];
 		let regs = [];
 		for (let arg of ast.tokens[2].tokens) {
-			if (arg.type == "variable") {
-				let load = this.scope.getVar(arg, true);
-				if (load.error) {
-					this.getFile().throw(load.msg, load.ref.start, load.ref.end);
-					return false;
-				}
-				preamble.merge(load.preamble);
+			let expr = this.compile_expr_opperand(arg);
+			if (expr === null) {
+				return null;
+			}
 
-				let cache = load.register.deref(this.scope, true, 1);
-				if (!cache || !cache.register) {
-					let name = Flattern.VariableStr(arg);
-					this.getFile().throw(
-						`Cannot dereference ${name}`,
-						arg.ref.start, arg.ref.end
-					);
-					return false;
-				}
-				preamble.merge(cache.preamble);
+			preamble.merge(expr.preamble);
+			epilog.merge(expr.epilog);
 
-				args.push(new LLVM.Argument(
-					new LLVM.Type(cache.register.type.represent, cache.register.pointer),
-					new LLVM.Name(cache.register.id, false),
-					null,
-					arg.name
-				));
-				regs.push(cache.register);
-				signature.push(new TypeRef(cache.register.pointer, cache.register.type));
-			} else {
-				let expr = this.compile_expr(arg, false, true, ['call']);
-				if (expr === false) {
-					return false;
-				}
+			args.push(expr.instruction);
+			signature.push(expr.type);
 
-				preamble.merge(expr.preamble);
-				epilog.merge(expr.epilog);
-
-				args.push(expr.instruction);
-				signature.push(expr.type);
+			if (expr.register) {
+				regs.push(expr.register);
 			}
 		}
 
 
 
 		// Link any [] accessors
-		let accesses = [ast.tokens[0].tokens[1].tokens];
+		let accesses = [ ast.tokens[0].tokens[1].tokens ];
 		let file = this.getFile();
 		for (let access of ast.tokens[0].tokens[2]) {
-			if (access.tokens[0] == "[]") {
-				let out = [];
-				for (let inner of access.tokens[1].tokens) {
-					if (inner.type != "variable") {
-						file.throw (
-							`Error: Non-variable accessors are not allowed at this time`,
-							inner.ref.start, inner.ref.end
-						);
-						return false;
-					}
-
-					let target = this.scope.getVar(inner, true);
-					if (target.error !== true) {
-						file.throw(
-							`Error: Cannot processed variables withiin [] for function access`,
-							inner.ref.start, inner.ref.end
-						);
-						return false;
-					}
-
-					let forward = Flattern.VariableList(inner);
-					if (forward[0][0] != 0) {
-						file.throw(
-							`Error: Cannot dereference function call ${Flattern.VariableStr(inner)}`,
-							inner.ref.start, inner.ref.end
-						);
-						return false;
-					}
-
-					target = file.getType(forward);
-
-					if (!target) {
-						file.throw(
-							`Error: Unknown variable ${Flattern.VariableStr(inner)}`,
-							inner.ref.start, inner.ref.end
-						);
-						return false;
-					}
-					out.push(target);
-				}
-
-				accesses.push(out);
+			if (access[0] == "[]") {
+				file.throw (
+					`Error: Class base function execution is currently unsupported`,
+					inner.ref.start, inner.ref.end
+				);
+				return null;
 			} else {
-				accesses.push(access);
+				accesses.push([access[0], access[1].tokens]);
 			}
 		}
 
 		// Link any template access
-		let template = [];
-		for (let arg of ast.tokens[1].tokens) {
-			switch (arg.type) {
-				case "data_type":
-					let type = this.getFunction().getType(arg);
-					if (type === null) {
-						file.throw(
-							`Error: Unknown data type ${Flattern.DataTypeStr(arg)}`,
-							arg.ref.start, arg.ref.end
-						);
-						return false;
-					}
-
-					template.push(type);
-					break;
-				default:
-					file.throw(
-						`Error: ${arg.type} are currently unsupported in template arguments`,
-						arg.ref.start, arg.ref.end
-					);
-					return false;
-			}
+		let template = this.resolveTemplate(ast.tokens[1]);
+		if (template === null) {
+			return null;
 		}
 
 		// Find a function with the given signature
-		let target = file.getFunction(accesses, signature, template);
+		let target = this.getFunction(accesses, signature, template);
 		if (!target) {
 			let funcName = Flattern.VariableStr(ast.tokens[0]);
 			file.throw(
 				`Error: Unable to find function "${funcName}" with signature ${signature.join(", ")}`,
 				ast.ref.start, ast.ref.end
 			);
-			return false;
+			return null;
 		}
 
 
@@ -290,7 +335,7 @@ class Execution {
 			}
 
 			// Mark this function as being called for the callgraph
-			this.getFunction().addCall(target);
+			this.getFunctionInstance().addCall(target);
 		}
 
 		return { preamble, instruction, epilog, type: returnType };
@@ -304,8 +349,8 @@ class Execution {
 	compile_call_procedure(ast) {
 		let frag = new LLVM.Fragment(ast);
 		let out = this.compile_call(ast);
-		if (out === false) {
-			return false;
+		if (out === null) {
+			return null;
 		}
 
 		// Merge the preable, execution, and epilog into one fragment
@@ -323,13 +368,13 @@ class Execution {
 	 * @returns {LLVM.Fragment}
 	 */
 	compile_declare(ast){
-		let typeRef = this.getFunction().getType(ast.tokens[0]);
 		let	name = ast.tokens[1].tokens;
 		let frag = new LLVM.Fragment();
 
-		if (typeRef == null) {
+		let typeRef = this.resolveType(ast.tokens[0]);
+		if (!(typeRef instanceof TypeRef)) {
 			this.getFile().throw(`Error: Invalid type name "${Flattern.DataTypeStr(ast.tokens[0])}"`, ast.ref.start, ast.ref.end);
-			return false;
+			return null;
 		}
 
 		// Update pointer level
@@ -346,7 +391,6 @@ class Execution {
 			new LLVM.Name(reg.id, false, ast.tokens[1].ref.start),
 			new LLVM.Alloc(
 				new LLVM.Type(reg.type.represent, typeRef.pointer, ast.tokens[0].ref.start),
-				reg.type.size,
 				ast.ref.start
 			),
 			ast.ref.start
@@ -354,6 +398,7 @@ class Execution {
 
 		return frag;
 	}
+
 	/**
 	 * Generates the LLVM for assigning a variable
 	 * @param {BNF_Node} ast
@@ -364,8 +409,8 @@ class Execution {
 
 		// Resolve the expression
 		let expr = this.compile_expr(ast.tokens[1], false, true);
-		if (expr === false) {
-			return false;
+		if (expr === null) {
+			return null;
 		}
 		frag.merge(expr.preamble);
 
@@ -373,10 +418,10 @@ class Execution {
 		//   This must occur after the expression is resolve
 		//   because this variable now needs to be accessed for writing
 		//   after any reads that might have taken place in the expresion
-		let load = this.scope.getVar(ast.tokens[0], false);
+		let load = this.getVar(ast.tokens[0], false);
 		if (load.error) {
 			this.getFile().throw( load.msg, load.ref.start, load.ref.end );
-			return false;
+			return null;
 		}
 		frag.merge(load.preamble);
 
@@ -388,7 +433,7 @@ class Execution {
 				` to ${expr.type.toString()}`,
 				ast.ref.start, ast.ref.end
 			);
-			return false;
+			return null;
 		}
 
 		if (expr.register) {
@@ -400,10 +445,9 @@ class Execution {
 					new LLVM.Type(load.register.type.represent, load.register.pointer),
 					new LLVM.Name(`${load.register.id}`, false),
 					ast.tokens[0].ref,
-					Flattern.VariableStr(ast.tokens[0])
+					// Flattern.VariableStr(ast.tokens[0]) TODO fix
 				),
 				expr.instruction,
-				load.register.type.size,
 				ast.ref.start
 			));
 			load.register.clearCache();
@@ -412,6 +456,7 @@ class Execution {
 		frag.merge(expr.epilog);
 		return frag;
 	}
+
 	/**
 	 * Generates the LLVM for the combined action of define + assign
 	 * @param {BNF_Node} ast
@@ -421,8 +466,8 @@ class Execution {
 		let frag = new LLVM.Fragment();
 
 		let declare = this.compile_declare(ast);
-		if (declare == false) {
-			return false;
+		if (declare == null) {
+			return null;
 		}
 		frag.merge(declare);
 
@@ -431,7 +476,7 @@ class Execution {
 			tokens: [
 				{
 					type: "variable",
-					tokens: [ 0, ast.tokens[1] ],
+					tokens: [ 0, ast.tokens[1], [] ],
 					ref: ast.tokens[1].ref
 				},
 				ast.tokens[2]
@@ -442,8 +487,8 @@ class Execution {
 			}
 		};
 		let assign = this.compile_assign(forward);
-		if (assign === false) {
-			return false;
+		if (assign === null) {
+			return null;
 		}
 		frag.merge(assign);
 
@@ -463,6 +508,9 @@ class Execution {
 			returnType = new TypeRef(0, Primative.types.void);
 		} else {
 			let res = this.compile_expr(ast.tokens[0], this.returnType, true);
+			if (res === null) {
+				return null;
+			}
 			returnType = res.type;
 			frag.merge(res.preamble);
 			inner = res.instruction;
@@ -599,8 +647,8 @@ class Execution {
 			ast.tokens[0].tokens[0]
 		);
 		let check = scope_check.compile_while_condition(ast.tokens[0]);
-		if (check === false) {
-			return false;
+		if (check === null) {
+			return null;
 		}
 
 		let scope_loop = this.clone();
@@ -610,8 +658,8 @@ class Execution {
 			ast.tokens[0].tokens[0]
 		);
 		let loop = scope_loop.compile(ast.tokens[1]);
-		if (loop === false) {
-			return false;
+		if (loop === null) {
+			return null;
 		}
 		loop.merge(scope_loop.flushAllClones());
 
@@ -649,8 +697,8 @@ class Execution {
 			true
 		);
 
-		if (res === false) {
-			return false;
+		if (res === null) {
+			return null;
 		}
 
 		res.preamble.merge(res.epilog);
@@ -668,32 +716,47 @@ class Execution {
 	 * @param {Array[Number, TypeDef]} expects
 	 * @param {Boolean} simple Simplifies the result to a single register when possible
 	 */
-	compile_expr (ast, expects = null, simple = false, block = []) {
-		if (block.includes(ast.type)) {
-			this.getFile().throw(
-				`Error: Cannot call ${ast.type} within a nested expression`,
-				ast.ref.start, ast.ref.end
-			);
-			return false;
-		}
-
+	compile_expr (ast, expects = null, simple = false, block = false) {
+		let recursiveFail = false;
 		let res = null;
 		switch (ast.type) {
 			case "constant":
 				res = this.compile_constant(ast);
 				break;
 			case "call":
+				if (block) {
+					recursiveFail = true;
+					break;
+				}
+
 				res = this.compile_call(ast);
 				break;
 			case "variable":
 				res = this.compile_loadVariable(ast);
 				break;
+			case "expr_arithmetic":
+				res = this.compile_expr_arithmetic(ast.tokens[0]);
+				break;
+			case "expr_compare":
+				res = this.compile_expr_compare(ast.tokens[0]);
+				break;
+			case "expr_bool":
+				res = this.compile_expr_bool(ast.tokens[0]);
+				break;
 			default:
 				throw new Error(`Unexpected expression type ${ast.type}`);
 		}
 
-		if (res === false) {
-			return false;
+		if (recursiveFail) {
+			this.getFile().throw(
+				`Error: Recursive expression are not allowed at this stage`,
+				ast.ref.start, ast.ref.end
+			);
+			return null;
+		}
+
+		if (res === null) {
+			return null;
 		}
 
 		if (expects instanceof TypeRef && !expects.match(res.type)) {
@@ -703,7 +766,7 @@ class Execution {
 					`instead got ${res.type.toString()}`,
 				ast.ref.start, ast.ref.end
 			);
-			return false;
+			return null;
 		}
 
 		/**
@@ -721,10 +784,10 @@ class Execution {
 			if (expects) {
 				irType = new LLVM.Type(expects.type.represent, expects.pointer, ast.ref.start)
 			} else {
-				if (!inner.type) {
+				if (!res.type) {
 					throw new Error("Error: Cannot simplify due to undeduceable type");
 				}
-				irType = inner.type;
+				irType = res.type;
 			}
 
 			let id = this.scope.genID();
@@ -744,8 +807,305 @@ class Execution {
 			);
 		}
 
+		res.ref = ast.ref;
 		return res;
 	}
+
+	compile_expr_opperand (ast) {
+		switch (ast.type) {
+			case "variable":
+				return this.compile_loadVariable(ast);
+			case "constant":
+				return this.compile_constant(ast);
+			default:
+				throw new Error(`Unexpected expression opperand type ${ast.type}`);
+		}
+	}
+
+	compile_expr_arithmetic(ast) {
+		let action = null;
+		switch (ast.type) {
+			case "expr_add":
+				action = "Add";
+				break;
+			case "expr_sub":
+				action = "Sub";
+				break;
+			case "expr_mul":
+				action = "Mul";
+				break;
+			case "expr_div":
+				action = "Div";
+				break;
+			case "expr_mod":
+				action = "Rem";
+				break;
+			default:
+				throw new Error(`Unexpected arithmetic expression type ${ast.type}`);
+		}
+
+
+
+		let preamble = new LLVM.Fragment();
+		let epilog = new LLVM.Fragment();
+
+		// Load the two operands ready for operation
+		let opperands = [
+			this.compile_expr_opperand(ast.tokens[0]),
+			this.compile_expr_opperand(ast.tokens[2])
+		];
+
+		// Append the load instructions
+		preamble.merge(opperands[0].preamble);
+		preamble.merge(opperands[1].preamble);
+
+		// Append the cleanup instructions
+		epilog.merge(opperands[0].epilog);
+		epilog.merge(opperands[1].epilog);
+
+
+
+		// Check opperands are primatives
+		if (!opperands[0].type.type.primative) {
+			this.getFile().throw(
+				`Error: Cannot run arithmetic opperation on non-primative type`,
+				ast.tokens[0].ref.start, ast.tokens[0].ref.end
+			);
+			return null;
+		}
+		if (!opperands[1].type.type.primative) {
+			this.getFile().throw(
+				`Error: Cannot run arithmetic opperation on non-primative type`,
+				ast.tokens[2].ref.start, ast.tokens[2].ref.end
+			);
+			return null;
+		}
+
+
+		// Check opperands are the same type
+		if (!opperands[0].type.match(opperands[1].type)) {
+			this.getFile().throw(
+				`Error: Cannot perform arithmetic opperation on unequal types`,
+				ast.tokens[0].ref.start, ast.tokens[2].ref.end
+			);
+			return null;
+		}
+
+
+		// Get the arrithmetic mode
+		let mode = null;
+		if (opperands[0].type.type.cat == "int") {
+			mode = opperands[0].type.type.signed ? 0 : 1;
+		} else if (opperands[0].type.type.cat == "float") {
+			mode = 2;
+		}
+		if (mode === null) {
+			this.getFile().throw(
+				`Error: Unable to perform arithmetic opperation for unknown reason`,
+				ast.tokens[1].ref.start, ast.tokens[1].ref.end
+			);
+			return null;
+		}
+
+
+
+		return {
+			preamble, epilog,
+			instruction: new LLVM[action](
+				mode,
+				opperands[0].instruction.type,
+				opperands[0].instruction.name,
+				opperands[1].instruction.name
+			),
+			type: opperands[0].type
+		};
+	}
+
+	compile_expr_compare(ast) {
+		let preamble = new LLVM.Fragment();
+		let epilog = new LLVM.Fragment();
+
+
+		// Load the two operands ready for operation
+		let opperands = [
+			this.compile_expr_opperand(ast.tokens[0]),
+			this.compile_expr_opperand(ast.tokens[2])
+		];
+
+
+		// Check opperands are primatives
+		if (!opperands[0].type.type.primative) {
+			this.getFile().throw(
+				`Error: Cannot perform comparison opperation on non-primative type`,
+				ast.tokens[0].ref.start, ast.tokens[0].ref.end
+			);
+			return null;
+		}
+		if (!opperands[1].type.type.primative) {
+			this.getFile().throw(
+				`Error: Cannot perform comparison opperation on non-primative type`,
+				ast.tokens[2].ref.start, ast.tokens[2].ref.end
+			);
+			return null;
+		}
+
+
+		// Check opperands are the same type
+		if (!opperands[0].type.match(opperands[1].type)) {
+			this.getFile().throw(
+				`Error: Cannot perform comparison opperation on unequal types`,
+				ast.tokens[0].ref.start, ast.tokens[2].ref.end
+			);
+			return null;
+		}
+
+
+		// Get the arrithmetic mode
+		let mode = null;
+		if (opperands[0].type.type.cat == "int") {
+			mode = opperands[0].type.type.signed ? 0 : 1;
+		} else if (opperands[0].type.type.cat == "float") {
+			mode = 2;
+		}
+		if (mode === null) {
+			this.getFile().throw(
+				`Error: Unable to perform comparison opperation for unknown reason`,
+				ast.tokens[1].ref.start, ast.tokens[1].ref.end
+			);
+			return null;
+		}
+
+
+		let cond = null;
+		switch (ast.type) {
+			case "expr_eq":
+				cond = mode == 2 ? "oeq" : "eq";
+				break;
+			case "expr_neq":
+				cond = mode == 2 ? "une" : "ne";
+				break;
+			case "expr_gt":
+				cond = mode == 0 ? "ugt" :
+					mode == 1 ? "sgt" :
+					"ogt";
+				break;
+			case "expr_gt_eq":
+				cond = mode == 0 ? "uge" :
+					mode == 1 ? "sge" :
+					"oge";
+				break;
+			case "expr_lt":
+				cond = mode == 0 ? "ult" :
+					mode == 1 ? "slt" :
+					"olt";
+				break;
+			case "expr_lt_eq":
+				cond = mode == 0 ? "ule" :
+					mode == 1 ? "sle" :
+					"ole";
+				break;
+			default:
+				throw new Error(`Unexpected comparison expression type ${ast.type}`);
+		}
+
+
+		// Append the load instructions
+		preamble.merge(opperands[0].preamble);
+		preamble.merge(opperands[1].preamble);
+
+		// Append the cleanup instructions
+		epilog.merge(opperands[0].epilog);
+		epilog.merge(opperands[1].epilog);
+
+
+
+		return {
+			preamble, epilog,
+			instruction: new LLVM.Compare(
+				mode,
+				cond,
+				opperands[0].instruction.type,
+				opperands[0].instruction.name,
+				opperands[1].instruction.name
+			),
+			type: new TypeRef(0, Primative.types.bool)
+		};
+	}
+
+	compile_expr_bool(ast) {
+		let preamble = new LLVM.Fragment();
+		let epilog = new LLVM.Fragment();
+
+
+		let opperands = [];
+		let action = null;
+		let type = new TypeRef(0, Primative.types.bool);
+		switch (ast.type) {
+			case "expr_and":
+			case "expr_or":
+				action = ast.type == "expr_and" ? "And" : "Or";
+				opperands = [
+					this.compile_expr_opperand(ast.tokens[0]),
+					this.compile_expr_opperand(ast.tokens[2])
+				];
+				break;
+			case "expr_not":
+				action = "XOr";
+				opperands = [
+					this.compile_expr_opperand(ast.tokens[0]),
+					{
+						preamble: new LLVM.Fragment(),
+						epilog: new LLVM.Fragment(),
+						instruction: new LLVM.Constant("true"),
+						type
+					}
+				];
+				break;
+			default:
+				throw new Error(`Unexpected boolean expression type ${ast.type}`);
+		}
+
+
+		// Check opperands are of boolean type
+		if (!opperands[0].type.match(type)) {
+			this.getFile().throw(
+				`Error: Cannot perform boolean opperation on non boolean types`,
+				ast.tokens[0].ref.start, ast.tokens[0].ref.end
+			);
+			return null;
+		}
+		if (!opperands[1].type.match(type)) {
+			this.getFile().throw(
+				`Error: Cannot perform boolean opperation on non boolean types`,
+				ast.tokens[2].ref.start, ast.tokens[2].ref.end
+			);
+			return null;
+		}
+
+
+		// Append the load instructions
+		preamble.merge(opperands[0].preamble);
+		preamble.merge(opperands[1].preamble);
+
+		// Append the cleanup instructions
+		epilog.merge(opperands[0].epilog);
+		epilog.merge(opperands[1].epilog);
+
+
+		let instruction = new LLVM[action](
+			opperands[0].instruction.type,
+			opperands[0].instruction.name,
+			action == "XOr" ? opperands[1].instruction : opperands[1].instruction.name
+		);
+
+		return {
+			preamble, epilog,
+			instruction,
+			type
+		};
+	}
+
+
 
 
 
@@ -778,7 +1138,7 @@ class Execution {
 				case "return":
 					inner = this.compile_return(token);
 					break;
-				case "call_procedure":
+				case "call":
 					inner = this.compile_call_procedure(token);
 					break;
 				case "if":
@@ -811,6 +1171,8 @@ class Execution {
 
 		return fragment;
 	}
+
+
 
 
 

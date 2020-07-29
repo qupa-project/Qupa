@@ -20,16 +20,16 @@ function DataTypeList(node) {
 	return out;
 }
 
-function DataTypeStr (node, char = "@") {
+function DataTypeStr (node) {
 	if (node.type == "constant") {
 		return node.tokens[0].tokens;
 	}
 
-	let str = DuplicateChar(node.tokens[0], char) + node.tokens[1].tokens;
+	let str = DuplicateChar(node.tokens[0], "@") + node.tokens[1].tokens;
 	if (node.tokens[2]) {
 		for (let access of node.tokens[2]){
 			if (access.tokens[0] == "[]") {
-				str += `[${access.tokens[1].tokens.map( x => DataTypeStr(x) ).join(", ")}]`;
+				str += `#[${access.tokens[1].tokens.map( x => DataTypeStr(x) ).join(", ")}]`;
 			} else {
 				str += access.tokens[0] + access.tokens[1].tokens;
 			}
@@ -42,9 +42,23 @@ function DataTypeStr (node, char = "@") {
 
 
 let VariableList = DataTypeList;
-
 function VariableStr (node) {
-	return DataTypeStr(node, "$");
+	if (node.type == "constant") {
+		return node.tokens[0].tokens;
+	}
+
+	let str = DuplicateChar(node.tokens[0], "$") + node.tokens[1].tokens;
+	if (node.tokens[2]) {
+		for (let access of node.tokens[2]){
+			if (access.tokens[0] == "[]") {
+				str += `[${access.tokens[1].tokens.map( x => DataTypeStr(x) ).join(", ")}]`;
+			} else {
+				str += access.tokens[0] + access.tokens[1].tokens;
+			}
+		}
+	}
+
+	return str;
 }
 
 

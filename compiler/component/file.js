@@ -11,6 +11,7 @@ const Import  = require('./import.js');
 // const { Namespace, Namespace_Type } = require('./namespace.js');
 const Parse = require('./../parser/parse.js');
 const fs = require('fs');
+const Template = require('./template.js');
 
 class File {
 	constructor (project, id, filepath) {
@@ -38,29 +39,6 @@ class File {
 	parse() {
 		console.info("Parsing:", this.path);
 
-		// Check the file exists
-		if (!fs.existsSync(this.path)) {
-			let msg = "\n";
-			msg += `Error: Cannot import file, as it does not exist\n`;
-			msg += `  absolute: ${this.path}\n`;
-			msg += `  relative: ${this.getRelative()}\n`;
-
-			console.error(msg);
-			this.project.markError(msg);
-			return;
-		}
-
-		if (!fs.lstatSync(this.path).isFile()) {
-			let msg = "\n";
-			msg += `Error: Cannot import directory as a file\n`;
-			msg += `  absolute: ${this.path}\n`;
-			msg += `  relative: ${this.getRelative()}\n`;
-
-			console.error(msg);
-			this.project.markError(msg);
-			return;
-		}
-
 		this.data = fs.readFileSync(this.path, 'utf8').replace(/\n\r/g, '\n');
 		let syntax = Parse(this.data, this.path);
 
@@ -87,10 +65,7 @@ class File {
 				let inner = element.tokens[0];
 				if (inner.type == "import") {
 					inner.tokens = [
-						path.resolve(
-							path.dirname(this.path),
-							inner.tokens[0].tokens[1]
-						),
+						inner.tokens[0].tokens[1],
 						inner.tokens[1]
 					];
 					this.register(inner);
@@ -181,15 +156,15 @@ class File {
 		}
 	}
 
-	getType(typeList) {
+	getType(typeList, template = []) {
 		let res = null;
 		// File access must be direct
 		if (typeList[0][0] == "." || Number.isInteger(typeList[0][0])) {
 			res = this.names[typeList[0][1]];
 
 			if (res) {
-				if (typeList.length > 1) {
-					return res.getType(typeList.slice(1));
+				if (res instanceof Template || typeList.length > 1) {
+					return res.getType(typeList.slice(1), template);
 				} else {
 					return new TypeRef(0, res);
 				}
@@ -201,7 +176,7 @@ class File {
 		// If the name isn't defined in this file
 		// Check other files
 		if (this.names["*"] instanceof Import) {
-			return this.names["*"].getType(typeList);
+			return this.names["*"].getType(typeList, template);
 		}
 
 		return null;
@@ -262,7 +237,7 @@ class File {
 		return this;
 	}
 	import(filename) {
-		return this.project.import(filename);
+		return this.project.import(filename, false, this.path);
 	}
 
 	throw (msg, refStart, refEnd) {

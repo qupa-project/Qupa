@@ -7,8 +7,8 @@ program ::= w* ( stmt_top w* )*
 	w ::= " " | "\t" | nl
 	nl ::= "\r\n" | "\n"
 
-	digit ::= "0" | "1" | "2" | "3" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
-		digit_nz ::= "1" | "2" | "3" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+	digit ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+		digit_nz ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 	letter ::= letter_upper | letter_lower
 		letter_lower ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "t" | "s" | "u" | "v" | "w" | "x" | "y" | "z"
 		letter_upper ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "T" | "S" | "U" | "V" | "W" | "X" | "Y" | "Z"
@@ -59,14 +59,13 @@ program ::= w* ( stmt_top w* )*
 	variable ::= "$"* name accessor*
 		accessor ::= accessor_dynamic | accessor_refer | accessor_static
 			accessor_dynamic ::= "[" w* variable_args w* "]"
-			accessor_refer   ::= "->" name
+			accessor_refer   ::= "->"
 			accessor_static  ::= "." name
 		variable_args ::= variable_arg ( w* "," w* variable_arg )*
 			variable_arg ::= constant | variable
 
-	data_type ::= "@"* name data_type_access*
-		data_type_access ::= datatype_access_static | template
-			datatype_access_static  ::= "." name
+	data_type ::= "@"* name data_type_access* template?
+		data_type_access ::= "." name
 
 
 #=============================
@@ -90,9 +89,9 @@ program ::= w* ( stmt_top w* )*
 
 	function_outline ::= func_head w* ";"
 
-	call ::= variable w* template? w* "(" w* call_args? w* ")"
+	call ::= variable template? w* "(" w* call_args? w* ")"
 		call_args ::= expr ( w* "," w* expr )*
-	call_procedure ::= variable w* template? w* "(" w* call_args? w* ")" w* ";"
+	call_procedure ::= call ";"
 
 	return ::= "return" ( w+ expr )? w* ";"
 
@@ -131,22 +130,28 @@ program ::= w* ( stmt_top w* )*
 #=============================
 #  Expression
 #=============================
-	expr ::= expr_p5
+	expr ::= w* expr_np
 
-	expr_p5       ::= expr_p5_and | expr_p5_or | expr_p4
-		expr_p5_and      ::= w* expr_p4 w* "&&" w* expr_p5
-		expr_p5_or       ::= w* expr_p4 w* "||" w* expr_p5
-	expr_p4       ::= expr_p4_modulus | expr_p3
-		expr_p4_modulus  ::= w* expr_p3 w* "%" w*  expr_p4
-	expr_p3       ::= expr_p3_multiply | expr_p3_divide | expr_p2
-		expr_p3_multiply ::= w* expr_p2 w* "*" w* expr_p3
-		expr_p3_divide   ::= w* expr_p2 w* "/" w* expr_p3
-	expr_p2       ::= expr_p2_add | expr_p2_sub | expr_p1
-		expr_p2_add      ::= w* expr_p1 w* "+" w* expr_p2
-		expr_p2_sub      ::= w* expr_p1 w* "-" w* expr_p2
-	expr_p1       ::= expr_p1_invert | expr_opperand
-		expr_p1_invert   ::= w* "~" w* expr_opperand
-	expr_opperand ::= call | expr_brackets | constant | variable
+	expr_np       ::= expr_compare | expr_arithmetic | expr_bool | call | expr_op
+		expr_ternary ::= expr_op w* "?" w* expr_op w* ":" w* expr_op
+	expr_bool ::= expr_and | expr_or | expr_not
+		expr_and     ::= expr_op w* "&&" w* expr_op
+		expr_or      ::= expr_op w* "||" w* expr_op
+		expr_not  ::= "!" w* expr_op
+	expr_compare ::= expr_eq | expr_neq | expr_gt | expr_lt | expr_gt_eq | expr_lt_eq
+		expr_eq      ::= expr_op w* "==" w* expr_op
+		expr_neq     ::= expr_op w* "!=" w* expr_op
+		expr_gt      ::= expr_op w* ">" w* expr_op
+		expr_lt      ::= expr_op w* "<" w* expr_op
+		expr_gt_eq   ::= expr_op w* ">=" w* expr_op
+		expr_lt_eq   ::= expr_op w* "<=" w* expr_op
+	expr_arithmetic ::= expr_mod | expr_mul | expr_div | expr_add | expr_sub
+		expr_mod     ::= expr_op w* "%" w*  expr_op
+		expr_mul     ::= expr_op w* "*" w* expr_op
+		expr_div     ::= expr_op w* "/" w* expr_op
+		expr_add     ::= expr_op w* "+" w* expr_op
+		expr_sub     ::= expr_op w* "-" w* expr_op
+	expr_op ::= constant | variable
 		expr_brackets    ::= "(" w* expr w* ")"
 
 

@@ -16,7 +16,7 @@ class Register {
 		this.name         = name;
 		this.pointer      = pointerDepth;
 		this.declared     = ref;
-		this.inner        = [];
+		this.inner        = {};
 		this.cache        = null;
 		this.isClone      = false;
 		this.isConcurrent = false;
@@ -28,17 +28,19 @@ class Register {
 	get(ast, scope, read = true) {
 		let preamble = new LLVM.Fragment();
 		let register = this;
+		let dynamic = false;
+		let ref = null;
 
-		// Do dereferencing if required
-		if (ast[0][0] == "->") {
+
+
+
+		// Do required dereferencing
+		while (ast.length > 0 && ast[0][0] == "->") {
 			if (this.pointer != 2) {
 				return {
 					error: true,
 					msg: `Type Error: Cannot dereference a non pointer value`,
-					ref: {
-						start: ast[0][1].ref.start,
-						end: ast[0][1].ref.end
-					}
+					ref
 				};
 			} else {
 				let load = this.deref(scope, read, 1);
@@ -46,92 +48,107 @@ class Register {
 					return {
 						error: true,
 						msg: `Internal Error: Cannot dereference for unknown reason`,
-						start: ast[0][1].ref.start,
-						end: ast[0][1].ref.end,
+						ref
 					};
 				} else {
 					preamble.merge(load.preamble);
 					register = load.register;
 				}
+				ast.splice(0, 1);
 			}
-		} else if (ast[0][0] == ".") {
-			if (this.pointer != 1) {
-				return {
-					error: true,
-					msg: `Internal Error: Cannot get sub element of direct value`,
-					ref: {
-						start: ast[0][1].ref.start,
-						end: ast[0][1].ref.end
-					}
-				};
+		}
+
+
+
+
+		// Check access type
+		let match = false;
+		if (ast.length > 0) {
+			if (ast[0][0] == ".") {
+				ref = ast[0][1].ref;
+				match = true;
+			} else if (ast[0][0] == "[]") {
+				if (ast[0][1].length > 0)
+					ref = ast[0][1].ref;
+
+				dynamic = true;
+				match = true;
 			}
-		} else {
+		}
+
+		if (!match) {
 			return {
 				error: true,
 				msg: `Internal Error: Unknown access operation ${ast[0][0]}`,
 				ref: {
-					start: ast[0][1].ref.start,
-					end: ast[0][1].ref.end
+					start: ast.ref.start,
+					end: ast.ref.end
 				}
 			};
 		}
 
+
+
+
+		// Check the pointer depth
+		if (register.pointer != 1) {
+			return {
+				error: true,
+				msg: `Reference Error: Cannot ${dynamic ? " dynamically" : ""}access element at this pointer depth`,
+				ref
+			};
+		}
+
+
+
+
 		// Check the index of the term
-		let search = register.type.getTerm(ast[0][1].tokens);
+		let search = dynamic ?
+			register.type.getElement(ast[0][1], register) :
+			register.type.getTerm(ast[0][1], register);
 		if (search === null) {
 			return {
 				error: true,
-				msg: `Type Error: Unknown term ${ast[0][1].tokens} of structure ${register.type.name}`,
-				ref: {
-					start: ast[0][1].ref.start,
-					end: ast[0][1].ref.end
-				}
+				msg: `Type Error: Unknown acccess of structure ${register.type.name}`,
+				ref
 			};
 		}
 
-		// Flush any waiting updates
-		preamble.merge(this.flushCache(null, false));
+		preamble.merge(search.preamble);
+
+		// All of GEPs need to be flushed as they migh be affected
+		if (!read) {
+			preamble.merge( this.flushGEPCaches( ast[0][1].ref, search.signature) );
+			this.clearGEPCaches(search.signature);
+
+			// If a GEP has been updated the cache will need to be reloaded
+			if (this.cache) {
+				this.cache.clearCache();
+			}
+		} else if (this.cache) {
+			preamble.merge(this.flushCache(ast[0][1].ref, false));
+		}
+
 
 		// Create an address cache if needed
-		if (!register.inner[search.index]) {
+		if (!register.inner[search.signature]) {
 			let reg = new Register(
 				scope.generator.next(),
-				search.term.type,
-				search.term.name,
-				search.term.pointer+1,
+				search.typeRef.type,
+				"temp",
+				search.typeRef.pointer+1,
 				ast[0][1].ref
 			);
-			register.inner[search.index] = reg;
+			register.inner[search.signature] = reg;
 
 			preamble.append(new LLVM.Set(
 				new LLVM.Name(reg.id, false, reg.declared),
-				new LLVM.GEP(
-					new LLVM.Type(register.type.represent, register.pointer-1, reg.declared),
-					new LLVM.Name(register.id, false, ast[0][1].ref),
-					[
-						new LLVM.Argument(
-							new LLVM.Type("i32", 0, ast[0][1].ref),
-							new LLVM.Constant("0", ast[0][1].ref),
-							ast[0][1].ref
-						),
-						new LLVM.Argument(
-							new LLVM.Type("i32", 0, ast[0][1].ref),
-							new LLVM.Constant(search.index.toString(), ast[0][1].ref)
-						)
-					],
-					ast[0][1].ref
-				),
+				search.instruction,
 				ast[0][1].ref
 			));
 		}
-		register = register.inner[search.index];
+		register = register.inner[search.signature];
 
-
-		// If a GEP has been updated the cache will need to be reloaded
-		if (!read && this.cache) {
-			this.cache.clearCache();
-			this.cache = null;
-		}
 
 
 		// If further access is required
@@ -146,8 +163,9 @@ class Register {
 			}
 		}
 
-
-		if (!read) {
+		if (read) {
+			preamble.merge( register.flushCache(ast.ref) );
+		} else {
 			register.markUpdated();
 		}
 		return {
@@ -168,7 +186,7 @@ class Register {
 	}
 
 	/**
-	 * Forces caches to write data to the correct location
+	 * Forces write pending caches to write data to the correct location
 	 * @param {BNF_Reference?} ref
 	 * @returns {LLVM.Fragment?}
 	 */
@@ -188,7 +206,6 @@ class Register {
 						new LLVM.Type(this.type.represent, this.cache.pointer),
 						new LLVM.Name(this.cache.id, false)
 					),
-					this.type.size,
 					ref
 				));
 				this.cache.writePending = false;
@@ -201,11 +218,15 @@ class Register {
 		return frag;
 	}
 
-	flushGEPCaches(ref) {
+	flushGEPCaches(ref, ignore = null) {
 		let frag = new LLVM.Fragment();
 
-		for (let reg of this.inner) {
-			frag.merge(reg.flushCache(ref));
+		for (let sig in this.inner) {
+			if (ignore !== null && sig == ignore) {
+				continue;
+			}
+
+			frag.merge(this.inner[sig].flushCache(ref));
 		}
 
 		this.writePending = false;
@@ -216,11 +237,15 @@ class Register {
 	 * Clears the caches of all GEPs
 	 * This will mark this register as having no writes pending
 	 */
-	clearGEPCaches() {
+	clearGEPCaches(ignore) {
 		let frag = new LLVM.Fragment();
 
-		for (let reg of this.inner) {
-			reg.clearCache();
+		for (let sig in this.inner) {
+			if (ignore !== null && sig == ignore) {
+				continue;
+			}
+
+			this.inner[sig].clearCache();
 		}
 
 		this.writePending = false;
@@ -232,10 +257,24 @@ class Register {
 	 * @param {Register} cache A cache that may replace this one
 	 * @returns {void}
 	 */
-	clearCache(replacement = null) {
-		this.inner = [];
+	clearCache(replacement = null, allowGEP = true) {
 		this.cache = replacement;
 		this.writePending = false;
+
+		if (allowGEP) {
+			this.clearGEPCaches();
+
+			for (let sig in this.inner) {
+				if (this.inner[sig].writePending) {
+					this.writePending = true;
+					break;
+				}
+			}
+		}
+	}
+
+	clearGEPAddresses() {
+		this.inner = [];
 	}
 
 
@@ -251,7 +290,7 @@ class Register {
 	deref(scope, read = true, amount = 1) {
 		// Cannot dereference a value
 		// Handle error within caller
-		if (this.pointer == 0) {
+		if (this.pointer == 0 && amount > 0) {
 			return null;
 		}
 
@@ -263,7 +302,11 @@ class Register {
 		// Wipe all GEP's caches
 		//   As their data is about to be over written
 		if (read) {
-			out.preamble.merge(this.flushGEPCaches());
+			let data = this.flushGEPCaches();
+			out.preamble.merge(data);
+			if (data.stmts.length > 0) {
+				this.clearCache(null, false);
+			}
 		} else {
 			this.clearGEPCaches();
 		}
@@ -287,12 +330,12 @@ class Register {
 					new LLVM.Name(`${this.cache.id}`, false),
 					new LLVM.Load(
 						new LLVM.Type(this.type.represent, this.pointer-1),
-						new LLVM.Name(`${this.id}`, false),
-						this.type.size
+						new LLVM.Name(`${this.id}`, false)
 					)
 				));
 			}
 		}
+
 
 		if (amount > 1) {
 			let next = this.cache.deref(scope, read, amount-1);
@@ -372,6 +415,16 @@ class Register {
 				this.cache.declone();
 				break;
 		}
+	}
+
+
+	toLLVM(ref) {
+		return new LLVM.Argument(
+			new LLVM.Type(this.type.represent, this.pointer, this.declared),
+			new LLVM.Name(this.id.toString(), false, this.declared),
+			ref,
+			this.name
+		);
 	}
 }
 
