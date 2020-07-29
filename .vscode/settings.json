@@ -1,5 +1,9 @@
 {
 	"editor.insertSpaces": false,
 	"files.eol": "\n",
-	"files.trimTrailingWhitespace": true
+	"files.trimTrailingWhitespace": true,
+	"files.associations": {
+		"*.qp": "qupa",
+		"cstdio": "cpp"
+	}
 }

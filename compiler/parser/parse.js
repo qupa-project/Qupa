@@ -275,7 +275,7 @@ function Simplify_Variable_Access (node) {
 			out = [ "[]", Simplify_Variable_Args(node.tokens[0].tokens[2][0]).tokens ];
 			break;
 		case "accessor_refer":
-			out = [ "->", Simplify_Name(node.tokens[0].tokens[1][0]).tokens ];
+			out = [ "->" ];
 			break;
 		case "accessor_static":
 			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]).tokens ];
@@ -648,7 +648,43 @@ function Simplify_Assign  (node) {
 
 
 function Simplify_Expr (node) {
-	return Simplify_Expr_p5 (node.tokens[0][0]);
+	return Simplify_Expr_Opperand (node.tokens[1][0]);
+}
+function Simplify_Expr_p8 (node) {
+	switch (node.tokens[0].type) {
+		case "expr_p7":
+			node = Simplify_Expr_p7(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected expr_p8 statement ${node.tokens[0].type}`);
+	}
+
+	node.reached = null;
+	return node;
+}
+function Simplify_Expr_p7 (node) {
+	switch (node.tokens[0].type) {
+		case "expr_p6":
+			node = Simplify_Expr_p6(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected expr_p7 statement ${node.tokens[0].type}`);
+	}
+
+	node.reached = null;
+	return node;
+}
+function Simplify_Expr_p6 (node) {
+	switch (node.tokens[0].type) {
+		case "expr_p5":
+			node = Simplify_Expr_p5(node.tokens[0]);
+			break;
+		default:
+			throw new TypeError(`Unexpected expr_p6 statement ${node.tokens[0].type}`);
+	}
+
+	node.reached = null;
+	return node;
 }
 function Simplify_Expr_p5 (node) {
 	switch (node.tokens[0].type) {
@@ -663,40 +699,75 @@ function Simplify_Expr_p5 (node) {
 	return node;
 }
 function Simplify_Expr_p4 (node) {
+	let out = null;
+
 	switch (node.tokens[0].type) {
+		case "expr_mod":
+			out = {
+				type: node.tokens[0].type,
+				tokens: [
+					Simplify_Expr_p3(node.tokens[0].tokens[1][0]),
+					Simplify_Expr_p4(node.tokens[0].tokens[5][0]),
+				],
+				ref: node.tokens[0].ref
+			}
+			break;
 		case "expr_p3":
-			node = Simplify_Expr_p3(node.tokens[0]);
+			out = Simplify_Expr_p3(node.tokens[0]);
 			break;
 		default:
 			throw new TypeError(`Unexpected expr_p4 statement ${node.tokens[0].type}`);
 	}
 
-	node.reached = null;
-	return node;
+	return out;
 }
 function Simplify_Expr_p3 (node) {
+	let out = null;
+
 	switch (node.tokens[0].type) {
+		case "expr_p3_div":
+		case "expr_p3_mul":
+			out = {
+				type: node.tokens[0].type,
+				tokens: [
+					Simplify_Expr_p2(node.tokens[0].tokens[1][0]),
+					Simplify_Expr_p3(node.tokens[0].tokens[5][0]),
+				],
+				ref: node.tokens[0].ref
+			}
+			break;
 		case "expr_p2":
-			node = Simplify_Expr_p2(node.tokens[0]);
+			out = Simplify_Expr_p2(node.tokens[0]);
 			break;
 		default:
 			throw new TypeError(`Unexpected expr_p3 statement ${node.tokens[0].type}`);
 	}
 
-	node.reached = null;
-	return node;
+	return out;
 }
 function Simplify_Expr_p2 (node) {
+	let out = null;
+
 	switch (node.tokens[0].type) {
+		case "expr_p2_add":
+		case "expr_p2_sub":
+			out = {
+				type: node.tokens[0].type,
+				tokens: [
+					Simplify_Expr_p1(node.tokens[0].tokens[1][0]),
+					Simplify_Expr_p2(node.tokens[0].tokens[5][0]),
+				],
+				ref: node.tokens[0].ref
+			}
+			break;
 		case "expr_p1":
-			node = Simplify_Expr_p1(node.tokens[0]);
+			out = Simplify_Expr_p1(node.tokens[0]);
 			break;
 		default:
 			throw new TypeError(`Unexpected expr_p2 statement ${node.tokens[0].type}`);
 	}
 
-	node.reached = null;
-	return node;
+	return out;
 }
 function Simplify_Expr_p1 (node) {
 	switch (node.tokens[0].type) {
@@ -710,7 +781,7 @@ function Simplify_Expr_p1 (node) {
 	node.reached = null;
 	return node;
 }
-function Simplify_Expr_opperand (node) {
+function Simplify_Expr_Opperand (node) {
 	switch (node.tokens[0].type) {
 		case "call":
 			node = Simplify_Call(node.tokens[0]);

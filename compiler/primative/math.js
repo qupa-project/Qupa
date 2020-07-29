@@ -11,10 +11,6 @@ class Template_Primative_Math extends Template {
 		this.type = type;
 	}
 
-	getFile () {
-		return this.ctx.getFile();
-	}
-
 	getFunction(variable, signature) {
 		if (variable.length != 0) {
 			return false;

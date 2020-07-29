@@ -21,8 +21,13 @@ external assume {
 	void i1_println(bool val);
 	void i32_print(i32 val);
 	void i32_println(i32 val);
+	void i64_print(i64 val);
+	void i64_println(i64 val);
 	void f32_print(float val);
 	void f32_println(float val);
+
+	@char malloc(i32 bytes);
+	void free(@char addr);
 }
 
 
@@ -38,6 +43,10 @@ void print(int val) {
 	i32_print(val);
 	return;
 }
+void print(i64 val) {
+	i64_print(val);
+	return;
+}
 void print(float val) {
 	f32_print(val);
 	return;
@@ -50,6 +59,10 @@ void print(bool val) {
 
 void println(int val) {
 	i32_println(val);
+	return;
+}
+void println(i64 val) {
+	i64_println(val);
 	return;
 }
 void println(float val) {

@@ -10,10 +10,6 @@ class Template_Primative_Static_Cast extends Template {
 		super(ctx, null);
 	}
 
-	getFile () {
-		return this.ctx.getFile();
-	}
-
 	getFunction(access, signature, template) {
 		return this.generate(access, signature, template);
 	}
@@ -88,48 +84,15 @@ class Template_Primative_Static_Cast extends Template {
 			}
 		} else {
 			// Address cast
-
-			return false;
-		}
-
-		return func;
-
-		// if (!Array.isArray(variable[0])) {
-		// 	return false;
-		// }
-		// if (variable[0].length != 1) {
-		// 	return false;
-		// }
-		// // let template = variable[0][0];
-
-		// let preamble = new LLVM.Fragment();
-		// let instruction = null;
-
-		// // Must both be a primative data type
-		// if (!types[template.type.represent] || !types[signature[0].type.represent]) {
-		// 	return false;
-		// }
-
-		return false;
-
-		// Pointer casting
-		if (template.pointer != 0 || signature[0].pointer != 0) {
-			// They must both be pointers
-			if (template.pointer == 0 || signature[0].pointer == 0) {
-				return false;
-			}
-
-
-			// Both pointers
 			func.generate = (regs, ir_args) => {
 				return {
-					preamble: preamble,
-					instruction: new LLVM.AddrCast(
+					preamble: new LLVM.Fragment(),
+					instruction: new LLVM.Bitcast(
+						template[0].toLLVM(),
 						ir_args[0],
-						template.toLLVM(),
 						null
 					),
-					type: template
+					type: template[0]
 				};
 			};
 		}

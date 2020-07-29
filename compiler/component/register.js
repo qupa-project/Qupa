@@ -31,10 +31,11 @@ class Register {
 		let dynamic = false;
 		let ref = null;
 
-		// Do dereferencing if required
-		if (ast[0][0] == "->") {
-			ref = ast[0][1].ref;
 
+
+
+		// Do required dereferencing
+		while (ast.length > 0 && ast[0][0] == "->") {
 			if (this.pointer != 2) {
 				return {
 					error: true,
@@ -53,23 +54,29 @@ class Register {
 					preamble.merge(load.preamble);
 					register = load.register;
 				}
+				ast.splice(0, 1);
 			}
-		} else if (ast[0][0] == ".") {
-			ref = ast[0][1].ref;
+		}
 
-			if (this.pointer != 1) {
-				return {
-					error: true,
-					msg: `Internal Error: Cannot get sub element of direct value`,
-					ref
-				};
-			}
-		} else if (ast[0][0] == "[]") {
-			if (ast[0][1].length > 0)
+
+
+
+		// Check access type
+		let match = false;
+		if (ast.length > 0) {
+			if (ast[0][0] == ".") {
 				ref = ast[0][1].ref;
+				match = true;
+			} else if (ast[0][0] == "[]") {
+				if (ast[0][1].length > 0)
+					ref = ast[0][1].ref;
 
-			dynamic = true;
-		} else {
+				dynamic = true;
+				match = true;
+			}
+		}
+
+		if (!match) {
 			return {
 				error: true,
 				msg: `Internal Error: Unknown access operation ${ast[0][0]}`,
@@ -79,6 +86,19 @@ class Register {
 				}
 			};
 		}
+
+
+
+
+		// Check the pointer depth
+		if (register.pointer != 1) {
+			return {
+				error: true,
+				msg: `Reference Error: Cannot ${dynamic ? " dynamically" : ""}access element at this pointer depth`,
+				ref
+			};
+		}
+
 
 
 
