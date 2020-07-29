@@ -1,11 +1,12 @@
-import "../std.qp";
+import "alloc.qp";
+import "print.qp";
 
 int main () {
-	int size = SizeOf#[i64]();
-	size = Mul(size, 4);
+	int size = sizeof#[i64]();
+	size = size * 4;
 
 	@char addr = malloc(size);
-	@Array#[i64] arr = static_cast#[@Array#[i64]](addr);
+	@Array#[i64] arr = static_cast#[ @Array#[i64] ](addr);
 
 
 	println(arr->[0]);

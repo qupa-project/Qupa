@@ -1,7 +1,7 @@
-import "../std.qp";
-import "../std.qp"; // twice to check double importation behaviour
+import "print.qp";
+import "print.qp"; // twice to check double importation behaviour
 
-import "../std.qp" as std; // check name-space access
+import "print.qp" as std; // check name-space access
 
 
 i32 main() {
@@ -15,7 +15,7 @@ i32 main() {
 	std.println(a);
 	println(b);
 
-	c = Add(a, b);
+	c = a + b;
 	println(c);
 
 	return 1;

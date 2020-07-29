@@ -27,7 +27,7 @@ class Template_Primative_Size_Of extends Template {
 			return false;
 		}
 
-		let func = new Function_Instance(this, "SizeOf", types.i32.toLLVM(), []);
+		let func = new Function_Instance(this, "sizeof", types.i32.toLLVM(), []);
 		func.generate = (regs, ir_args) => {
 			return {
 				preamble: new LLVM.Fragment(),

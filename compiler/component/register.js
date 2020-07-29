@@ -262,7 +262,7 @@ class Register {
 		this.writePending = false;
 
 		if (allowGEP) {
-			this.inner = [];
+			this.clearGEPCaches();
 
 			for (let sig in this.inner) {
 				if (this.inner[sig].writePending) {
@@ -271,6 +271,10 @@ class Register {
 				}
 			}
 		}
+	}
+
+	clearGEPAddresses() {
+		this.inner = [];
 	}
 
 
@@ -286,7 +290,7 @@ class Register {
 	deref(scope, read = true, amount = 1) {
 		// Cannot dereference a value
 		// Handle error within caller
-		if (this.pointer == 0) {
+		if (this.pointer == 0 && amount > 0) {
 			return null;
 		}
 
@@ -331,6 +335,7 @@ class Register {
 				));
 			}
 		}
+
 
 		if (amount > 1) {
 			let next = this.cache.deref(scope, read, amount-1);

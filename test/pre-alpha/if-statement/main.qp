@@ -1,4 +1,3 @@
-import "../std.qp";
 /*
 	Expected:
 		0
@@ -11,6 +10,7 @@ import "../std.qp";
 		42
 		1
 */
+import "print.qp";
 
 
 i32 main () {
@@ -28,7 +28,7 @@ i32 main () {
 	println(b);
 
 	c = 2;
-	d = Equal(a, c);
+	d = a == c;
 	if (d) {
 		a = 42;
 	}
@@ -38,9 +38,9 @@ i32 main () {
 	println(a);
 	println(b);
 
-	d = Equal(a, b);
+	d = a == b;
 	if (d) {
-		b = Add(a, b);
+		b = a + b;
 	} else {
 		b = 1;
 	}

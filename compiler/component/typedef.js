@@ -9,6 +9,7 @@ class TypeDef {
 		this.ref      = ast.ref.start;
 		this.external = external;
 
+		this.primative = false;
 		this.linked = false;
 
 		this.id = typeIDGen.next();

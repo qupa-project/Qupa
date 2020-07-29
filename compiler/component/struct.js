@@ -38,7 +38,7 @@ class Structure extends TypeDef {
 		let found = false;
 		let i = 0;
 		for (; i<this.terms.length && !found; i++) {
-			if (this.terms[i].name == name) {
+			if (this.terms[i].name == name.tokens) {
 				found = true;
 				break;
 			}
@@ -53,21 +53,21 @@ class Structure extends TypeDef {
 			new LLVM.Type(register.type.represent, register.pointer-1, register.declared),
 			new LLVM.Argument(
 				new LLVM.Type(register.type.represent, register.pointer, register.declared),
-				new LLVM.Name(register.id, false, null),
-				null
+				new LLVM.Name(register.id, false, name.ref.start),
+				name.ref.start
 			),
 			[
 				new LLVM.Argument(
 					Primative.types.i32.toLLVM(),
-					new LLVM.Constant("0", null),
-					null
+					new LLVM.Constant("0", name.ref.start),
+					name.ref.start
 				),
 				new LLVM.Argument(
-					new LLVM.Type("i32", 0, null),
-					new LLVM.Constant(i.toString(), null)
+					new LLVM.Type("i32", 0, name.ref.start),
+					new LLVM.Constant(i.toString(), name.ref.start)
 				)
 			],
-			null
+			name.ref.start
 		);
 
 		return { preamble, instruction, signature, typeRef: this.terms[i].typeRef };
