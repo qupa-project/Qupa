@@ -12,7 +12,7 @@
 		12
 */
 
-import "../std.qp";
+import "print.qp";
 
 struct Rect {
 	i32 width;
@@ -57,17 +57,17 @@ i32 main() {
 }
 
 Rect Shift(Rect a, int val) {
-	a.width = Add(a.width, val);
-	a.height = Add(a.height, val);
+	a.width = a.width + val;
+	a.height = a.height + val;
 	return a;
 }
 
 i32 Area(Rect rec){
-	return Mul(rec.width, rec.height);
+	return rec.width * rec.height;
 }
 
 Rect Combine(Rect a, Rect b) {
-	a.width = Add(a.width, b.width);
-	a.height = Add(a.height, b.height);
+	a.width = a.width + b.width;
+	a.height = a.height + b.height;
 	return a;
 }

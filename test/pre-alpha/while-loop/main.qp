@@ -22,16 +22,15 @@
 1
 0
 */
-import "../std.qp";
+import "print.qp";
 
 
 i32 main() {
 	i32 a = 20;
 
-	bool d = true;
-	while (Greater(a, 0)) {
+	while (a > 0) {
 		println(a);
-		a = Sub(a, 1);
+		a = a - 1;
 	}
 
 	println(a);
