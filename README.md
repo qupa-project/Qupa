@@ -7,7 +7,8 @@ First you need do install Clang and NPM, both of which are operating system spec
 <details>
 	<summary>Unix</summary>
 	On unix installation is quite easy. Just run the two lines below in your terminal
-	<pre><code>sudo apt-get npm</br>sudo apt-get clang++</code></pre>
+<pre><code>sudo apt-get npm
+sudo apt-get clang++</code></pre>
 </details>
 <details>
 	<summary>Windows</summary>
