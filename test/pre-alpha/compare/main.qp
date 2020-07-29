@@ -24,20 +24,22 @@ void CompareInts() {
 	return;
 }
 
-// void CompareBools () {
-// 	bool a = true;
-// 	bool b = false;
-// 	bool c;
+void CompareBools () {
+	bool a = true;
+	bool b = false;
+	bool c;
 
-// 	c = !a;
-// 	c = a || b;
-// 	c = a && b;
-// }
+	c = !a;
+	c = a || b;
+	c = a && b;
+
+	return;
+}
 
 int main() {
 	CompareFloats();
 	CompareInts();
-	// CompareBools();
+	CompareBools();
 
 	return 0;
 }
