@@ -653,8 +653,7 @@ function Simplify_Expr (node) {
 function Simplify_Expr_NoPrecedence (node) {
 	switch (node.tokens[0].type) {
 		case "call":
-			node = Simplify_Call(node.tokens[0]);
-			break;
+			return Simplify_Call(node.tokens[0]);
 		case "expr_compare":
 			return Simplify_Expr_Compare(node.tokens[0]);
 		case "expr_arithmetic":
@@ -685,6 +684,7 @@ function Simplify_Expr_Compare (node) {
 
 	node.tokens = [out];
 	node.reached = null;
+	return node;
 }
 function Simplify_Expr_Arithmetic (node) {
 	let out = null;
@@ -707,6 +707,7 @@ function Simplify_Expr_Arithmetic (node) {
 
 	node.tokens = [out];
 	node.reached = null;
+	return node;
 }
 function Simplify_Expr_Unary (node) {
 	let out = [
