@@ -23,7 +23,7 @@ function Generate (ctx) {
 	}
 
 	file.names.static_cast = new Static_Cast(file);
-	file.names.SizeOf = new SizeOf(file);
+	file.names.sizeof = new SizeOf(file);
 
 	file.names.Array = new Array_Template(file);
 
