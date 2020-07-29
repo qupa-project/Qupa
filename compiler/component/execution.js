@@ -292,14 +292,14 @@ class Execution {
 		let accesses = [ ast.tokens[0].tokens[1].tokens ];
 		let file = this.getFile();
 		for (let access of ast.tokens[0].tokens[2]) {
-			if (access.tokens[0] == "[]") {
+			if (access[0] == "[]") {
 				file.throw (
 					`Error: Class base function execution is currently unsupported`,
 					inner.ref.start, inner.ref.end
 				);
 				return null;
 			} else {
-				accesses.push([access.tokens[0], access.tokens[1].tokens]);
+				accesses.push([access[0], access[1].tokens]);
 			}
 		}
 

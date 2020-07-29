@@ -278,7 +278,7 @@ function Simplify_Variable_Access (node) {
 			out = [ "->" ];
 			break;
 		case "accessor_static":
-			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]).tokens ];
+			out = [ ".", Simplify_Name(node.tokens[0].tokens[1][0]) ];
 			break;
 		default:
 			throw new TypeError(`Unexpected accessor type ${node.type}`);
@@ -346,7 +346,8 @@ function Simplify_Data_Type (node) {
 		}),
 		node.tokens[3].length > 0 ? Simplify_Template(node.tokens[3][0]) : {   // Template
 			type: "template",
-			tokens: []
+			tokens: [],
+			ref: {start: null, end:null}
 		},
 	];
 
