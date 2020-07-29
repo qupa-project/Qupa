@@ -340,7 +340,6 @@ class Register {
 		if (amount > 1) {
 			let next = this.cache.deref(scope, read, amount-1);
 			if (next === null) {
-				console.log('FAIL');
 				return null;
 			}
 
