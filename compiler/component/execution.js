@@ -738,6 +738,9 @@ class Execution {
 				res = this.compile_expr_arithmetic(ast.tokens[0]);
 				break;
 			case "expr_compare":
+				res = this.compile_expr_compare(ast.tokens[0]);
+				break;
+			case "expr_compare":
 			default:
 				throw new Error(`Unexpected expression type ${ast.type}`);
 		}
@@ -913,6 +916,117 @@ class Execution {
 				opperands[1].instruction.name
 			),
 			type: opperands[0].type
+		};
+	}
+
+	compile_expr_compare(ast) {
+		let preamble = new LLVM.Fragment();
+		let epilog = new LLVM.Fragment();
+
+
+		// Load the two operands ready for operation
+		let opperands = [
+			this.compile_expr_opperand(ast.tokens[0]),
+			this.compile_expr_opperand(ast.tokens[2])
+		];
+
+
+		// Check opperands are primatives
+		if (!opperands[0].type.type.primative) {
+			this.getFile().throw(
+				`Error: Cannot run arithmetic opperation on non-primative type`,
+				ast.tokens[0].ref.start, ast.tokens[0].ref.end
+			);
+			return null;
+		}
+		if (!opperands[1].type.type.primative) {
+			this.getFile().throw(
+				`Error: Cannot run arithmetic opperation on non-primative type`,
+				ast.tokens[2].ref.start, ast.tokens[2].ref.end
+			);
+			return null;
+		}
+
+
+		// Check opperands are the same type
+		if (!opperands[0].type.match(opperands[1].type)) {
+			this.getFile().throw(
+				`Error: Cannot perform arithmetic opperation on unequal types`,
+				ast.tokens[0].ref.start, ast.tokens[2].ref.end
+			);
+			return null;
+		}
+
+
+		// Get the arrithmetic mode
+		let mode = null;
+		if (opperands[0].type.type.cat == "int") {
+			mode = opperands[0].type.type.signed ? 0 : 1;
+		} else if (opperands[0].type.type.cat == "float") {
+			mode = 2;
+		}
+		if (mode === null) {
+			this.getFile().throw(
+				`Error: Unable to perform arithmetic opperation for unknown reason`,
+				ast.tokens[1].ref.start, ast.tokens[1].ref.end
+			);
+			return null;
+		}
+
+
+		let cond = null;
+		switch (ast.type) {
+			case "expr_eq":
+				cond = mode == 2 ? "oeq" : "eq";
+				break;
+			case "expr_neq":
+				cond = mode == 2 ? "une" : "ne";
+				break;
+			case "expr_gt":
+				cond = mode == 0 ? "ugt" :
+					mode == 1 ? "sgt" :
+					"ogt";
+				break;
+			case "expr_gt_eq":
+				cond = mode == 0 ? "uge" :
+					mode == 1 ? "sge" :
+					"oge";
+				break;
+			case "expr_lt":
+				cond = mode == 0 ? "ult" :
+					mode == 1 ? "slt" :
+					"olt";
+				break;
+			case "expr_lt_eq":
+				cond = mode == 0 ? "ule" :
+					mode == 1 ? "sle" :
+					"ole";
+				break;
+			default:
+				throw new Error(`Unexpected comparison expression type ${ast.type}`);
+		}
+
+
+		// Append the load instructions
+		preamble.merge(opperands[0].preamble);
+		preamble.merge(opperands[1].preamble);
+
+		// Append the cleanup instructions
+		epilog.merge(opperands[0].epilog);
+		epilog.merge(opperands[1].epilog);
+
+
+
+		return {
+			preamble, epilog,
+			instruction: new LLVM.Compare(
+				mode,
+				cond,
+				opperands[0].instruction.type,
+				opperands[0].instruction.name,
+				opperands[1].instruction.name
+			),
+			type: new TypeRef(0, Primative.types.bool)
 		};
 	}
 

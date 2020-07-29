@@ -6,6 +6,7 @@ const Branch = require('./branch.js');
 const Branch_Unco = require('./branch_unco.js');
 const Call = require('./call.js');
 const Comment = require('./comment.js');
+const Compare = require('./compare.js');
 const Constant = require('./constant.js');
 const Div = require('./div.js');
 const Extend = require('./extend.js');
@@ -32,7 +33,7 @@ const WPad = require('./wpad');
 module.exports = {
 	Add, Alloc, Argument,
 	Bitcast, Branch, Branch_Unco,
-	Call, Comment, Constant,
+	Call, Comment, Compare, Constant,
 	Div,
 	Extend,
 	FloatConvert,	Fragment,
