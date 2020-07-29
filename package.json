@@ -1,6 +1,6 @@
 {
   "name": "@qupa/qupa",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Queued Parallelism Language",
   "main": "compile/compile.js",
   "preferGlobal": true,
