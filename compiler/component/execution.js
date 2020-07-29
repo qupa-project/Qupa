@@ -95,12 +95,10 @@ class Execution {
 		}
 		frag.merge(load.preamble);
 
-		let count = ast.tokens[0]+1;
-		let cache = load.register.deref(this.scope, true, count);
-		if (!cache.register) {
-			let name = Flattern.VariableStr(ast);
+		let cache = load.register.deref(this.scope, true, 1);
+		if (cache === null || !cache.register) {
 			this.getFile().throw(
-				`Error: Cannot dereference ${Flattern.DuplicateChar(count, "$")}${name}`,
+				`Error: Cannot dereference ${Flattern.VariableStr(ast)}`,
 				ast.ref.start, ast.ref.end
 			);
 			return null;
@@ -261,28 +259,19 @@ class Execution {
 		let args = [];
 		let regs = [];
 		for (let arg of ast.tokens[2].tokens) {
-			if (arg.type == "variable") {
-				let load = this.compile_loadVariable(arg);
-				if (load === null) {
-					return null;
-				}
-				preamble.merge (load.preamble);
-				epilog.merge   (load.epilog);
+			let expr = this.compile_expr_opperand(arg);
+			if (expr === null) {
+				return null;
+			}
 
-				args.push(load.instruction);
-				regs.push(load.register);
-				signature.push(load.type);
-			} else {
-				let expr = this.compile_expr(arg, null, true, true);
-				if (expr === null) {
-					return null;
-				}
+			preamble.merge(expr.preamble);
+			epilog.merge(expr.epilog);
 
-				preamble.merge(expr.preamble);
-				epilog.merge(expr.epilog);
+			args.push(expr.instruction);
+			signature.push(expr.type);
 
-				args.push(expr.instruction);
-				signature.push(expr.type);
+			if (expr.register) {
+				regs.push(expr.register);
 			}
 		}
 

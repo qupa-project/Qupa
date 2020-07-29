@@ -286,7 +286,7 @@ class Register {
 	deref(scope, read = true, amount = 1) {
 		// Cannot dereference a value
 		// Handle error within caller
-		if (this.pointer == 0) {
+		if (this.pointer == 0 && amount > 0) {
 			return null;
 		}
 
@@ -332,9 +332,11 @@ class Register {
 			}
 		}
 
+
 		if (amount > 1) {
 			let next = this.cache.deref(scope, read, amount-1);
 			if (next === null) {
+				console.log('FAIL');
 				return null;
 			}
 
