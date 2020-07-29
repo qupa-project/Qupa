@@ -130,30 +130,27 @@ program ::= w* ( stmt_top w* )*
 #=============================
 #  Expression
 #=============================
-	expr ::= w* expr_opperand
+	expr ::= w* expr_np
 
-	expr_p8       ::= expr_p8_ternary | expr_p7
-		expr_p8_ternary ::= expr_p7 w* "?" w* expr_p8 w* ":" w* expr_p8
-	expr_p7       ::= expr_p7_and | expr_p7_or | expr_p5
-		expr_p7_and     ::= expr_p6 w* "&&" w* expr_p7
-		expr_p7_or      ::= expr_p6 w* "||" w* expr_p7
-	expr_p6       ::= expr_p6_eq | expr_p6_neq | expr_p5
-		expr_p6_eq      ::= expr_p5 w* "==" w* expr_p6
-		expr_p6_neq     ::= expr_p5 w* "!=" w* expr_p6
-	expr_p5       ::= expr_p5_gt | expr_p5_lt | expr_p4
-		expr_p5_gt      ::= expr_p4 w* ">" "="? w* expr_p5
-		expr_p5_lt      ::= expr_p4 w* "<" "="? w* expr_p5
-	expr_p4       ::= expr_p4_mod | expr_p3
-		expr_p4_mod     ::= expr_p3 w* "%" w*  expr_p4
-	expr_p3       ::= expr_p3_mul | expr_p3_div | expr_p2
-		expr_p3_mul     ::= expr_p2 w* "*" w* expr_p3
-		expr_p3_div     ::= expr_p2 w* "/" w* expr_p3
-	expr_p2       ::= expr_p2_add | expr_p2_sub | expr_p1
-		expr_p2_add     ::= expr_p1 w* "+" w* expr_p2
-		expr_p2_sub     ::= expr_p1 w* "-" w* expr_p2
-	expr_p1       ::= expr_p1_invert | expr_opperand
-		expr_p1_invert ::= "!" w* expr_opperand
-	expr_opperand ::= expr_brackets | constant | call | variable
+	expr_np       ::= expr_compare | expr_arithmetic | expr_op
+		expr_ternary ::= expr_op w* "?" w* expr_op w* ":" w* expr_op
+	expr_compare ::= expr_and | expr_or | expr_eq | expr_neq | expr_gt | expr_lt | expr_gt_eq | expr_lt_eq
+		expr_and     ::= expr_op w* "&&" w* expr_op
+		expr_or      ::= expr_op w* "||" w* expr_op
+		expr_eq      ::= expr_op w* "==" w* expr_op
+		expr_neq     ::= expr_op w* "!=" w* expr_op
+		expr_gt      ::= expr_op w* ">" w* expr_op
+		expr_lt      ::= expr_op w* "<" w* expr_op
+		expr_gt_eq   ::= expr_op w* ">=" w* expr_op
+		expr_lt_eq   ::= expr_op w* "<=" w* expr_op
+	expr_arithmetic ::= expr_mod | expr_mul | expr_div | expr_add | expr_sub | expr_invert
+		expr_mod     ::= expr_op w* "%" w*  expr_op
+		expr_mul     ::= expr_op w* "*" w* expr_op
+		expr_div     ::= expr_op w* "/" w* expr_op
+		expr_add     ::= expr_op w* "+" w* expr_op
+		expr_sub     ::= expr_op w* "-" w* expr_op
+		expr_invert ::= "!" w* expr_op
+	expr_op ::= constant | call | variable
 		expr_brackets    ::= "(" w* expr w* ")"
 
 
