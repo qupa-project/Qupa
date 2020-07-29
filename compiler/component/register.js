@@ -262,7 +262,7 @@ class Register {
 		this.writePending = false;
 
 		if (allowGEP) {
-			this.inner = [];
+			this.clearGEPCaches();
 
 			for (let sig in this.inner) {
 				if (this.inner[sig].writePending) {
@@ -271,6 +271,10 @@ class Register {
 				}
 			}
 		}
+	}
+
+	clearGEPAddresses() {
+		this.inner = [];
 	}
 
 
