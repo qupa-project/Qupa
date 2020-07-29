@@ -27,8 +27,6 @@ class Template_Primative_Size_Of extends Template {
 			return false;
 		}
 
-		console.log(34, signature);
-
 		let func = new Function_Instance(this, "Malloc", types.i32.toLLVM(), []);
 		func.generate = (regs, ir_args) => {
 			return {

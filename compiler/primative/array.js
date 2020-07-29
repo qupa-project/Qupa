@@ -27,11 +27,12 @@ class Template_Array extends Template {
 			return null;
 		}
 
-		if (template[1].instruction.type.term != "i32") {
-			return null;
+		// Allow default size 0
+		let size = 0;
+		if (template[1] && template[1].instruction.type.term == "i32") {
+			size = Number(template[1].instruction.name.val);
 		}
 
-		let size = Number(template[1].instruction.name.val);
 		let signature = `${template[0].type.represent} x ${size}`;
 
 		let inst = this.instances[signature];
@@ -59,10 +60,10 @@ class Array_Gen extends TypeDef {
 		}, false);
 
 		this.name = `${type.type.name}[${length}]`;
-		this.represent = `[${length} x ${type.type.represent}]`;
+		this.represent = length === 0 ? `${type.type.represent}` : `[${length} x ${type.type.represent}]`;
 		this.length  = length;
 		this.typeRef = type;
-		this.size = 0;
+		this.size = length === 0 ? 4 : type.type.size * length;
 	}
 
 	parse () {
@@ -82,19 +83,31 @@ class Array_Gen extends TypeDef {
 		let preamble = opperands[0].preamble;
 
 		let signature = `[${opperands.map( x=> x.instruction.toLLVM() )}]`;
-		let instruction = new LLVM.GEP(
-			new LLVM.Type(this.represent, 0),
-			target.toLLVM(),
-			[
-				new LLVM.Argument(
-					Primative.types.i32.toLLVM(),
-					new LLVM.Constant("0", opperands[0].ref),
-					opperands[0].ref
-				),
-				opperands[0].instruction
-			],
-			opperands[0].ref
-		);
+		let instruction = null;
+		if (this.length === 0) {
+			instruction = new LLVM.GEP(
+				this.typeRef.toLLVM(),
+				target.toLLVM(),
+				[
+					opperands[0].instruction
+				],
+				opperands[0].ref
+			);
+		} else {
+			instruction = new LLVM.GEP(
+				new LLVM.Type(this.represent, 0),
+				target.toLLVM(),
+				[
+					new LLVM.Argument(
+						Primative.types.i32.toLLVM(),
+						new LLVM.Constant("0", opperands[0].ref),
+						opperands[0].ref
+					),
+					opperands[0].instruction
+				],
+				opperands[0].ref
+			);
+		}
 
 		preamble.merge(opperands[0].epilog);
 

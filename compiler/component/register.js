@@ -31,6 +31,9 @@ class Register {
 		let dynamic = false;
 		let ref = null;
 
+
+
+
 		// Do required dereferencing
 		while (ast.length > 0 && ast[0][0] == "->") {
 			if (this.pointer != 2) {
@@ -97,7 +100,7 @@ class Register {
 		}
 
 
-		console.log(86, dynamic, register);
+
 
 		// Check the index of the term
 		let search = dynamic ?
