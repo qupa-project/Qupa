@@ -771,7 +771,7 @@ function Parse (data, filename){
 		msg += `  ${BNF.Message.HighlightArea(data, ref).split('\n').join('\n  ')}\n\n`;
 		msg += `  Interpreted: ${cause}`;
 		console.error(msg);
-		throw msg;
+		process.exit(1);
 	}
 
 	return Simplify_Program(result.tree);

@@ -817,6 +817,17 @@ class Execution {
 		return res;
 	}
 
+	compile_expr_opperand (ast) {
+		switch (ast.type) {
+			case "variable":
+				return this.compile_loadVariable(ast);
+			case "constant":
+				return this.compile_constant(ast);
+			default:
+				throw new Error(`Unexpected expression opperand type ${ast.type}`);
+		}
+	}
+
 	compile_expr_arithmetic(ast) {
 		let action = null;
 		switch (ast.type) {
@@ -846,8 +857,8 @@ class Execution {
 
 		// Load the two operands ready for operation
 		let opperands = [
-			this.compile_loadVariable(ast.tokens[0]),
-			this.compile_loadVariable(ast.tokens[2])
+			this.compile_expr_opperand(ast.tokens[0]),
+			this.compile_expr_opperand(ast.tokens[2])
 		];
 
 		// Append the load instructions
