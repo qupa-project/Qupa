@@ -30,27 +30,43 @@ i32 main() {
 	b.height = 7;
 
 	// Test single structure argument function
+	println("Area:");
 	i32 area = Area(a);
+	print("  a: 20 == ");
 	println(area);
 	area = Area(b);
+	print("  b: 42 == ");
 	println(area);
 
 	// Check parsing forward/back a structure
 	Rect c = Shift(a, 3);
+	println("Shift c:");
+	print("  width  : 7 == ");
 	println(c.width);
+	print("  height : 8 == ");
 	println(c.height);
 
 	// Test returning struct function
+	println("Combine : c = a + b");
 	c = Combine(a, b);
 
 	// Check that a & b weren't modified
+	println("  a:");
+	print  ("    width  : 4 == ");
 	println(a.width);
+	print  ("    height : 5 == ");
 	println(a.height);
+	println("  b:");
+	print  ("    width  : 6 == ");
 	println(b.width);
+	print  ("    height : 7 == ");
 	println(b.height);
 
 	// Check the result of C
+	println("  c:");
+	print  ("    width  : 10 == ");
 	println(c.width);
+	print  ("    height : 12 == ");
 	println(c.height);
 
 	return 0;

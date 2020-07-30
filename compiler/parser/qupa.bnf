@@ -27,10 +27,9 @@ program ::= w* ( stmt_top w* )*
 #=============================
 	constant ::= boolean | string | hexidecimal | octal | binary | float | integer
 
-	string ::= string_unicode | string_text | string_multiline
+	string ::= string_unicode | string_text
 		string_unicode   ::= "\"" ( "\\\"" | !( "\"" ) )* "\""
 		string_text      ::= "'" ( "\\'"  | !( "'"  ) )* "'"
-		string_multiline ::= "`" ( "\\`"  | !( "`"  ) )* "`"
 
 	hexidecimal ::= "0x" hex_char+
 		hex_char ::= digit | "a" | "b" | "c" | "d" | "e" | "f" | "A" | "B" | "C" | "D" | "E" | "F"

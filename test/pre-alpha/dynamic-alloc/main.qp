@@ -8,10 +8,13 @@ int main () {
 	@char addr = malloc(size);
 	@Array#[i64] arr = static_cast#[ @Array#[i64] ](addr);
 
-
-	println(arr->[0]);
-	println(arr->[1]);
-	println(arr->[2]);
+	print("[ ");
+	print(arr->[0]);
+	print(", ");
+	print(arr->[1]);
+	print(", ");
+	print(arr->[2]);
+	print(" ]");
 
 	free(addr);
 	return 0;
