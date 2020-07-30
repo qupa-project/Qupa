@@ -1,32 +1,34 @@
 /*
 Expected:
-42
-12
--56
+Test 1:
+[ 42, 12, -56 ]
 -44
+[ 42, 12, -56 ]
+
+Test 2:
 42
-12
--56
-42
-42
-12
--56
-42
-12
--56
+42, 12, -56,
+
+Test 3:
+[ 42, 12, -56 ]
 */
 
-import "../std.qp";
+import "print.qp";
 
 i32 main() {
+	println("Test 1:");
 	Test1();
 
+	println("");
+	println("Test 2:");
 	Array#[int, 3] arr;
 	arr[0] = 42;
 	arr[1] = 12;
 	arr[2] = -56;
 	Test2(arr);
 
+	println("");
+	println("Test 3:");
 	Test3(arr);
 	printArr(arr);
 
@@ -44,7 +46,7 @@ void Test1() {
 
 	int i = 1;
 	int j = 2;
-	arr[i] = Add(arr[i], arr[j]);
+	arr[i] = arr[i] + arr[j];
 
 	println(arr[i]);
 	printArr(arr);
@@ -60,26 +62,32 @@ void Test2(Array#[int, 3] arr) {
 	int i = 0;
 	println(arr[i]);
 
-	while ( Lesser(i, 3) ) {
-		println(arr[i]);
-		i = Add(i, 1);
+	while ( i < 3 ) {
+		print(arr[i]);
+		print(", ");
+		i = i + 1;
 	}
+	println("");
 
 	return;
 }
 
 void Test3(Array#[int, 3] arr) {
-	arr[0] = Add(arr[0], 3);
-	arr[1] = Add(arr[1], 3);
-	arr[2] = Add(arr[2], 3);
+	arr[0] = arr[0] + 3;
+	arr[1] = arr[1] + 3;
+	arr[2] = arr[2] + 3;
 
 	return;
 }
 
 void printArr(Array#[int, 3] arr) {
-	println(arr[0]);
-	println(arr[1]);
-	println(arr[2]);
+	print("[ ");
+	print(arr[0]);
+	print(", ");
+	print(arr[1]);
+	print(", ");
+	print(arr[2]);
+	println(" ]");
 
 	return;
 }
