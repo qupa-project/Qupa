@@ -1,0 +1,17 @@
+import "print.qp";
+
+int main () {
+	println('Hello World');
+
+	int a = 42;
+	print('A: ');
+	println(a);
+
+	int b = a / 3;
+	print('\'A/3\': ');
+	println(b);
+
+	print('"A"');
+
+	return 0;
+}

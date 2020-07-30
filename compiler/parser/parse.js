@@ -107,7 +107,7 @@ function Simplify_String (node) {
 	let data = "";
 	for (let seg of node.tokens[0].tokens[1]) {
 		if (typeof(seg.tokens) == "string") {
-			data += seg.tokens;
+			data += seg.tokens.slice(1);
 		} else {
 			data += seg.tokens[0].tokens;
 		}
@@ -376,6 +376,9 @@ function Simplify_Constant (node) {
 			break;
 		case "float":
 			node.tokens = [ Simplify_Float(node.tokens[0]) ];
+			break;
+		case "string":
+			node.tokens = [ Simplify_String(node.tokens[0]) ];
 			break;
 		default:
 			throw new TypeError(`Unexpected constant expression ${node.tokens[0].type}`);
