@@ -218,24 +218,78 @@ class Execution {
 	 * @param {BNF_Node} ast
 	 */
 	compile_constant(ast) {
-		let type = Primative.types.i32;
-		let val = ast.tokens[0].tokens;
-		if (ast.tokens[0].type == "float") {
-			type = Primative.types.float;
-		} else if (ast.tokens[0].type == "boolean") {
-			type = Primative.types.bool;
-			val = val == "true" ? 1 : 0;
+		let preamble = new LLVM.Fragment();
+		let type = null;
+		let val = null;
+		switch (ast.tokens[0].type) {
+			case "float":
+				type = new TypeRef(0, Primative.types.float);
+				val = ast.tokens[0].tokens;
+				break;
+			case "boolean":
+				type = new TypeRef(0, Primative.types.bool);
+				val = val == "true" ? 1 : 0;
+				break;
+			case "integer":
+				type = new TypeRef(0, Primative.types.i32);
+				val = ast.tokens[0].tokens;
+				break;
+			case "string":
+				let bytes = ast.tokens[0].tokens[1].length + 1;
+				let str = ast.tokens[0].tokens[1].replace(/\"/g, "\\22").replace(/\n/g, '\\0A') + "\\00";
+
+				let ir_t1 = new LLVM.Type(`[ ${bytes} x i8 ]`, 0, ast.ref);
+				let ir_t2 = new LLVM.Type(`i8`, 1);
+				let ir_str = new LLVM.Name(this.scope.genID(), false, ast.ref);
+				let ir_ptr = new LLVM.Name(this.scope.genID(), false, ast.ref);
+
+				let ir_arg1 = new LLVM.Argument(
+					new LLVM.Type(`[ ${bytes} x i8 ]*`, 0, ast.ref),
+					ir_str, ast.ref, "#str_const"
+				);
+
+				preamble.append(new LLVM.Set(
+					ir_str,
+					new LLVM.Alloc(
+						ir_t1,
+						ast.ref
+					),
+					ast.ref
+				));
+				preamble.append(new LLVM.Store(
+					ir_arg1,
+					new LLVM.Argument(
+						ir_t1,
+						new LLVM.Constant(`c"${str}"`, ast.ref),
+						ast.ref
+					)
+				));
+				preamble.append(new LLVM.Set(
+					ir_ptr,
+					new LLVM.Bitcast(
+						ir_t2,
+						ir_arg1,
+						ast.ref
+					),
+					ast.ref
+				));
+
+				type = new TypeRef(1, Primative.types.i8);
+				val = ir_ptr.toLLVM();
+				break;
+			default:
+				throw new Error(`Unknown constant type ${ast.tokens[0].type}`);
 		}
 
 		return {
 			instruction: new LLVM.Argument(
-				new LLVM.Type(type.represent, 0, ast.ref.start),
+				new LLVM.Type(type.type.represent, type.pointer, ast.ref.start),
 				new LLVM.Constant(val, ast.ref.start),
 				ast.ref
 			),
-			preamble: new LLVM.Fragment(),
+			preamble,
 			epilog: new LLVM.Fragment(),
-			type: new TypeRef(0, type),
+			type: type,
 		};
 	}
 

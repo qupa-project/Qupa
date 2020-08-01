@@ -17,6 +17,10 @@ extern "C" {
 			std::cout << "false";
 		}
 	}
+	void str_print(char* val) {
+		std::cout << val;
+	}
+
 	void i32_println(int val) {
 		std::cout << val << std::endl;
 	}
@@ -32,5 +36,8 @@ extern "C" {
 		} else {
 			std::cout << "false" << std::endl;
 		}
+	}
+	void str_println(char* val) {
+		std::cout << val << std::endl;
 	}
 }

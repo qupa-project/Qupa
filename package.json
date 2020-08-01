@@ -17,6 +17,7 @@
     "compile": "node compiler/compile.js",
     "test": "npm run test-parser",
     "test-parser": "node compiler/parser/test.js",
+    "test-compilation": "node compiler/test.js",
     "postinstall": "npm run build",
     "build": "npm run build-syntax && npm run build-runtime",
     "build-syntax": "node compiler/parser/build.js",
