@@ -1,5 +1,7 @@
 # Qupa
 
+![Compilation](https://github.com/qupa-lang/Qupa/workflows/Compilation/badge.svg?branch=main)
+
 A compiled programming language based around having individual queues for each thread allowing event and callback driven multithreading behaviour.
 
 ## Setup
