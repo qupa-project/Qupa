@@ -1,7 +1,7 @@
 const Template = require('../component/template.js');
 const LLVM = require('../middle/llvm.js');
 const TypeRef = require('../component/typeRef.js');
-const TypeDef = require('../component/typeDef.js');
+const TypeDef = require('../component/typedef.js');
 
 const Primative = {
 	types: require('./types.js')

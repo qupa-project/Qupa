@@ -15,7 +15,7 @@
     "setup": "npm install && npm run build",
     "start": "node compiler/compile.js",
     "compile": "node compiler/compile.js",
-    "test": "npm run test-parser",
+    "test": "npm run test-compilation",
     "test-parser": "node compiler/parser/test.js",
     "test-compilation": "node compiler/test.js",
     "postinstall": "npm run build",
