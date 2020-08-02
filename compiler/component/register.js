@@ -196,7 +196,7 @@ class Register {
 		if (this.cache) {
 			frag.merge(this.cache.flushCache());
 
-			if (this.writePending) {
+			if (this.writePending || frag.stmts.length > 0) {
 				frag.append(new LLVM.Store(
 					new LLVM.Argument(
 						new LLVM.Type(this.type.represent, this.pointer),
@@ -229,7 +229,7 @@ class Register {
 			frag.merge(this.inner[sig].flushCache(ref));
 		}
 
-		this.writePending = false;
+		this.writePending = frag.stmts.length > 0 ? false : this.writePending;
 		return frag;
 	}
 

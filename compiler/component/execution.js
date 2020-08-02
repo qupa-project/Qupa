@@ -492,7 +492,6 @@ class Execution {
 
 		if (expr.register) {
 			load.register.clearCache(expr.register);
-			load.register.markUpdated();
 		} else {
 			frag.append(new LLVM.Store(
 				new LLVM.Argument(
@@ -507,6 +506,7 @@ class Execution {
 			load.register.clearCache();
 		}
 
+		load.register.markUpdated();
 		frag.merge(expr.epilog);
 		return frag;
 	}
@@ -582,7 +582,7 @@ class Execution {
 		}
 
 		// Ensure that pointers actually write their data before returning
-		frag.merge(this.scope.flushAllConcurrents(ast.ref));
+		frag.merge(this.compile_cleanup(ast.ref));
 
 		frag.append(new LLVM.Return(inner, ast.ref.start));
 		return frag;
@@ -1157,6 +1157,13 @@ class Execution {
 			instruction,
 			type
 		};
+	}
+
+
+
+
+	compile_cleanup (ref) {
+		return this.scope.flushAllConcurrents(ref);
 	}
 
 

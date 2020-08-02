@@ -56,6 +56,6 @@ let tests = [
 
 let i = 0;
 for (let file of tests) {
-	console.log("\nTest", i++, ' of ', tests.length);
+	console.info("\nTest", i++, ' of ', tests.length);
 	Compile(file);
 }
