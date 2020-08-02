@@ -247,8 +247,6 @@ class Scope {
 
 
 
-
-
 	/**
 	 * Deep clone
 	 * @returns {Scope}
@@ -293,8 +291,12 @@ class Scope {
 		let frag = new LLVM.Fragment();
 
 		for (let name in this.variables) {
-			if (this.variables[name].isConcurrent) {
-				frag.merge( this.variables[name].flushCache(ref) );
+			if (
+				this.variables[name].isConcurrent &&
+				this.variables[name].cache
+			) {
+				let out = this.variables[name].cache.flushCache(ref, true);
+				frag.merge( out );
 			}
 		}
 
