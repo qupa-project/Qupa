@@ -321,6 +321,7 @@ class Execution {
 			signature.push(expr.type);
 
 			if (expr.register instanceof Register) {
+				preamble.merge(expr.register.flushCache());
 				regs.push(expr.register);
 			}
 		}
