@@ -611,6 +611,7 @@ class Execution {
 		let scope_true = this.clone();
 		let body_true = scope_true.compile(ast.tokens[0].tokens[1]);
 		body_true.prepend(label_true.toDefinition());
+		body_true.merge(scope_true.flushAllClones());
 
 
 		/**
@@ -625,7 +626,7 @@ class Execution {
 		if (hasElse) {
 			body_false.prepend(label_false.toDefinition());
 			body_false = scope_false.compile(ast.tokens[2].tokens[0]);
-			body_false.prepend(label_false.toDefinition());
+			body_false.merge(scope_false.flushAllClones());
 		}
 
 

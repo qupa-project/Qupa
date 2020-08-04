@@ -9,6 +9,7 @@
 ### Fixes
 
 + Fixed not flushing values before while loop
++ Fixed if statment not affecting reloads
 
 ## v0.0.3
 

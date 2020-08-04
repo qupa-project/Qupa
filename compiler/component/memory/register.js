@@ -396,7 +396,11 @@ class Register extends Value {
 			action = 1;
 		} else if (alwaysExecute && this.cache === null && other.cache !== null) { // a cache was created
 			action = 2;
-		} else if (this.cache !== null && other.cache !== null && this.cache.id != other.cache.id) { // a cache was updated
+		} else if (this.cache !== null && other.cache !== null && (
+			this.cache.id != other.cache.id ||
+			this.cache instanceof Constant !== other.cache instanceof Constant ||
+			( this.cache instanceof Constant && other.cache instanceof Constant && this.cache.value != other.cache.value )
+		)) { // a cache was updated
 			action = alwaysExecute ? 2 : 1;
 		}
 
@@ -411,6 +415,10 @@ class Register extends Value {
 				this.cache = other.cache.clone();
 				this.cache.declone();
 				break;
+		}
+
+		if (this.cache instanceof Register && other.cache instanceof Register) {
+			this.cache.mergeUpdates(other.cache, alwaysExecute);
 		}
 	}
 

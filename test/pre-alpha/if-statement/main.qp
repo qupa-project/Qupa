@@ -14,22 +14,16 @@ import "print.qp";
 
 
 i32 main () {
-	i32 a;
-	i32 b;
-	i32 c;
-	bool d;
+	i32 a = 2;
+	i32 b = 3;
 
-	a = 2;
-	b = 3;
-
-	c = 0;
+	int c = 0;
 	println(c);
 	println(a);
 	println(b);
 
 	c = 2;
-	d = a == c;
-	if (d) {
+	if ( a == c ) {
 		a = 42;
 	}
 
@@ -38,8 +32,7 @@ i32 main () {
 	println(a);
 	println(b);
 
-	d = a == b;
-	if (d) {
+	if ( a == b ) {
 		b = a + b;
 	} else {
 		b = 1;
