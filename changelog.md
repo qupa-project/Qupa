@@ -1,5 +1,15 @@
 # Change Log
 
+## Unreleased
+
+### Added
+
++ Constants are not longer forcibly written to memory
+
+### Fixes
+
++ Fixed not flushing values before while loop
+
 ## v0.0.3
 
 ### Added

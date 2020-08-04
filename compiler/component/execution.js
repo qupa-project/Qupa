@@ -1,3 +1,4 @@
+const Constant = require('./memory/constant.js');
 const Register = require('./memory/register.js');
 const Scope = require('./memory/scope.js');
 
@@ -106,15 +107,10 @@ class Execution {
 		frag.merge(cache.preamble);
 
 		return {
-			instruction: new LLVM.Argument(
-				new LLVM.Type(cache.register.type.represent, cache.register.pointer),
-				new LLVM.Name(cache.register.id, null),
-				null,
-				load.register.name
-			),
+			instruction: cache.register.toLLVM(),
 			preamble: frag,
 			epilog: new LLVM.Fragment(),
-			type: new TypeRef(cache.register.pointer, cache.register.type),
+			type: cache.register.type,
 			register: cache.register
 		};
 	}
@@ -324,7 +320,7 @@ class Execution {
 			args.push(expr.instruction);
 			signature.push(expr.type);
 
-			if (expr.register) {
+			if (expr.register instanceof Register) {
 				regs.push(expr.register);
 			}
 		}
@@ -435,8 +431,7 @@ class Execution {
 		typeRef.pointer = ast.tokens[0].tokens[0];
 
 		let reg = this.scope.register_Var(
-			typeRef.type,
-			typeRef.pointer+1,
+			typeRef.duplicate().offsetPointer(1),
 			name,
 			ast.ref.start
 		);
@@ -444,7 +439,7 @@ class Execution {
 		frag.append(new LLVM.Set(
 			new LLVM.Name(reg.id, false, ast.tokens[1].ref.start),
 			new LLVM.Alloc(
-				new LLVM.Type(reg.type.represent, typeRef.pointer, ast.tokens[0].ref.start),
+				reg.type.duplicate().offsetPointer(-1).toLLVM(),
 				ast.ref.start
 			),
 			ast.ref.start
@@ -479,7 +474,7 @@ class Execution {
 		}
 		frag.merge(load.preamble);
 
-		let targetType = new TypeRef(load.register.pointer-1, load.register.type);
+		let targetType = load.register.type.duplicate().offsetPointer(-1);
 		if (!expr.type.match(targetType)) {
 			this.getFile().throw(
 				`Error: Assignment type mis-match` +
@@ -493,17 +488,7 @@ class Execution {
 		if (expr.register) {
 			load.register.clearCache(expr.register);
 		} else {
-			frag.append(new LLVM.Store(
-				new LLVM.Argument(
-					new LLVM.Type(load.register.type.represent, load.register.pointer),
-					new LLVM.Name(`${load.register.id}`, false),
-					ast.tokens[0].ref,
-					// Flattern.VariableStr(ast.tokens[0]) TODO fix
-				),
-				expr.instruction,
-				ast.ref.start
-			));
-			load.register.clearCache();
+			load.register.clearCache(new Constant(expr.type, expr.instruction.name.val, expr.ref.start), expr.ref.start);
 		}
 
 		load.register.markUpdated();
@@ -694,6 +679,8 @@ class Execution {
 	compile_while (ast) {
 		let frag = new LLVM.Fragment();
 
+		frag.merge(this.scope.flushAll(ast.ref, true));
+
 		let scope_check = this.clone();
 		scope_check.clearAllCaches();
 		let label_check = new LLVM.Label(
@@ -846,7 +833,7 @@ class Execution {
 
 			let id = this.scope.genID();
 
-			res.register = new Register(id, res.type.type, "temp", res.type.pointer, ast.ref.start);
+			res.register = new Register(id, res.type, "temp", ast.ref.start);
 			let regIR = new LLVM.Name(id.toString(), false, ast.ref.start);
 
 			res.preamble.append(new LLVM.Set(
