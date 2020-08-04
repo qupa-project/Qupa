@@ -1,8 +1,8 @@
-const { Generator_ID } = require('./generate.js');
-const LLVM = require("../middle/llvm.js");
-const Flattern = require('../parser/flattern.js');
+const Flattern = require('../../parser/flattern.js');
+const { Generator_ID } = require('../generate.js');
+const LLVM = require("../../middle/llvm.js");
+const TypeRef = require('./../typeRef.js');
 const Register = require('./register.js');
-const TypeRef = require('./typeRef.js');
 
 class Scope {
 	static raisedVariables = true; // whether or not a variable can be redefined within a new scope
@@ -67,9 +67,8 @@ class Scope {
 
 			this.variables[arg.name] = new Register(
 				this.generator.next(),
-				arg.type,
+				new TypeRef(arg.pointer+1, arg.type),
 				arg.name,
-				arg.pointer+1,
 				arg.ref
 			);
 			if (arg.pointer > 0) {
@@ -78,9 +77,8 @@ class Scope {
 
 			let cache = new Register(
 				arg.id,
-				arg.type,
+				new TypeRef(arg.pointer, arg.type),
 				arg.name,
-				arg.pointer,
 				arg.ref
 			);
 			this.variables[arg.name].cache = cache;
@@ -114,11 +112,11 @@ class Scope {
 	 * @param {BNF_Reference} ref
 	 * @returns {void}
 	 */
-	register_Var(type, pointerLvl, name, ref) {
+	register_Var(type, name, ref) {
 		if (Scope.raisedVariables) {
 			let parent = this.getParent();
 			if (parent) {
-				return parent.register_Var(type, pointerLvl, name, ref);
+				return parent.register_Var(type, name, ref);
 			}
 		}
 
@@ -135,7 +133,7 @@ class Scope {
 			);
 		}
 
-		this.variables[name] = new Register(this.generator.next(), type, name, pointerLvl, ref);
+		this.variables[name] = new Register(this.generator.next(), type, name, ref);
 		return this.variables[name];
 	}
 
@@ -268,6 +266,16 @@ class Scope {
 		for (let name in this.variables) {
 			this.variables[name].clearCache();
 		}
+	}
+
+	flushAll(ref, allowGEPS) {
+		let frag = new LLVM.Fragment();
+
+		for (let name in this.variables) {
+			frag.merge( this.variables[name].flushCache(ref, allowGEPS) );
+		}
+
+		return frag;
 	}
 
 	/**

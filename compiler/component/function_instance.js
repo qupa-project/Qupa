@@ -3,8 +3,8 @@ const { Generator_ID } = require('./generate.js');
 const Flattern = require('./../parser/flattern.js');
 const TypeDef = require('./typedef.js');
 const LLVM = require('../middle/llvm.js');
-const Scope = require('./scope.js');
 const Execution = require('./execution.js');
+const Scope = require('./memory/scope.js');
 const State = require('./state.js');
 const TypeRef = require('./typeRef.js');
 

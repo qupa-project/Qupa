@@ -1,21 +1,22 @@
-const LLVM = require('./../middle/llvm.js');
-const TypeDef = require('./typedef.js');
+const LLVM = require('../../middle/llvm.js');
+const TypeRef = require('../typeRef.js');
 
-class Register {
+const Constant = require('./constant.js');
+const Value = require('./value.js');
+
+class Register extends Value {
 	/**
 	 *
 	 * @param {Number} id
-	 * @param {TypeDef|Structure} type
+	 * @param {TypeRef} type
 	 * @param {String} name
 	 * @param {Number} pointerDepth
 	 * @param {BNF_Reference} ref
 	 */
-	constructor(id, type, name, pointerDepth, ref) {
+	constructor(id, type, name, ref) {
+		super(type, ref);
 		this.id           = id;
-		this.type         = type;
 		this.name         = name;
-		this.pointer      = pointerDepth;
-		this.declared     = ref;
 		this.inner        = {};
 		this.cache        = null;
 		this.isClone      = false;
@@ -36,7 +37,7 @@ class Register {
 
 		// Do required dereferencing
 		while (ast.length > 0 && ast[0][0] == "->") {
-			if (this.pointer != 2) {
+			if (this.type.pointer != 2) {
 				return {
 					error: true,
 					msg: `Type Error: Cannot dereference a non pointer value`,
@@ -91,10 +92,10 @@ class Register {
 
 
 		// Check the pointer depth
-		if (register.pointer != 1) {
+		if (register.type.pointer != 1) {
 			return {
 				error: true,
-				msg: `Reference Error: Cannot ${dynamic ? " dynamically" : ""}access element at this pointer depth`,
+				msg: `Reference Error: Cannot ${dynamic ? " dynamically " : ""}access element at this pointer depth`,
 				ref
 			};
 		}
@@ -134,9 +135,8 @@ class Register {
 		if (!register.inner[search.signature]) {
 			let reg = new Register(
 				scope.generator.next(),
-				search.typeRef.type,
+				search.typeRef.duplicate().offsetPointer(1),
 				"temp",
-				search.typeRef.pointer+1,
 				ast[0][1].ref
 			);
 			register.inner[search.signature] = reg;
@@ -194,18 +194,14 @@ class Register {
 		let frag = new LLVM.Fragment();
 
 		if (this.cache) {
-			frag.merge(this.cache.flushCache());
+			if (this.cache instanceof Register) {
+				frag.merge(this.cache.flushCache());
+			}
 
 			if (this.writePending || frag.stmts.length > 0) {
 				frag.append(new LLVM.Store(
-					new LLVM.Argument(
-						new LLVM.Type(this.type.represent, this.pointer),
-						new LLVM.Name(this.id, false)
-					),
-					new LLVM.Argument(
-						new LLVM.Type(this.type.represent, this.cache.pointer),
-						new LLVM.Name(this.cache.id, false)
-					),
+					this.toLLVM(),
+					this.cache.toLLVM(),
 					ref
 				));
 				this.cache.writePending = false;
@@ -254,7 +250,8 @@ class Register {
 
 	/**
 	 * Dumps all caches, forcing reloads
-	 * @param {Register} cache A cache that may replace this one
+	 * @param {Value} cache A cache that may replace this one
+	 * @param {Boolean} allowGEP also flush GEP caches?
 	 * @returns {void}
 	 */
 	clearCache(replacement = null, allowGEP = true) {
@@ -286,11 +283,12 @@ class Register {
 	 * @param {Scope} scope
 	 * @param {Boolean} read
 	 * @param {Number} amount
+	 * @returns {Object?}
 	 */
 	deref(scope, read = true, amount = 1) {
 		// Cannot dereference a value
 		// Handle error within caller
-		if (this.pointer == 0 && amount > 0) {
+		if (this.type.pointer == 0 && amount > 0) {
 			return null;
 		}
 
@@ -317,9 +315,8 @@ class Register {
 		if (!read || this.cache === null || amount > 1) {
 			this.cache = new Register(
 				scope.generator.next(),
-				this.type,
-				this.name,
-				this.pointer-1
+				this.type.duplicate().offsetPointer(-1),
+				this.name
 			);
 			out.register = this.cache;
 
@@ -329,7 +326,7 @@ class Register {
 				out.preamble.append(new LLVM.Set(
 					new LLVM.Name(`${this.cache.id}`, false),
 					new LLVM.Load(
-						new LLVM.Type(this.type.represent, this.pointer-1),
+						this.type.duplicate().offsetPointer(-1).toLLVM(),
 						new LLVM.Name(`${this.id}`, false)
 					)
 				));
@@ -360,7 +357,7 @@ class Register {
 	 * @returns {Register}
 	 */
 	clone () {
-		let out = new Register(this.id, this.type, this.name, this.pointer, this.ref);
+		let out = new Register(this.id, this.type, this.name, this.ref);
 		if (this.cache !== null) {
 			out.cache = this.cache.clone();
 		}
@@ -399,7 +396,11 @@ class Register {
 			action = 1;
 		} else if (alwaysExecute && this.cache === null && other.cache !== null) { // a cache was created
 			action = 2;
-		} else if (this.cache !== null && other.cache !== null && this.cache.id != other.cache.id) { // a cache was updated
+		} else if (this.cache !== null && other.cache !== null && (
+			this.cache.id != other.cache.id ||
+			this.cache instanceof Constant !== other.cache instanceof Constant ||
+			( this.cache instanceof Constant && other.cache instanceof Constant && this.cache.value != other.cache.value )
+		)) { // a cache was updated
 			action = alwaysExecute ? 2 : 1;
 		}
 
@@ -415,12 +416,16 @@ class Register {
 				this.cache.declone();
 				break;
 		}
+
+		if (this.cache instanceof Register && other.cache instanceof Register) {
+			this.cache.mergeUpdates(other.cache, alwaysExecute);
+		}
 	}
 
 
 	toLLVM(ref) {
 		return new LLVM.Argument(
-			new LLVM.Type(this.type.represent, this.pointer, this.declared),
+			this.type.toLLVM(this.declared),
 			new LLVM.Name(this.id.toString(), false, this.declared),
 			ref,
 			this.name
