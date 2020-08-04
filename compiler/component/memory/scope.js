@@ -1,8 +1,8 @@
-const { Generator_ID } = require('./generate.js');
-const LLVM = require("../middle/llvm.js");
-const Flattern = require('../parser/flattern.js');
+const Flattern = require('../../parser/flattern.js');
+const { Generator_ID } = require('../generate.js');
+const LLVM = require("../../middle/llvm.js");
+const TypeRef = require('./../typeRef.js');
 const Register = require('./register.js');
-const TypeRef = require('./typeRef.js');
 
 class Scope {
 	static raisedVariables = true; // whether or not a variable can be redefined within a new scope

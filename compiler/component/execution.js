@@ -1,10 +1,10 @@
+const Register = require('./memory/register.js');
+const Scope = require('./memory/scope.js');
+
 const Flattern = require('../parser/flattern.js');
-const LLVM = require("../middle/llvm.js");
-const TypeRef = require('./typeRef.js');
-const Scope = require('./scope.js');
-const State = require('./state.js');
-const { Argument, Type } = require('../middle/llvm.js');
-const Register = require('./register.js');
+const LLVM     = require("../middle/llvm.js");
+const TypeRef  = require('./typeRef.js');
+const State    = require('./state.js');
 
 const Primative = {
 	types: require('./../primative/types.js')
@@ -831,7 +831,7 @@ class Execution {
 		 */
 		if (
 			simple &&
-			!( res.instruction instanceof Argument )
+			!( res.instruction instanceof LLVM.Argument )
 		) {
 			let inner = res.instruction;
 			let irType = null;

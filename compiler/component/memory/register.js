@@ -1,5 +1,5 @@
-const LLVM = require('./../middle/llvm.js');
-const TypeDef = require('./typedef.js');
+const LLVM = require('../../middle/llvm.js');
+const TypeDef = require('./../typedef.js');
 
 class Register {
 	/**
