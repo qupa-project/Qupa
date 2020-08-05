@@ -110,7 +110,7 @@ class Register extends Value {
 		if (search === null) {
 			return {
 				error: true,
-				msg: `Type Error: Unknown acccess of structure ${register.type.name}`,
+				msg: `Type Error: Unknown acccess of structure ${register.type.getName()}`,
 				ref
 			};
 		}

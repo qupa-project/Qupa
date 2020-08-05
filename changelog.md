@@ -11,6 +11,7 @@
 + Fixed not flushing values before while loop
 + Fixed if statment not affecting reloads
 + Fixed not flushing pointers before function calls
++ Fixed compiler crashing on invalid array access on non-array
 
 ## v0.0.3
 

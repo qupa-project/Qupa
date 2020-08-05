@@ -21,9 +21,14 @@ class TypeDef {
 		this.parse();
 	}
 
-	getTerm() {
+
+	getTerm () {
 		return null;
 	}
+	getElement () {
+		return null;
+	}
+
 
 	parse() {
 		this.name = this.ast.tokens[0].tokens;
