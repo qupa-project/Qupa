@@ -14,6 +14,10 @@ class TypeRef {
 		this.type = type;
 	}
 
+	getName () {
+		return this.type.name || constant;
+	}
+
 	getTerm (ast, reg) {
 		return this.type.getTerm(ast, reg);
 	}
