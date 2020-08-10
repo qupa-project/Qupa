@@ -16,6 +16,8 @@ class ID extends Instruction {
 		let out = new ID(this.ref);
 		out.origin = false;
 		out.link = this;
+
+		return out;
 	}
 
 	/**
