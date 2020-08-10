@@ -15,6 +15,8 @@ let config = {
 	execute: false
 };
 
+let fails = 0;
+
 async function Compile(root) {
 	// Load required files
 	let project = new Project(root, {
@@ -46,6 +48,7 @@ async function Compile(root) {
 		await exec(`clang++ ${runtime_path} ${config.output}.ll`);
 	} catch (e) {
 		fail = true;
+		fails++;
 	}
 
 	console.log(fail ? "  FAILED" : "  success");
@@ -77,6 +80,8 @@ async function Test () {
 		console.info("\nTest", i++, ' of ', tests.length);
 		await Compile(file);
 	}
+
+	console.log(`\nFailed ${fails} of ${tests.length}`);
 }
 
 Test();
