@@ -7,10 +7,9 @@ const Register = require('./register.js');
 class Scope {
 	static raisedVariables = true; // whether or not a variable can be redefined within a new scope
 
-	constructor(ctx, caching = true, id_generator = new Generator_ID(1)) {
+	constructor(ctx, caching = true) {
 		this.ctx        = ctx;
 		this.variables  = {};
-		this.generator  = id_generator;
 		this.caching    = caching;
 		this.isChild    = false;
 	}
@@ -36,14 +35,6 @@ class Scope {
 		return null;
 	}
 
-	/**
-	 * Generates a new register ID
-	 * @returns {Number}
-	 */
-	genID() {
-		return this.generator.next();
-	}
-
 
 
 	/**
@@ -51,8 +42,6 @@ class Scope {
 	 * @param {Object[]} args
 	 */
 	register_Args(args) {
-		this.generator.next(); // skip one id for function entry point
-
 		let frag = new LLVM.Fragment();
 		let registers = [];
 
