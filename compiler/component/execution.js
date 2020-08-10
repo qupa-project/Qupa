@@ -271,7 +271,7 @@ class Execution {
 				));
 
 				type = new TypeRef(1, Primative.types.i8);
-				val = ir_ptr.toLLVM();
+				val = ir_ptr.flattern();
 				break;
 			default:
 				throw new Error(`Unknown constant type ${ast.tokens[0].type}`);
