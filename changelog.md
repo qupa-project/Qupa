@@ -6,6 +6,10 @@
 
 + Constants are not longer forcibly written to memory
 
+### Tweaks
+
++ New LLVM ID assignment system to allow for out of order code generation
+
 ### Fixes
 
 + Fixed not flushing values before while loop
