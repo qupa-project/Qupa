@@ -17,7 +17,7 @@ class Sub extends Instruction {
 		this.b = opperand_b;
 	}
 
-	flattern() {
+	flattern(indent) {
 		return super.flattern(
 			( this.mode == 2 ? "f" : "" ) +
 			`add ` +

@@ -17,7 +17,7 @@ class Rem extends Instruction {
 		this.b = opperand_b;
 	}
 
-	flattern() {
+	flattern(indent) {
 		return super.flattern(
 			( this.mode == 0 ? "u" : ( this.mode == 1 ? "s" : "f" ) ) +
 			`rem ` +
