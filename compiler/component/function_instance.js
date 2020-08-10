@@ -184,16 +184,18 @@ class Function_Instance {
 		);
 
 		if (!this.abstract && !this.external) {
-			// Apply the argument reads
-			frag.merge(res.frag);
-
 			// Mark the entry point
 			let entry = new LLVM.Label( new LLVM.ID(), this.ast.ref.start );
-			frag.append( entry.toDefinition() );
+			frag.append( entry.toDefinition(true) );
+
+			// Apply the argument reads
+			frag.merge(res.frag);
 
 			// Compile the internal behaviour
 			let exec = new Execution(this, this.returnType, scope);
 			frag.merge(exec.compile(this.ast.tokens[1]));
+
+			console.log(198, frag);
 		}
 
 		let gen = new Generator_ID(0);
