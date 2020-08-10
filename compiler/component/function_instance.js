@@ -194,8 +194,6 @@ class Function_Instance {
 			// Compile the internal behaviour
 			let exec = new Execution(this, this.returnType, scope);
 			frag.merge(exec.compile(this.ast.tokens[1]));
-
-			console.log(198, frag);
 		}
 
 		let gen = new Generator_ID(0);
