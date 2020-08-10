@@ -14,6 +14,7 @@ const Extend = require('./extend.js');
 const FloatConvert = require('./floatconvert.js');
 const Fragment = require('./fragment.js');
 const GEP = require('./gep.js');
+const ID = require('./id.js');
 const Instruction = require('./instruction');
 const Label = require('./label.js');
 const Load = require('./load.js');
@@ -41,6 +42,7 @@ module.exports = {
 	Extend,
 	FloatConvert,	Fragment,
 	GEP,
+	ID,
 	Instruction,
 	Label, Load,
 	Mul,

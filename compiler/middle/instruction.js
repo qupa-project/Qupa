@@ -3,7 +3,11 @@ class Instruction {
 		this.ref = ref;
 	}
 
-	toLLVM(str = "", indent = 0) {
+	assign_ID () {
+		return;
+	}
+
+	flattern(str = "", indent = 0) {
 		let out = "";
 		for (let i=0; i<indent; i++) {
 			out += " ";

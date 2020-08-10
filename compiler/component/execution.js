@@ -6,6 +6,7 @@ const Flattern = require('../parser/flattern.js');
 const LLVM     = require("../middle/llvm.js");
 const TypeRef  = require('./typeRef.js');
 const State    = require('./state.js');
+const { Name } = require('../middle/llvm.js');
 
 const Primative = {
 	types: require('./../primative/types.js')
@@ -220,15 +221,24 @@ class Execution {
 		switch (ast.tokens[0].type) {
 			case "float":
 				type = new TypeRef(0, Primative.types.float);
-				val = ast.tokens[0].tokens;
+				val = new LLVM.Constant(
+					ast.tokens[0].tokens,
+					ast.ref.start
+				);
 				break;
 			case "boolean":
 				type = new TypeRef(0, Primative.types.bool);
-				val = val == "true" ? 1 : 0;
+				val = new LLVM.Constant(
+					val == "true" ? 1 : 0,
+					ast.ref.start
+				);
 				break;
 			case "integer":
 				type = new TypeRef(0, Primative.types.i32);
-				val = ast.tokens[0].tokens;
+				val = new LLVM.Constant(
+					ast.tokens[0].tokens,
+					ast.ref.start
+				);
 				break;
 			case "string":
 				let bytes = ast.tokens[0].tokens[1].length + 1;
@@ -236,16 +246,12 @@ class Execution {
 
 				let ir_t1 = new LLVM.Type(`[ ${bytes} x i8 ]`, 0, ast.ref);
 				let ir_t2 = new LLVM.Type(`i8`, 1);
-				let ir_str = new LLVM.Name(this.scope.genID(), false, ast.ref);
-				let ir_ptr = new LLVM.Name(this.scope.genID(), false, ast.ref);
 
-				let ir_arg1 = new LLVM.Argument(
-					new LLVM.Type(`[ ${bytes} x i8 ]*`, 0, ast.ref),
-					ir_str, ast.ref, "#str_const"
-				);
+				let str_id = new LLVM.ID();
+				let ptr_id = new LLVM.ID();
 
 				preamble.append(new LLVM.Set(
-					ir_str,
+					new LLVM.Name(str_id, false, ast.ref),
 					new LLVM.Alloc(
 						ir_t1,
 						ast.ref
@@ -253,7 +259,11 @@ class Execution {
 					ast.ref
 				));
 				preamble.append(new LLVM.Store(
-					ir_arg1,
+					new LLVM.Argument(
+						new LLVM.Type(`[ ${bytes} x i8 ]*`, 0, ast.ref),
+						new LLVM.Name(str_id.reference(), false, ast.ref),
+						ast.ref, "#str_const"
+					),
 					new LLVM.Argument(
 						ir_t1,
 						new LLVM.Constant(`c"${str}"`, ast.ref),
@@ -261,17 +271,21 @@ class Execution {
 					)
 				));
 				preamble.append(new LLVM.Set(
-					ir_ptr,
+					new LLVM.Name(ptr_id, false, ast.ref),
 					new LLVM.Bitcast(
 						ir_t2,
-						ir_arg1,
+						new LLVM.Argument(
+							new LLVM.Type(`[ ${bytes} x i8 ]*`, 0, ast.ref),
+							new LLVM.Name(str_id.reference(), false, ast.ref),
+							ast.ref, "#str_const"
+						),
 						ast.ref
 					),
 					ast.ref
 				));
 
 				type = new TypeRef(1, Primative.types.i8);
-				val = ir_ptr.toLLVM();
+				val = new Name(ptr_id, false, ast.ref);
 				break;
 			default:
 				throw new Error(`Unknown constant type ${ast.tokens[0].type}`);
@@ -280,7 +294,7 @@ class Execution {
 		return {
 			instruction: new LLVM.Argument(
 				new LLVM.Type(type.type.represent, type.pointer, ast.ref.start),
-				new LLVM.Constant(val, ast.ref.start),
+				val,
 				ast.ref
 			),
 			preamble,
@@ -606,12 +620,13 @@ class Execution {
 		/**
 		 * Prepare condition true body
 		 */
-		let label_true = new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false, ast.tokens[0].tokens[1]), ast.tokens[0].tokens[1]
-		);
+		let true_id = new LLVM.ID(ast.tokens[0].tokens[1].ref);
 		let scope_true = this.clone();
 		let body_true = scope_true.compile(ast.tokens[0].tokens[1]);
-		body_true.prepend(label_true.toDefinition());
+		body_true.prepend(new LLVM.Label(
+			true_id,
+			ast.tokens[0].tokens[1].ref
+		).toDefinition());
 		body_true.merge(scope_true.flushAllClones());
 
 
@@ -619,14 +634,14 @@ class Execution {
 		 * Prepare condition false body
 		 */
 		let hasElse = ast.tokens[2] !== null;
-		let label_false = new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false)
-		);
+		let false_id = new LLVM.ID();
 		let body_false = new LLVM.Fragment();
 		let scope_false = this.clone();
 		if (hasElse) {
-			body_false.prepend(label_false.toDefinition());
 			body_false = scope_false.compile(ast.tokens[2].tokens[0]);
+			body_false.prepend(new LLVM.Label(
+				false_id
+			).toDefinition());
 			body_false.merge(scope_false.flushAllClones());
 		}
 
@@ -634,14 +649,21 @@ class Execution {
 		/**
 		 * Cleanup and merging
 		 */
-		let endpoint = hasElse ? new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false)
-		) : label_false;
+		let endpoint_id = new LLVM.ID();
+		let endpoint = new LLVM.Label(
+			new LLVM.Name(endpoint_id.reference(), false)
+		);
 
+		frag.append(new LLVM.Comment(`Has Else? ${hasElse}`));
 		frag.append(new LLVM.Branch(
 			cond.instruction,
-			label_true,
-			label_false,
+			new LLVM.Label(
+				new LLVM.Name(true_id.reference(), false, ast.tokens[0].tokens[1].ref),
+				ast.tokens[0].tokens[1].ref
+			),
+			new LLVM.Label(
+				new LLVM.Name( hasElse ? false_id.reference() : endpoint_id.reference() , false)
+			),
 			ast.ref.start
 		));
 
@@ -666,7 +688,11 @@ class Execution {
 
 		// Push the end point
 		if (!this.returned) {
-			frag.append(endpoint.toDefinition());
+			frag.append(new LLVM.Label(
+				endpoint_id
+			).toDefinition());
+		} else {
+			frag.append(new LLVM.Comment("694"));
 		}
 
 		// If any variables were updated within child scopes
@@ -685,10 +711,7 @@ class Execution {
 
 		let scope_check = this.clone();
 		scope_check.clearAllCaches();
-		let label_check = new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false, ast.tokens[0].ref),
-			ast.tokens[0].tokens[0]
-		);
+		let check_id = new LLVM.ID(ast.tokens[0].ref);
 		let check = scope_check.compile_while_condition(ast.tokens[0]);
 		if (check === null) {
 			return null;
@@ -696,34 +719,52 @@ class Execution {
 
 		let scope_loop = this.clone();
 		scope_loop.clearAllCaches();
-		let label_loop = new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false, ast.tokens[0].tokens[0]),
-			ast.tokens[0].tokens[0]
-		);
+		let loop_id = new LLVM.ID();
 		let loop = scope_loop.compile(ast.tokens[1]);
 		if (loop === null) {
 			return null;
 		}
 		loop.merge(scope_loop.flushAllClones());
 
-		let label_end = new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false, ast.tokens[0].tokens[0]),
-			ast.tokens[0].tokens[0]
-		);
+		let end_id = new LLVM.ID();
 
-		frag.append(new LLVM.Branch_Unco(label_check));
-		frag.append(label_check.toDefinition());
+		frag.append(new LLVM.Branch_Unco(new LLVM.Label(
+			new LLVM.Name(check_id.reference(), false, ast.tokens[0].ref),
+			ast.tokens[0].tokens[0]
+		)));
+
+		frag.append(new LLVM.Label(
+			check_id,
+			ast.tokens[0].tokens[0]
+		).toDefinition());
 		frag.merge(check.instructions);
+
 		frag.append(new LLVM.Branch(
 			check.register,
-			label_loop,
-			label_end,
+			new LLVM.Label(
+				new LLVM.Name(loop_id.reference(), false, ast.tokens[0].tokens[0]),
+				ast.tokens[0].tokens[0]
+			),
+			new LLVM.Label(
+				new LLVM.Name(end_id.reference(), false, ast.tokens[0].tokens[0]),
+				ast.tokens[0].tokens[0]
+			),
 			ast.ref.start
 		));
-		frag.append(label_loop.toDefinition());
+		frag.append(new LLVM.Label(
+			loop_id,
+			ast.tokens[0].tokens[0]
+		).toDefinition());
 		frag.merge(loop);
-		frag.append(new LLVM.Branch_Unco(label_check));
-		frag.append(label_end.toDefinition());
+
+		frag.append(new LLVM.Branch_Unco(new LLVM.Label(
+			new LLVM.Name(check_id.reference(), false, ast.tokens[0].ref),
+			ast.tokens[0].tokens[0]
+		)));
+		frag.append(new LLVM.Label(
+			end_id,
+			ast.tokens[0].tokens[0]
+		).toDefinition());
 
 
 		// If any variables were updated within child scopes
@@ -833,21 +874,15 @@ class Execution {
 				irType = res.type;
 			}
 
-			let id = this.scope.genID();
-
-			res.register = new Register(id, res.type, "temp", ast.ref.start);
-			let regIR = new LLVM.Name(id.toString(), false, ast.ref.start);
+			res.register = new Register(res.type, "temp", ast.ref.start);
+			let regIR = res.register.toLLVM();
 
 			res.preamble.append(new LLVM.Set(
-				regIR,
+				regIR.name,
 				inner,
 				ast.ref.start
 			));
-			res.instruction = new LLVM.Argument(
-				irType,
-				regIR,
-				ast.ref.start
-			);
+			res.instruction = regIR;
 		}
 
 		res.ref = ast.ref;

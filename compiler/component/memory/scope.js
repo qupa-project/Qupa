@@ -7,10 +7,9 @@ const Register = require('./register.js');
 class Scope {
 	static raisedVariables = true; // whether or not a variable can be redefined within a new scope
 
-	constructor(ctx, caching = true, id_generator = new Generator_ID(1)) {
+	constructor(ctx, caching = true) {
 		this.ctx        = ctx;
 		this.variables  = {};
-		this.generator  = id_generator;
 		this.caching    = caching;
 		this.isChild    = false;
 	}
@@ -36,14 +35,6 @@ class Scope {
 		return null;
 	}
 
-	/**
-	 * Generates a new register ID
-	 * @returns {Number}
-	 */
-	genID() {
-		return this.generator.next();
-	}
-
 
 
 	/**
@@ -51,9 +42,8 @@ class Scope {
 	 * @param {Object[]} args
 	 */
 	register_Args(args) {
-		this.generator.next(); // skip one id for function entry point
-
 		let frag = new LLVM.Fragment();
+		let registers = [];
 
 		for (let arg of args) {
 			if (this.variables[arg.name]) {
@@ -66,8 +56,7 @@ class Scope {
 			}
 
 			this.variables[arg.name] = new Register(
-				this.generator.next(),
-				new TypeRef(arg.pointer+1, arg.type),
+				arg.type.duplicate().offsetPointer(1),
 				arg.name,
 				arg.ref
 			);
@@ -76,13 +65,13 @@ class Scope {
 			}
 
 			let cache = new Register(
-				arg.id,
-				new TypeRef(arg.pointer, arg.type),
+				arg.type,
 				arg.name,
 				arg.ref
 			);
 			this.variables[arg.name].cache = cache;
 			cache.isConcurrent = arg.pointer > 0;
+			registers.push(cache);
 
 			frag.append(new LLVM.Set(
 				new LLVM.Name(
@@ -91,7 +80,7 @@ class Scope {
 					arg.ref
 				),
 				new LLVM.Alloc(
-					new LLVM.Type(arg.type.represent, arg.pointer, arg.ref),
+					arg.type.toLLVM(arg.ref),
 					arg.ref
 				),
 				arg.ref
@@ -99,7 +88,7 @@ class Scope {
 			this.variables[arg.name].markUpdated();
 		}
 
-		return frag;
+		return {frag, registers};
 	}
 
 
@@ -133,7 +122,7 @@ class Scope {
 			);
 		}
 
-		this.variables[name] = new Register(this.generator.next(), type, name, ref);
+		this.variables[name] = new Register(type, name, ref);
 		return this.variables[name];
 	}
 

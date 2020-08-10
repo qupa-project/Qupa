@@ -154,58 +154,51 @@ class Function_Instance {
 			return null;
 		}
 
-		let generator = new Generator_ID(0);
-		let head = this.ast.tokens[0];
-		let argRegs = [];
-		let irArgs = [];
-		for (let i=0; i<this.signature.length; i++) {
-			let regID = generator.next();
-			argRegs.push({
-				id      : regID,
-				type    : this.signature[i].type,                // type
-				pointer : this.signature[i].pointer,             // pointerLvl
-				name    : head.tokens[2].tokens[i][1].tokens,    // name
-				ref     : head.tokens[2].tokens[i][0].ref.start  // ln ref
-			});
+		let scope = new Scope(
+			this,
+			this.getFile().project.config.caching
+		);
 
-			irArgs.push(new LLVM.Argument(
-				new LLVM.Type(
-					this.signature[i].type.represent,
-					this.signature[i].pointer,
-					head.tokens[2].tokens[i][0].ref.start
-				),
-				new LLVM.Name(
-					regID,
-					false,
-					head.tokens[2].tokens[i][1].ref.start
-				),
-				head.tokens[2].tokens[i][0].ref.start,
-				head.tokens[2].tokens[i][1].tokens
-			));
+		let head = this.ast.tokens[0];
+		let args = [];
+		for (let i=0; i<this.signature.length; i++) {
+			args.push({
+				type: this.signature[i],                     // TypeRef
+				name: head.tokens[2].tokens[i][1].tokens,    // Name
+				ref: head.tokens[2].tokens[i][0].ref.start  // Ref
+			});
+		}
+
+		let res = scope.register_Args( args );
+		if (res == null) {
+			return null;
 		}
 
 		let frag = new LLVM.Procedure(
-			new LLVM.Type(this.returnType.type.represent, this.returnType.pointer, head.tokens[0].ref),
+			this.returnType.toLLVM(head.tokens[0].ref),
 			new LLVM.Name(this.represent, true, head.tokens[1].ref),
-			irArgs,
+			res.registers.map( x => x.toLLVM() ),
 			"#1",
 			this.external,
 			this.ref
 		);
 
-		let scope = new Scope(
-			this,
-			this.getFile().project.config.caching,
-			generator
-		);
-		let setup = scope.register_Args(argRegs);
-		if (setup !== null) {
-			if (!this.abstract && !this.external) {
-				frag.merge(setup);
-				let exec = new Execution(this, this.returnType, scope);
-				frag.merge(exec.compile(this.ast.tokens[1]));
-			}
+		if (!this.abstract && !this.external) {
+			// Mark the entry point
+			let entry = new LLVM.Label( new LLVM.ID(), this.ast.ref.start );
+			frag.append( entry.toDefinition(true) );
+
+			// Apply the argument reads
+			frag.merge(res.frag);
+
+			// Compile the internal behaviour
+			let exec = new Execution(this, this.returnType, scope);
+			frag.merge(exec.compile(this.ast.tokens[1]));
 		}
+
+		let gen = new Generator_ID(0);
+		frag.assign_ID(gen);
+		frag.flattern();
 
 		return frag;
 	}

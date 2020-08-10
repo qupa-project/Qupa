@@ -3,10 +3,10 @@ const LLVM = require('./llvm.js');
 
 class Trunc extends Instruction {
 	/**
-	 *
-	 * @param {LLVM.Name} reg_address
-	 * @param {LLVM.Constant[]} cnst_term
-	 * @param {BNF_Reference} ref
+	 * @param {String} mode
+	 * @param {LLVM.Type} type
+	 * @param {LLVM.Argument} target
+	 * @param {BNF_Reference?} ref
 	 */
 	constructor(mode, type, target, ref) {
 		super (ref);
@@ -15,12 +15,12 @@ class Trunc extends Instruction {
 		this.type   = type;
 	}
 
-	toLLVM() {
-		return super.toLLVM(
+	flattern() {
+		return super.flattern(
 			( this.mode == 2 ? "fp" : "" ) +
 			`trunc ` +
-			`${this.target.toLLVM()} to ` +
-			`${this.type.toLLVM()}`,
+			`${this.target.flattern()} to ` +
+			`${this.type.flattern()}`,
 		0);
 	}
 }

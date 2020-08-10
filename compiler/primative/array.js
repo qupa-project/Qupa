@@ -82,7 +82,7 @@ class Array_Gen extends TypeDef {
 
 		let preamble = opperands[0].preamble;
 
-		let signature = `[${opperands.map( x=> x.instruction.toLLVM() )}]`;
+		let signature = `[${opperands.map( x=> x.instruction.flattern() )}]`;
 		let instruction = null;
 		if (this.length === 0) {
 			instruction = new LLVM.GEP(

@@ -122,7 +122,8 @@ class Project {
 		let fragment = new LLVM.Fragment();
 
 		for (let file of this.files) {
-			fragment.append(file.compile());
+			let res = file.compile();
+			fragment.append(res);
 			fragment.append(new LLVM.WPad(3));
 		}
 		fragment.append(new LLVM.WPad(3));

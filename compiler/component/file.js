@@ -269,7 +269,8 @@ class File {
 		fragment.append(new LLVM.Comment(`ModuleID = '${this.getRelative()}'`));
 
 		for (let key in this.names) {
-			fragment.append(this.names[key].compile());
+			let res = this.names[key].compile();
+			fragment.append(res);
 		}
 
 		return fragment;

@@ -3,11 +3,11 @@ const LLVM = require('./llvm.js');
 
 class FloatConvert extends Instruction {
 	/**
-	 *
+	 * @param {String} a
+	 * @param {String} b
 	 * @param {LLVM.Type} type
-	 * @param {LLVM.Name} reg_address
-	 * @param {LLVM.Constant[]} cnst_term
-	 * @param {BNF_Reference} ref
+	 * @param {LLVM.Argument} target
+	 * @param {BNF_Reference?} ref
 	 */
 	constructor(a, b, type, target, ref) {
 		super (ref);
@@ -17,12 +17,12 @@ class FloatConvert extends Instruction {
 		this.target = target;
 	}
 
-	toLLVM() {
-		return super.toLLVM(
+	flattern(indent) {
+		return super.flattern(
 			`${this.a}to${this.b} ` +
-			`${this.target.toLLVM()} to ` +
-			`${this.type.toLLVM()} `,
-		0);
+			`${this.target.flattern()} to ` +
+			`${this.type.flattern()} `,
+		indent);
 	}
 }
 
