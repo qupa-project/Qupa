@@ -76,7 +76,7 @@ if (project.error) {
 	process.exit(1);
 }
 
-fs.writeFileSync(`${config.output}.ll`, asm.toLLVM(), 'utf8');
+fs.writeFileSync(`${config.output}.ll`, asm.flattern(), 'utf8');
 
 
 

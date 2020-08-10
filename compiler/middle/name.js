@@ -1,11 +1,12 @@
 const Instruction = require("./instruction.js");
+const ID = require('./id.js');
 
 class Name extends Instruction {
 	/**
-	 * 
-	 * @param {String} term 
-	 * @param {Boolean} global 
-	 * @param {BNF_Reference?} ref 
+	 *
+	 * @param {LLVM.ID|String} term
+	 * @param {Boolean} global
+	 * @param {BNF_Reference?} ref
 	 */
 	constructor(term, global, ref) {
 		super (ref);
@@ -13,8 +14,15 @@ class Name extends Instruction {
 		this.isGlobal = global;
 	}
 
-	toLLVM() {
-		return `${this.isGlobal ? "@" : "%"}${this.term}`;
+	assign_ID (gen) {
+		if (this.term instanceof ID) {
+			this.term.assign_ID(gen);
+		}
+	}
+
+	flattern() {
+		return `${this.isGlobal ? "@" : "%"}` +
+			( this.term instanceof ID ? this.term.flattern() : this.term );
 	}
 }
 module.exports = Name;

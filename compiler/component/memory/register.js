@@ -13,9 +13,9 @@ class Register extends Value {
 	 * @param {Number} pointerDepth
 	 * @param {BNF_Reference} ref
 	 */
-	constructor(id, type, name, ref) {
+	constructor(type, name, ref) {
 		super(type, ref);
-		this.id           = id;
+		this.id           = new LLVM.ID();
 		this.name         = name;
 		this.inner        = {};
 		this.cache        = null;
@@ -134,7 +134,6 @@ class Register extends Value {
 		// Create an address cache if needed
 		if (!register.inner[search.signature]) {
 			let reg = new Register(
-				scope.generator.next(),
 				search.typeRef.duplicate().offsetPointer(1),
 				"temp",
 				ast[0][1].ref
@@ -314,7 +313,6 @@ class Register extends Value {
 		//  b) the value of this reference has not yet been cached
 		if (!read || this.cache === null || amount > 1) {
 			this.cache = new Register(
-				scope.generator.next(),
 				this.type.duplicate().offsetPointer(-1),
 				this.name
 			);
@@ -324,10 +322,10 @@ class Register extends Value {
 			// Otherwise leave the assigned register unused
 			if (read || amount > 1) {
 				out.preamble.append(new LLVM.Set(
-					new LLVM.Name(`${this.cache.id}`, false),
+					this.cache.toLLVM().name,
 					new LLVM.Load(
 						this.type.duplicate().offsetPointer(-1).toLLVM(),
-						new LLVM.Name(`${this.id}`, false)
+						this.toLLVM().name
 					)
 				));
 			}
@@ -357,7 +355,8 @@ class Register extends Value {
 	 * @returns {Register}
 	 */
 	clone () {
-		let out = new Register(this.id, this.type, this.name, this.ref);
+		let out = new Register(this.type, this.name, this.ref);
+		out.id = this.id;
 		if (this.cache !== null) {
 			out.cache = this.cache.clone();
 		}
@@ -426,7 +425,7 @@ class Register extends Value {
 	toLLVM(ref) {
 		return new LLVM.Argument(
 			this.type.toLLVM(this.declared),
-			new LLVM.Name(this.id.toString(), false, this.declared),
+			new LLVM.Name(this.id, false, this.declared),
 			ref,
 			this.name
 		);

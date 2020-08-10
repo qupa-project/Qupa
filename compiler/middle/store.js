@@ -15,11 +15,12 @@ class Store extends Instruction {
 		this.data     = data;
 	}
 
-	toLLVM(indent) {
-		return super.toLLVM(
-			`store ${this.data.toLLVM()}, ${this.register.toLLVM()}, align 4`,
-			indent
-		);
+	flattern(indent) {
+		return super.flattern(
+			`store ${this.data.flattern()}, ` +
+			`${this.register.flattern()}, ` +
+			`align 4`,
+		indent);
 	}
 }
 

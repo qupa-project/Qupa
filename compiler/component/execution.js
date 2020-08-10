@@ -833,21 +833,15 @@ class Execution {
 				irType = res.type;
 			}
 
-			let id = this.scope.genID();
-
-			res.register = new Register(id, res.type, "temp", ast.ref.start);
-			let regIR = new LLVM.Name(id.toString(), false, ast.ref.start);
+			res.register = new Register(res.type, "temp", ast.ref.start);
+			let regIR = res.register.toLLVM();
 
 			res.preamble.append(new LLVM.Set(
-				regIR,
+				regIR.name,
 				inner,
 				ast.ref.start
 			));
-			res.instruction = new LLVM.Argument(
-				irType,
-				regIR,
-				ast.ref.start
-			);
+			res.instruction = regIR;
 		}
 
 		res.ref = ast.ref;

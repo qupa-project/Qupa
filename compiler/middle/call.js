@@ -17,11 +17,12 @@ class Call extends Instruction {
 		this.args = args;
 	}
 
-	toLLVM (indent) {
-		return super.toLLVM(
-			`call ${this.type.toLLVM()} ${this.name.toLLVM()}(${this.args.map(x=>x.toLLVM()).join(",")})`,
-			indent
-		);
+	flattern (indent) {
+		return super.flattern(
+			`call ${this.type.flattern()} ` +
+			`${this.name.flattern()} ` +
+			`(${this.args.map(x=>x.flattern()).join(",")})`,
+		indent);
 	}
 }
 

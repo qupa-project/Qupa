@@ -4,10 +4,10 @@ const LLVM = require('./llvm.js');
 class Extend extends Instruction {
 	/**
 	 *
+	 * @param {String} mode
 	 * @param {LLVM.Type} type
-	 * @param {LLVM.Name} reg_address
-	 * @param {LLVM.Constant[]} cnst_term
-	 * @param {BNF_Reference} ref
+	 * @param {LLVM.Argument} target
+	 * @param {BNF_Reference?} ref
 	 */
 	constructor(mode, type, target, ref) {
 		super (ref);
@@ -16,13 +16,13 @@ class Extend extends Instruction {
 		this.target = target;
 	}
 
-	toLLVM() {
-		return super.toLLVM(
+	flattern(indent) {
+		return super.flattern(
 			( this.mode == 2 ? "f" : ( this.mode == 1 ? "s" : "z" ) ) +
 			`ext ` +
-			`${this.target.toLLVM()} to ` +
-			`${this.type.toLLVM()} `,
-		0);
+			`${this.target.flattern()} to ` +
+			`${this.type.flattern()} `,
+		indent);
 	}
 }
 

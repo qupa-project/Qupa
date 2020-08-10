@@ -1,13 +1,13 @@
 class Raw {
 	/**
-	 * 
-	 * @param {String} text 
+	 *
+	 * @param {String} text
 	 */
 	constructor (text) {
 		this.text = text;
 	}
 
-	toLLVM() {
+	flattern() {
 		return this.text;
 	}
 }

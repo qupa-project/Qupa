@@ -15,16 +15,14 @@ external assume {
 i32 main () {
 	i32 a;
 	i32 b;
-	i32 c;
 
-	a = 1;
-	b = 2;
+	// a = 1;
+	// b = 2;
 
 	i32_println(a);
 	i32_println(b);
 
-	c = a + b;
-
+	int c = a + b;
 	i32_println(c);
 
 	c = b;

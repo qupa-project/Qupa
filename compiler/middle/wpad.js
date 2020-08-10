@@ -1,13 +1,13 @@
 class WPad {
 	/**
-	 * 
-	 * @param {Number} lines 
+	 *
+	 * @param {Number} lines
 	 */
 	constructor (lines) {
 		this.lines = lines;
 	}
 
-	toLLVM() {
+	flattern() {
 		let out = "";
 		for (let i=0; i<this.lines-1; i++) {
 			out += "\n";

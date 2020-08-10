@@ -1,12 +1,12 @@
 const Instruction = require("./instruction.js");
 const LLVM = require('./llvm.js');
 
-class Name extends Instruction {
+class Type extends Instruction {
 	/**
-	 * 
-	 * @param {String} term 
-	 * @param {Number} pointerDepth 
-	 * @param {BNF_Reference?} ref 
+	 *
+	 * @param {String} term
+	 * @param {Number} pointerDepth
+	 * @param {BNF_Reference?} ref
 	 */
 	constructor(term, pointerDepth, ref) {
 		super (ref);
@@ -14,13 +14,13 @@ class Name extends Instruction {
 		this.pointer = pointerDepth;
 	}
 
-	toLLVM(indent) {
+	flattern(indent) {
 		let lvl = "";
 		for (let i=0; i<this.pointer; i++) {
 			lvl += "*";
 		}
 
-		return super.toLLVM(`${this.term}${lvl}`, indent);
+		return super.flattern(`${this.term}${lvl}`, indent);
 	}
 }
-module.exports = Name;
+module.exports = Type;
