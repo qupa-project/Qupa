@@ -19,12 +19,14 @@ class Execution {
 	 * @param {*} returnType
 	 * @param {*} scope
 	 */
-	constructor(ctx, returnType, scope) {
+	constructor(ctx, returnType, scope, entryPoint = new LLVM.ID()) {
 		this.ctx        = ctx;
 		this.scope      = scope;
 		this.returnType = returnType;
 		this.returned   = false;
 		this.isChild    = false;
+
+		this.entryPoint = entryPoint.reference();
 	}
 
 	/**
@@ -622,6 +624,7 @@ class Execution {
 		 */
 		let true_id = new LLVM.ID(ast.tokens[0].tokens[1].ref);
 		let scope_true = this.clone();
+		scope_true.entryPoint = true_id;
 		let body_true = scope_true.compile(ast.tokens[0].tokens[1]);
 		body_true.prepend(new LLVM.Label(
 			true_id,
@@ -637,6 +640,7 @@ class Execution {
 		let false_id = new LLVM.ID();
 		let body_false = new LLVM.Fragment();
 		let scope_false = this.clone();
+		scope_false.entryPoint = false_id;
 		if (hasElse) {
 			body_false = scope_false.compile(ast.tokens[2].tokens[0]);
 			body_false.prepend(new LLVM.Label(
@@ -654,7 +658,8 @@ class Execution {
 			new LLVM.Name(endpoint_id.reference(), false)
 		);
 
-		frag.append(new LLVM.Comment(`Has Else? ${hasElse}`));
+
+		// Push the branching jump
 		frag.append(new LLVM.Branch(
 			cond.instruction,
 			new LLVM.Label(
@@ -666,6 +671,18 @@ class Execution {
 			),
 			ast.ref.start
 		));
+
+
+
+		// Prepare the synchronisation pre-process for each branch
+		let sync = this.mergeUpdates([
+			scope_true,
+			hasElse ? scope_false : this
+		]);
+		body_true.merge  (sync.frags[0]);
+		body_false.merge (sync.frags[1]);
+
+
 
 		// Push the if branch
 		if (!scope_true.returned) {
@@ -691,14 +708,13 @@ class Execution {
 			frag.append(new LLVM.Label(
 				endpoint_id
 			).toDefinition());
-		} else {
-			frag.append(new LLVM.Comment("694"));
 		}
 
-		// If any variables were updated within child scopes
-		//   Flush their caches if needed
-		this.mergeUpdates(scope_true, false);
-		this.mergeUpdates(scope_false, false);
+
+
+
+		// Push the final clean up an synchronisation
+		frag.merge(sync.sync);
 
 		return frag;
 	}
@@ -717,9 +733,10 @@ class Execution {
 			return null;
 		}
 
-		let scope_loop = this.clone();
-		scope_loop.clearAllCaches();
 		let loop_id = new LLVM.ID();
+		let scope_loop = this.clone();
+		scope_loop.entryPoint = loop_id;
+		scope_loop.clearAllCaches();
 		let loop = scope_loop.compile(ast.tokens[1]);
 		if (loop === null) {
 			return null;
@@ -769,8 +786,8 @@ class Execution {
 
 		// If any variables were updated within child scopes
 		//   Flush their caches if needed
-		this.mergeUpdates(scope_check, true);
-		this.mergeUpdates(scope_loop, true);
+		this.mergeUpdates([scope_check]);
+		this.mergeUpdates([scope_loop]);
 
 		return frag;
 	}
@@ -1196,7 +1213,6 @@ class Execution {
 
 	compile(ast) {
 		let fragment = new LLVM.Fragment();
-
 		let returnWarned = false;
 		let failed = false;
 		let inner = null;
@@ -1285,14 +1301,35 @@ class Execution {
 
 	/**
 	 * Updates any caches due to alterations in child scope
-	 * @param {Execution} child the scope to be merged
+	 * @param {Execution[]} child the scope to be merged
 	 * @param {Boolean} alwaysExecute If this scope will always execute and is non optional (i.e. not if statement)
+	 * @returns {LLVM.Fragment[]}
 	 */
-	mergeUpdates(child, alwaysExecute = false) {
-		this.scope.mergeUpdates(child.scope, alwaysExecute);
-		if (alwaysExecute && child.returned) {
-			this.returned = true;
+	mergeUpdates(children) {
+		if ( !Array.isArray(children) || children.length < 1) {
+			throw new Error("Cannot merge a zero children");
 		}
+
+		// Synchornise this scope to others
+		let output = this.scope.syncScopes(
+			children.map( x => x.scope ),
+			children.map( x => x.entryPoint )
+		);
+
+
+		// Determine definite return
+		let allReturned = true;
+		for (let child of children) {
+			if (child.returned == false) {
+				allReturned = false;
+				break;
+			}
+		}
+		this.returned = allReturned;
+
+
+
+		return output;
 	}
 }
 

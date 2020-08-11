@@ -300,17 +300,31 @@ class Scope {
 		return frag;
 	}
 
-	/**
-	 * Updates any caches due to alterations in child scope
-	 * @param {Scope} childScope the scope to be merged
-	 * @param {Boolean} alwaysExecute If this scope will always execute and is non optional (i.e. not if statement)
-	 */
-	mergeUpdates(childScope, alwaysExecute = false) {
-		for (let name in this.variables) {
-			this.variables[name].mergeUpdates(childScope.variables[name], alwaysExecute);
-		}
-	}
+	syncScopes(group, entries) {
+		let frags = group.map ( x => new LLVM.Fragment() );
+		let sync = new LLVM.Fragment();
 
+		for (let name in this.variables) {
+			let regGroup = group.map( x => x.variables[name] );
+			let form = Register.GetProminentForm(regGroup);
+
+			// Convert all registers to the same cache form
+			for (let i=0; i<frags.length; i++) {
+				frags[i].merge(
+					regGroup[i].changeForm(this, form)
+				);
+			}
+
+			// Resolve all versions
+			sync.merge(this.variables[name].mergeUpdates(
+				regGroup,
+				entries,
+				form
+			));
+		}
+
+		return { frags, sync };
+	}
 }
 
 module.exports = Scope;

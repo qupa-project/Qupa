@@ -185,14 +185,20 @@ class Function_Instance {
 
 		if (!this.abstract && !this.external) {
 			// Mark the entry point
-			let entry = new LLVM.Label( new LLVM.ID(), this.ast.ref.start );
+			let entry_id = new LLVM.ID();
+			let entry = new LLVM.Label( entry_id, this.ast.ref.start );
 			frag.append( entry.toDefinition(true) );
 
 			// Apply the argument reads
 			frag.merge(res.frag);
 
 			// Compile the internal behaviour
-			let exec = new Execution(this, this.returnType, scope);
+			let exec = new Execution(
+				this,
+				this.returnType,
+				scope,
+				entry_id.reference()
+			);
 			frag.merge(exec.compile(this.ast.tokens[1]));
 		}
 
