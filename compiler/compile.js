@@ -93,7 +93,12 @@ if (config.execute && config.source !== false) {
 if (config.source != "llvm") {
 	let runtime_path = path.resolve(__dirname, "./../runtime/runtime.ll");
 	// let prebuilt_path = path.resolve(__dirname, "./../runtime/prebuilt.ll");
-	let args = [runtime_path, /*prebuilt_path,*/ `${config.output}.ll`];
+	let args = [
+		"-x", "ir",
+		runtime_path,
+		"-x", "ir",
+		`${config.output}.ll`
+	];
 
 	let exec_out = config.output;
 	if (config.source == "asm") {

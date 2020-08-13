@@ -13,8 +13,7 @@ const mkdir = util.promisify( fs.mkdir );
 
 let flags = {
 	clang: process.argv.includes('--clang'),
-	exec: process.argv.includes('--exec'),
-	llvm: process.argv.includes('--llvm'),
+	exec: process.argv.includes('--exec')
 };
 
 let config = {
@@ -68,7 +67,7 @@ async function Compile(root, id) {
 			let data = asm.flattern();
 			await writeFile(ir_path, data, 'utf8');
 
-			await exec(`${flags.llvm ? "llc" : "clang"} ${runtime_path} ${ir_path} -o ${exe_path}`);
+			await exec(`clang++ -x ir ${runtime_path} -x ir ${ir_path} -o ${exe_path}`);
 		}
 
 		// Test execution
