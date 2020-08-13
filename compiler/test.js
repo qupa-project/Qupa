@@ -72,10 +72,10 @@ async function Compile(root, id) {
 		// Test execution
 		if (!failed && flags.clang && flags.exec) {
 			msg += "Executing...\n";
+			let out = await exec(exe_path);
 
 			if (await exists(log_path)) {
 				let log = await readFile(log_path, 'utf8');
-				let out = await exec(exe_path);
 				if (out.stdout.replace(/\r\n/g, '\n') != log.replace(/\r\n/g, '\n')) {
 					throw new Error("Output does not match log");
 				}

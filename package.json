@@ -18,7 +18,7 @@
     "test": "npm run test-compilation",
     "test-parser": "node compiler/parser/test.js",
     "test-compilation": "node compiler/test.js --clang",
-    "test-exec": "node compiler/test.js --clang",
+    "test-exec": "node compiler/test.js --clang --exec",
     "postinstall": "npm run build",
     "build": "npm run build-syntax && npm run build-runtime",
     "build-syntax": "node compiler/parser/build.js",
