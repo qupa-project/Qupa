@@ -6,7 +6,7 @@ class Fragment extends Instruction {
 		this.stmts = [];
 	}
 
-	prepend(instruction) {
+	prepend (instruction) {
 		this.stmts = [instruction, ...this.stmts];
 	}
 
@@ -16,6 +16,9 @@ class Fragment extends Instruction {
 
 	merge (other) {
 		this.stmts = this.stmts.concat(other.stmts);
+	}
+	merge_front (other) {
+		this.stmts = other.stmts.concat(this.stmts);
 	}
 
 	/**

@@ -716,6 +716,9 @@ class Execution {
 		// Push the final clean up an synchronisation
 		frag.merge(sync.sync);
 
+		// Mark current branch
+		this.entryPoint = hasElse ? false_id : endpoint_id;
+
 		return frag;
 	}
 
@@ -723,40 +726,18 @@ class Execution {
 	compile_while (ast) {
 		let frag = new LLVM.Fragment();
 
-		frag.merge(this.scope.flushAll(ast.ref, true));
-
-		let scope_check = this.clone();
-		scope_check.clearAllCaches();
 		let check_id = new LLVM.ID(ast.tokens[0].ref);
+		let loop_id  = new LLVM.ID(ast.tokens[1].ref);
+		let end_id   = new LLVM.ID();
+
+
+		// Loop Entry
+		let scope_check = this.clone();
 		let check = scope_check.compile_while_condition(ast.tokens[0]);
 		if (check === null) {
 			return null;
 		}
-
-		let loop_id = new LLVM.ID();
-		let scope_loop = this.clone();
-		scope_loop.entryPoint = loop_id;
-		scope_loop.clearAllCaches();
-		let loop = scope_loop.compile(ast.tokens[1]);
-		if (loop === null) {
-			return null;
-		}
-		loop.merge(scope_loop.flushAllClones());
-
-		let end_id = new LLVM.ID();
-
-		frag.append(new LLVM.Branch_Unco(new LLVM.Label(
-			new LLVM.Name(check_id.reference(), false, ast.tokens[0].ref),
-			ast.tokens[0].tokens[0]
-		)));
-
-		frag.append(new LLVM.Label(
-			check_id,
-			ast.tokens[0].tokens[0]
-		).toDefinition());
-		frag.merge(check.instructions);
-
-		frag.append(new LLVM.Branch(
+		check.instructions.merge(new LLVM.Branch(
 			check.register,
 			new LLVM.Label(
 				new LLVM.Name(loop_id.reference(), false, ast.tokens[0].tokens[0]),
@@ -768,26 +749,79 @@ class Execution {
 			),
 			ast.ref.start
 		));
-		frag.append(new LLVM.Label(
-			loop_id,
-			ast.tokens[0].tokens[0]
-		).toDefinition());
-		frag.merge(loop);
 
-		frag.append(new LLVM.Branch_Unco(new LLVM.Label(
-			new LLVM.Name(check_id.reference(), false, ast.tokens[0].ref),
-			ast.tokens[0].tokens[0]
-		)));
-		frag.append(new LLVM.Label(
-			end_id,
-			ast.tokens[0].tokens[0]
-		).toDefinition());
+
+		// Compute Loop
+		let scope_loop = scope_check.clone();
+		scope_loop.entryPoint = loop_id;
+		let recurr = scope_loop.scope.prepareRecursion(this.entryPoint.reference());
+		let loop = scope_loop.compile(ast.tokens[1]);
+		if (loop === null) {
+			return null;
+		}
+
+		check.instructions.merge(recurr.prolog);
+		frag.merge(check.instructions);
+
+
+		// Recursion check
+		frag.append(new LLVM.Label(check_id, check_id.ref).toDefinition());
+		scope_check = scope_loop.clone();
+		scope_check.entryPoint = check_id;
+		check = scope_check.compile_while_condition(ast.tokens[0]);
+		if (check === null) {
+			return null;
+		}
+		frag.merge(check.instructions);
+		frag.append(new LLVM.Branch(
+			check.register,
+			new LLVM.Label(
+				new LLVM.Name(loop_id.reference(), false, loop_id.ref),
+				ast.tokens[0].tokens[0]
+			),
+			new LLVM.Label(
+				new LLVM.Name(end_id.reference(), false, loop_id.ref),
+				ast.tokens[0].tokens[0]
+			),
+			ast.ref.start
+		));
+
+
+
+		// Resolve loop values
+		let recurr_resolve = scope_loop.scope.resolveRecursion(
+			recurr.state,
+			scope_check.entryPoint
+		);
+		loop.merge_front(recurr_resolve.prolog);
+		loop.merge_front(recurr.prolog);
+		loop.merge(recurr_resolve.epilog);
+
 
 
 		// If any variables were updated within child scopes
 		//   Flush their caches if needed
-		this.mergeUpdates([scope_check]);
-		this.mergeUpdates([scope_loop]);
+		scope_loop.entryPoint = scope_check.entryPoint;
+		let sync = this.mergeUpdates([this, scope_loop]);
+		frag.merge(sync.frags[0]);
+		loop.merge(sync.frags[1]);
+
+
+		// Insert loop instructions
+		frag.append(new LLVM.Label(loop_id, loop_id.ref).toDefinition());
+		frag.merge(loop);
+		// Jump to the check
+		frag.append(new LLVM.Branch_Unco(new LLVM.Label(
+			new LLVM.Name(check_id.reference(), false, ast.tokens[0].ref),
+			ast.tokens[0].tokens[0]
+		)));
+
+
+		// End point
+		frag.append(new LLVM.Label(end_id, end_id.ref).toDefinition());
+
+		this.entryPoint = end_id;
+		frag.merge(sync.sync);
 
 		return frag;
 	}
