@@ -20,7 +20,7 @@ class Sub extends Instruction {
 	flattern(indent) {
 		return super.flattern(
 			( this.mode == 2 ? "f" : "" ) +
-			`add ` +
+			`sub ` +
 			`${this.type.flattern()} ` +
 			`${this.a.flattern()}, ` +
 			`${this.b.flattern()}`,
