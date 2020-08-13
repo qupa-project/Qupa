@@ -131,6 +131,12 @@ async function Test () {
 	await Promise.all(tasks);
 
 	console.log(`\nFailed ${fails} of ${tests.length}`);
+
+	if (fails > 0) {
+		process.exit(1);
+	} else {
+		process.exit(0);
+	}
 }
 
 Test();
