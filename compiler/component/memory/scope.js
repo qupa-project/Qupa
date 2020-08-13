@@ -396,8 +396,6 @@ class Scope {
 			)));
 		}
 
-		console.log(375, prolog.stmts);
-
 		return { prolog, epilog };
 	}
 }

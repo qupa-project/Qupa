@@ -737,7 +737,7 @@ class Execution {
 		if (check === null) {
 			return null;
 		}
-		check.instructions.merge(new LLVM.Branch(
+		check.instructions.append(new LLVM.Branch(
 			check.register,
 			new LLVM.Label(
 				new LLVM.Name(loop_id.reference(), false, ast.tokens[0].tokens[0]),
@@ -760,6 +760,7 @@ class Execution {
 			return null;
 		}
 
+		// Add any preparation needed before entry to the loop
 		check.instructions.merge(recurr.prolog);
 		frag.merge(check.instructions);
 
@@ -794,7 +795,6 @@ class Execution {
 			scope_check.entryPoint
 		);
 		loop.merge_front(recurr_resolve.prolog);
-		loop.merge_front(recurr.prolog);
 		loop.merge(recurr_resolve.epilog);
 
 
