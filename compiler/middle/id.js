@@ -15,16 +15,41 @@ class ID extends Instruction {
 	reference() {
 		let out = new ID(this.ref);
 		out.origin = false;
-		out.link = this;
+		out.link = this.origin ? this : this.link;
 
 		return out;
 	}
 
 	/**
 	 * Returns the ID number
+	 * @returns {Number}
 	*/
 	getID () {
 		return this.origin ? this.id : this.link.getID();
+	}
+
+	/**
+	 * Gets the original ID point
+	 * @returns {ID}
+	 */
+	getDefinition() {
+		if (this.origin) {
+			return this;
+		} else {
+			return this.link.getDefinition();
+		}
+	}
+
+	/**
+	 * Returns true if the ID numbers are equilavent (will resolve to the same number)
+	 * @param {Boolean} other
+	 */
+	match (other) {
+		if (other instanceof ID) {
+			return this.getDefinition() == other.getDefinition();
+		} else {
+			return false;
+		}
 	}
 
 	/**
@@ -41,7 +66,6 @@ class ID extends Instruction {
 
 	/**
 	 * Flattern the LLVM to a single string
-
 	 * @returns {String}
 	 */
 	flattern() {

@@ -18,5 +18,5 @@ i32 main () {
 	res_float = c / d;
 	res_float = c % d;
 
-	return 1;
+	return 0;
 }

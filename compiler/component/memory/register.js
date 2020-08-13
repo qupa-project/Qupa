@@ -174,6 +174,21 @@ class Register extends Value {
 	}
 
 
+	/**
+	 * Is a component cache present?
+	 * @returns {Boolean}
+	 */
+	hasGEPCache() {
+		for (let val of this.inner) {
+			if (val.cache !== null) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+
 
 	/**
 	 *
@@ -379,47 +394,121 @@ class Register extends Value {
 
 
 
+
+
 	/**
 	 * Updates any caches due to alterations in child scope
-	 * @param {Register} other the register to be merged
-	 * @param {Boolean} alwaysExecute If this change ALWAYS execute
+	 * @param {Register[]} other the register to be merged
+	 * @param {LLVM.ID[]} entries the entry points for each scope
+	 * @param {String} form
 	 */
-	mergeUpdates(other, alwaysExecute) {
-		// This is now a concurrent pointer
-		if (other.isConcurrent) {
-			this.isConcurrent = true;
+	mergeUpdates(others, entries, form) {
+		let frag = new LLVM.Fragment();
+
+		// If this variable isn't concurrent
+		//   Check if it has been converted to a concurrent
+		if (!this.isConcurrent) {
+			for (let reg of others) {
+				if (reg.isConcurrent) {
+					this.isConcurrent = true;
+					break;
+				}
+			}
 		}
 
-		let action = 0; // 0 = no action, 1 = clear cache, 2 = copy new cache
-		if (this.cache !== null && other.cache == null) {                          // a cache was destroyed
-			action = 1;
-		} else if (alwaysExecute && this.cache === null && other.cache !== null) { // a cache was created
-			action = 2;
-		} else if (this.cache !== null && other.cache !== null && (
-			this.cache.id != other.cache.id ||
-			this.cache instanceof Constant !== other.cache instanceof Constant ||
-			( this.cache instanceof Constant && other.cache instanceof Constant && this.cache.value != other.cache.value )
-		)) { // a cache was updated
-			action = alwaysExecute ? 2 : 1;
+		switch (form) {
+			case "cmp-cache": // dump the cache
+			case "no-cache":
+				this.cache = null;
+				break;
+			case "val-cache":
+				let id = new LLVM.ID();
+				let opts = [];
+
+				for (let i=0; i<others.length; i++) {
+					opts.push([
+						others[i].cache.toLLVM().name,
+						new LLVM.Name(entries[i], false, null)
+					]);
+				}
+
+				let phi = new LLVM.Set(
+					new LLVM.Name(id, false, null),
+					new LLVM.Phi(
+						this.cache.type.toLLVM(),
+						opts
+					)
+				);
+
+				this.cache = new Register(
+					this.type.duplicate().offsetPointer(-1),
+					this.name,
+					this.declared
+				);
+				this.cache.id = id;
+
+				frag.append(phi);
+				break;
+			default:
+				throw new Error(`Unable to sync register on form "${form}"`);
 		}
 
-		switch (action) {
-			case 0:
-				break;
-			case 1:
-				this.clearCache();
-				break;
-			case 2:
-				this.clearCache();
-				this.cache = other.cache.clone();
-				this.cache.declone();
-				break;
-		}
-
-		if (this.cache instanceof Register && other.cache instanceof Register) {
-			this.cache.mergeUpdates(other.cache, alwaysExecute);
-		}
+		return frag;
 	}
+
+
+
+
+
+	changeForm (scope, form) {
+		let frag;
+
+		switch (form) {
+			case "cmp-cache": // dump the cache
+			case "no-cache":
+				frag = this.flushCache(null, true);
+				this.cache = null;
+				break;
+			case "val-cache":
+				frag = this.flushGEPCaches();
+				if (this.cache === null) {
+					frag.merge( this.deref(scope, true, 1) );
+				}
+				break;
+			default:
+				throw new Error(`Unable to sync register on form "${form}"`);
+		}
+
+		return frag;
+	}
+
+	/**
+	 * Returns the prominent form of the register
+	 * @param {Register[]} regs
+	 * @returns {String} no-cache | val-cache | cmp-cache
+	 */
+	static GetProminentForm (regs) {
+		let hasCache = false;
+		let hasComp = false;
+		for (let reg of regs) {
+			if (reg.cache !== null) {
+				hasCache = true;
+			} else if (reg.hasGEPCache()) {
+				hasComp = true;
+			}
+
+			if (hasCache) {
+				break;
+			}
+		}
+
+		return hasCache ? "val-cache" :
+			hasComp ? "cmp-cache" :
+			"no-cache";
+	}
+
+
+
 
 
 	toLLVM(ref) {

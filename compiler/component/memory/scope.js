@@ -257,6 +257,12 @@ class Scope {
 		}
 	}
 
+	/**
+	 * Flushes all variable caches
+	 * @param {BNF_Reference} ref
+	 * @param {Boolean} allowGEPS
+	 * @returns {LLVM.Fragment}
+	 */
 	flushAll(ref, allowGEPS) {
 		let frag = new LLVM.Fragment();
 
@@ -284,6 +290,11 @@ class Scope {
 		return frag;
 	}
 
+	/**
+	 * Flush all concurrent variables
+	 * @param {BNF_Reference} ref
+	 * @returns {LLVM.Fragment}
+	 */
 	flushAllConcurrents(ref) {
 		let frag = new LLVM.Fragment();
 
@@ -301,16 +312,92 @@ class Scope {
 	}
 
 	/**
-	 * Updates any caches due to alterations in child scope
-	 * @param {Scope} childScope the scope to be merged
-	 * @param {Boolean} alwaysExecute If this scope will always execute and is non optional (i.e. not if statement)
+	 *
+	 * @param {Scope[]} group
+	 * @param {LLVM.ID[]} entries
 	 */
-	mergeUpdates(childScope, alwaysExecute = false) {
+	syncScopes(group, entries) {
+		let frags = group.map ( x => new LLVM.Fragment() );
+		let sync = new LLVM.Fragment();
+
 		for (let name in this.variables) {
-			this.variables[name].mergeUpdates(childScope.variables[name], alwaysExecute);
+			let regGroup = group.map( x => x.variables[name] );
+			let form = Register.GetProminentForm(regGroup);
+
+			// Convert all registers to the same cache form
+			for (let i=0; i<frags.length; i++) {
+				frags[i].merge(
+					regGroup[i].changeForm(this, form)
+				);
+			}
+
+			// Resolve all versions
+			sync.merge(this.variables[name].mergeUpdates(
+				regGroup,
+				entries,
+				form
+			));
 		}
+
+		return { frags, sync };
 	}
 
+
+
+
+	prepareRecursion(block, ref) {
+		let prolog  = new LLVM.Fragment();
+		let state = {};
+
+		for (let name in this.variables) {
+			if ( this.variables[name].type.pointer < 1	) {
+				continue;
+			}
+
+			if (this.variables[name].cache === null) {
+				prolog.merge(this.variables[name].deref(1));
+			}
+
+			state[name] = {
+				id: new LLVM.ID(),
+				type: this.variables[name].type.duplicate().offsetPointer(-1),
+				block: block,
+				val: this.variables[name].cache.toLLVM()
+			};
+
+			this.variables[name].cache = new Register(
+				state[name].type,
+				name,
+				ref
+			);
+			this.variables[name].cache.id = state[name].id.reference();
+		}
+
+		return {prolog, state};
+	}
+
+	resolveRecursion(state, block, ref) {
+		let prolog = new LLVM.Fragment();
+		let epilog = new LLVM.Fragment();
+
+		for (let name in state) {
+			if (this.variables[name].cache === null) {
+				epilog.merge(this.variables[name].deref(1));
+			}
+
+			let opts = [
+				[ state[name].val.name, new LLVM.Name(state[name].block, false, ref) ],
+				[ this.variables[name].cache.toLLVM().name, new LLVM.Name(block, false, ref) ]
+			];
+
+			prolog.append(new LLVM.Set(
+				new LLVM.Name (state[name].id, false, ref),
+				new LLVM.Phi (state[name].type.toLLVM(), opts, ref
+			)));
+		}
+
+		return { prolog, epilog };
+	}
 }
 
 module.exports = Scope;
