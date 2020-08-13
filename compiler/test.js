@@ -3,6 +3,7 @@ const Project = require('./component/project.js');
 const util = require('util');
 const { resolve, dirname } = require('path');
 const fs = require('fs');
+const { SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION } = require('constants');
 
 const exec = util.promisify( require('child_process').exec );
 const writeFile = util.promisify( fs.writeFile );
@@ -12,7 +13,8 @@ const mkdir = util.promisify( fs.mkdir );
 
 let flags = {
 	clang: process.argv.includes('--clang'),
-	exec: process.argv.includes('--exec')
+	exec: process.argv.includes('--exec'),
+	llvm: process.argv.includes('--llvm'),
 };
 
 let config = {
@@ -58,15 +60,15 @@ async function Compile(root, id) {
 		let runtime_path = resolve(__dirname, "./../runtime/runtime.ll");
 		let ir_path = resolve(__dirname, `./../test/temp/${id}.ll`);
 		let log_path = resolve( dirname(root), "./out.txt" );
-		let exe_path = resolve(__dirname, `./../test/temp/${id}.exe`);
+		let exe_path = resolve(__dirname, `./../test/temp/${id}`);
 
 		// Compile completely using clang
-		if (!failed && flags.clang) {
+		if (!failed && ( flags.clang || flags.llvm)) {
 			msg += "Binerising...\n";
 			let data = asm.flattern();
 			await writeFile(ir_path, data, 'utf8');
 
-			await exec(`clang++ ${runtime_path} ${ir_path} -o ${exe_path}`);
+			await exec(`${flags.llvm ? "llc" : "clang"} ${runtime_path} ${ir_path} -o ${exe_path}`);
 		}
 
 		// Test execution
@@ -75,8 +77,10 @@ async function Compile(root, id) {
 			let out = await exec(exe_path);
 
 			if (await exists(log_path)) {
-				let log = await readFile(log_path, 'utf8');
-				if (out.stdout.replace(/\r\n/g, '\n') != log.replace(/\r\n/g, '\n')) {
+				let log = (await readFile(log_path, 'utf8')).replace(/\r\n/g, '\n');
+				let io = out.stdout.replace(/\r\n/g, '\n');
+				if (io != log) {
+					console.log(81, [io, log])
 					throw new Error("Output does not match log");
 				}
 			}
@@ -92,6 +96,8 @@ async function Compile(root, id) {
 	console.info("\nTest", completed, ' of ', total);
 	console.log(msg);
 	console.log(failed ? "  FAILED" : "  success");
+
+	return;
 }
 
 
