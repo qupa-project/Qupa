@@ -3,7 +3,7 @@ const Project = require('./component/project.js');
 const util = require('util');
 const { resolve, dirname } = require('path');
 const fs = require('fs');
-const { SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION } = require('constants');
+const os = require('os');
 
 const exec = util.promisify( require('child_process').exec );
 const writeFile = util.promisify( fs.writeFile );
@@ -23,6 +23,9 @@ if (flags.exec) {
 let config = {
 	caching: true,
 	output: "out",
+	ext: os.platform() == "win32" ? "exe" :
+		os.platform() == "darwin" ? "app" :
+		"o",
 	source: false,
 	execute: false
 };
@@ -63,7 +66,7 @@ async function Compile(root, id) {
 		let runtime_path = resolve(__dirname, "./../runtime/runtime.ll");
 		let ir_path = resolve(__dirname, `./../test/temp/${id}.ll`);
 		let log_path = resolve( dirname(root), "./out.txt" );
-		let exe_path = resolve(__dirname, `./../test/temp/${id}`);
+		let exe_path = resolve(__dirname, `./../test/temp/${id}.${config.ext}`);
 
 		// Compile completely using clang
 		if (!failed && ( flags.clang || flags.llvm)) {
@@ -80,8 +83,12 @@ async function Compile(root, id) {
 			let out = await exec(exe_path);
 
 			if (await exists(log_path)) {
-				let log = (await readFile(log_path, 'utf8')).replace(/\r\n/g, '\n');
-				let io = out.stdout.replace(/\r\n/g, '\n');
+				let log = (await readFile(log_path, 'utf8'))
+					.replace(/\r\n/g, '\n')
+					.replace(/ \n/g, '\n');
+				let io = out.stdout
+					.replace(/\r\n/g, '\n')
+					.replace(/ \n/g, '\n');
 				if (io != log) {
 					console.log(81, [io, log])
 					throw new Error("Output does not match log");
