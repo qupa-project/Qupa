@@ -25,7 +25,7 @@ let config = {
 	output: "out",
 	ext: os.platform() == "win32" ? "exe" :
 		os.platform() == "darwin" ? "app" :
-		"o",
+		"out",
 	source: false,
 	execute: false
 };
@@ -63,7 +63,7 @@ async function Compile(root, id) {
 			}
 		}
 
-		let runtime_path = resolve(__dirname, "./../runtime/runtime.ll");
+		let runtime_path = resolve(__dirname, "./../runtime/runtime.cpp");
 		let ir_path = resolve(__dirname, `./../test/temp/${id}.ll`);
 		let log_path = resolve( dirname(root), "./out.txt" );
 		let exe_path = resolve(__dirname, `./../test/temp/${id}.${config.ext}`);
@@ -74,7 +74,7 @@ async function Compile(root, id) {
 			let data = asm.flattern();
 			await writeFile(ir_path, data, 'utf8');
 
-			await exec(`clang++ -x ir ${runtime_path} -x ir ${ir_path} -o ${exe_path}`);
+			await exec(`clang++ ${runtime_path} -x ir ${ir_path} -o ${exe_path}`);
 		}
 
 		// Test execution

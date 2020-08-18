@@ -107,7 +107,7 @@ if (config.source != "llvm") {
 	} else if (os.platform() == "darwin") {
 		exec_out += ".app";
 	} else {
-		exec_out += ".o";
+		exec_out += ".out";
 	}
 	args = args.concat(["-o", exec_out]);
 
