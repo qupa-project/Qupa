@@ -3,14 +3,13 @@ const Project = require('./component/project.js');
 const util = require('util');
 const { resolve, dirname } = require('path');
 const fs = require('fs');
+const { SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION } = require('constants');
 
 const exec = util.promisify( require('child_process').exec );
 const writeFile = util.promisify( fs.writeFile );
 const readFile = util.promisify( fs.readFile );
 const exists = util.promisify( fs.exists );
 const mkdir = util.promisify( fs.mkdir );
-
-
 
 let flags = {
 	clang: process.argv.includes('--bin'),
@@ -20,10 +19,6 @@ let flags = {
 if (flags.exec) {
 	flags.clang = true;
 }
-
-
-process.env.llvm9 = process.argv.includes('--llvm9');
-
 
 let config = {
 	caching: true,
