@@ -1,0 +1,16 @@
+Area:
+  a: 20 == 20
+  b: 42 == 42
+Shift c:
+  width  : 7 == 7
+  height : 8 == 8
+Combine : c = a + b
+  a:
+    width  : 4 == 4
+    height : 5 == 5
+  b:
+    width  : 6 == 6
+    height : 7 == 7
+  c:
+    width  : 10 == 10
+    height : 12 == 12

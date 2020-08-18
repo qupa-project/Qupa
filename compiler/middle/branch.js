@@ -2,11 +2,11 @@ const Instruction = require("./instruction.js");
 
 class Branch extends Instruction {
 	/**
-	 * 
-	 * @param {LLVM.Argument} condition 
-	 * @param {LLVM.Label} label_true 
-	 * @param {LLVM.Label} label_false 
-	 * @param {BNF_Reference} ref 
+	 *
+	 * @param {LLVM.Argument} condition
+	 * @param {LLVM.Label} label_true
+	 * @param {LLVM.Label} label_false
+	 * @param {BNF_Reference?} ref
 	 */
 	constructor(condition, label_true, label_false, ref) {
 		super (ref);
@@ -15,8 +15,12 @@ class Branch extends Instruction {
 		this.false = label_false;
 	}
 
-	toLLVM(indent) {
-		return super.toLLVM(`br ${this.condition.toLLVM()}, ${this.true.toLLVM()}, ${this.false.toLLVM()}`, indent);
+	flattern(indent) {
+		return super.flattern(
+			`br ${this.condition.flattern()}, ` +
+			`${this.true.flattern()}, ` +
+			`${this.false.flattern()}`,
+		indent);
 	}
 }
 module.exports = Branch;

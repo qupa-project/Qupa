@@ -3,10 +3,10 @@ const LLVM = require('./llvm.js');
 
 class Bitcast extends Instruction {
 	/**
-	 * 
-	 * @param {LLVM.Type} type 
-	 * @param {LLVM.Argument} target 
-	 * @param {BNF_Reference} ref 
+	 *
+	 * @param {LLVM.Type} type
+	 * @param {LLVM.Argument} target
+	 * @param {BNF_Reference?} ref
 	 */
 	constructor(type, target, ref) {
 		super (ref);
@@ -14,11 +14,11 @@ class Bitcast extends Instruction {
 		this.type   = type;
 	}
 
-	toLLVM() {
-		return super.toLLVM(
+	flattern() {
+		return super.flattern(
 			`bitcast ` +
-			`${this.target.toLLVM()} to ` +
-			`${this.type.toLLVM()}`,
+			`${this.target.flattern()} to ` +
+			`${this.type.flattern()}`,
 		0);
 	}
 }

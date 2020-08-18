@@ -1,21 +1,22 @@
-const LLVM = require('./../middle/llvm.js');
-const TypeDef = require('./typedef.js');
+const LLVM = require('../../middle/llvm.js');
+const TypeRef = require('../typeRef.js');
 
-class Register {
+const Constant = require('./constant.js');
+const Value = require('./value.js');
+
+class Register extends Value {
 	/**
 	 *
 	 * @param {Number} id
-	 * @param {TypeDef|Structure} type
+	 * @param {TypeRef} type
 	 * @param {String} name
 	 * @param {Number} pointerDepth
 	 * @param {BNF_Reference} ref
 	 */
-	constructor(id, type, name, pointerDepth, ref) {
-		this.id           = id;
-		this.type         = type;
+	constructor(type, name, ref) {
+		super(type, ref);
+		this.id           = new LLVM.ID();
 		this.name         = name;
-		this.pointer      = pointerDepth;
-		this.declared     = ref;
 		this.inner        = {};
 		this.cache        = null;
 		this.isClone      = false;
@@ -36,7 +37,7 @@ class Register {
 
 		// Do required dereferencing
 		while (ast.length > 0 && ast[0][0] == "->") {
-			if (this.pointer != 2) {
+			if (this.type.pointer != 2) {
 				return {
 					error: true,
 					msg: `Type Error: Cannot dereference a non pointer value`,
@@ -91,10 +92,10 @@ class Register {
 
 
 		// Check the pointer depth
-		if (register.pointer != 1) {
+		if (register.type.pointer != 1) {
 			return {
 				error: true,
-				msg: `Reference Error: Cannot ${dynamic ? " dynamically" : ""}access element at this pointer depth`,
+				msg: `Reference Error: Cannot ${dynamic ? " dynamically " : ""}access element at this pointer depth`,
 				ref
 			};
 		}
@@ -109,7 +110,7 @@ class Register {
 		if (search === null) {
 			return {
 				error: true,
-				msg: `Type Error: Unknown acccess of structure ${register.type.name}`,
+				msg: `Type Error: Unknown acccess of structure ${register.type.getName()}`,
 				ref
 			};
 		}
@@ -133,10 +134,8 @@ class Register {
 		// Create an address cache if needed
 		if (!register.inner[search.signature]) {
 			let reg = new Register(
-				scope.generator.next(),
-				search.typeRef.type,
+				search.typeRef.duplicate().offsetPointer(1),
 				"temp",
-				search.typeRef.pointer+1,
 				ast[0][1].ref
 			);
 			register.inner[search.signature] = reg;
@@ -175,6 +174,21 @@ class Register {
 	}
 
 
+	/**
+	 * Is a component cache present?
+	 * @returns {Boolean}
+	 */
+	hasGEPCache() {
+		for (let val of this.inner) {
+			if (val.cache !== null) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+
 
 	/**
 	 *
@@ -194,18 +208,14 @@ class Register {
 		let frag = new LLVM.Fragment();
 
 		if (this.cache) {
-			frag.merge(this.cache.flushCache());
+			if (this.cache instanceof Register) {
+				frag.merge(this.cache.flushCache());
+			}
 
-			if (this.writePending) {
+			if (this.writePending || frag.stmts.length > 0) {
 				frag.append(new LLVM.Store(
-					new LLVM.Argument(
-						new LLVM.Type(this.type.represent, this.pointer),
-						new LLVM.Name(this.id, false)
-					),
-					new LLVM.Argument(
-						new LLVM.Type(this.type.represent, this.cache.pointer),
-						new LLVM.Name(this.cache.id, false)
-					),
+					this.toLLVM(),
+					this.cache.toLLVM(),
 					ref
 				));
 				this.cache.writePending = false;
@@ -229,7 +239,7 @@ class Register {
 			frag.merge(this.inner[sig].flushCache(ref));
 		}
 
-		this.writePending = false;
+		this.writePending = frag.stmts.length > 0 ? false : this.writePending;
 		return frag;
 	}
 
@@ -254,7 +264,8 @@ class Register {
 
 	/**
 	 * Dumps all caches, forcing reloads
-	 * @param {Register} cache A cache that may replace this one
+	 * @param {Value} cache A cache that may replace this one
+	 * @param {Boolean} allowGEP also flush GEP caches?
 	 * @returns {void}
 	 */
 	clearCache(replacement = null, allowGEP = true) {
@@ -286,11 +297,12 @@ class Register {
 	 * @param {Scope} scope
 	 * @param {Boolean} read
 	 * @param {Number} amount
+	 * @returns {Object?}
 	 */
 	deref(scope, read = true, amount = 1) {
 		// Cannot dereference a value
 		// Handle error within caller
-		if (this.pointer == 0 && amount > 0) {
+		if (this.type.pointer == 0 && amount > 0) {
 			return null;
 		}
 
@@ -316,10 +328,8 @@ class Register {
 		//  b) the value of this reference has not yet been cached
 		if (!read || this.cache === null || amount > 1) {
 			this.cache = new Register(
-				scope.generator.next(),
-				this.type,
-				this.name,
-				this.pointer-1
+				this.type.duplicate().offsetPointer(-1),
+				this.name
 			);
 			out.register = this.cache;
 
@@ -327,10 +337,10 @@ class Register {
 			// Otherwise leave the assigned register unused
 			if (read || amount > 1) {
 				out.preamble.append(new LLVM.Set(
-					new LLVM.Name(`${this.cache.id}`, false),
+					this.cache.toLLVM().name,
 					new LLVM.Load(
-						new LLVM.Type(this.type.represent, this.pointer-1),
-						new LLVM.Name(`${this.id}`, false)
+						this.type.duplicate().offsetPointer(-1).toLLVM(),
+						this.toLLVM().name
 					)
 				));
 			}
@@ -360,7 +370,8 @@ class Register {
 	 * @returns {Register}
 	 */
 	clone () {
-		let out = new Register(this.id, this.type, this.name, this.pointer, this.ref);
+		let out = new Register(this.type, this.name, this.ref);
+		out.id = this.id;
 		if (this.cache !== null) {
 			out.cache = this.cache.clone();
 		}
@@ -383,45 +394,127 @@ class Register {
 
 
 
+
+
 	/**
 	 * Updates any caches due to alterations in child scope
-	 * @param {Register} other the register to be merged
-	 * @param {Boolean} alwaysExecute If this change ALWAYS execute
+	 * @param {Register[]} other the register to be merged
+	 * @param {LLVM.ID[]} entries the entry points for each scope
+	 * @param {String} form
 	 */
-	mergeUpdates(other, alwaysExecute) {
-		// This is now a concurrent pointer
-		if (other.isConcurrent) {
-			this.isConcurrent = true;
+	mergeUpdates(others, entries, form) {
+		let frag = new LLVM.Fragment();
+
+		// If this variable isn't concurrent
+		//   Check if it has been converted to a concurrent
+		if (!this.isConcurrent) {
+			for (let reg of others) {
+				if (reg.isConcurrent) {
+					this.isConcurrent = true;
+					break;
+				}
+			}
 		}
 
-		let action = 0; // 0 = no action, 1 = clear cache, 2 = copy new cache
-		if (this.cache !== null && other.cache == null) {                          // a cache was destroyed
-			action = 1;
-		} else if (alwaysExecute && this.cache === null && other.cache !== null) { // a cache was created
-			action = 2;
-		} else if (this.cache !== null && other.cache !== null && this.cache.id != other.cache.id) { // a cache was updated
-			action = alwaysExecute ? 2 : 1;
+		switch (form) {
+			case "cmp-cache": // dump the cache
+			case "no-cache":
+				this.cache = null;
+				break;
+			case "val-cache":
+				let id = new LLVM.ID();
+				let opts = [];
+
+				for (let i=0; i<others.length; i++) {
+					opts.push([
+						others[i].cache.toLLVM().name,
+						new LLVM.Name(entries[i], false, null)
+					]);
+				}
+
+				let phi = new LLVM.Set(
+					new LLVM.Name(id, false, null),
+					new LLVM.Phi(
+						this.cache.type.toLLVM(),
+						opts
+					)
+				);
+
+				this.cache = new Register(
+					this.type.duplicate().offsetPointer(-1),
+					this.name,
+					this.declared
+				);
+				this.cache.id = id;
+
+				frag.append(phi);
+				break;
+			default:
+				throw new Error(`Unable to sync register on form "${form}"`);
 		}
 
-		switch (action) {
-			case 0:
-				break;
-			case 1:
-				this.clearCache();
-				break;
-			case 2:
-				this.clearCache();
-				this.cache = other.cache.clone();
-				this.cache.declone();
-				break;
-		}
+		return frag;
 	}
+
+
+
+
+
+	changeForm (scope, form) {
+		let frag;
+
+		switch (form) {
+			case "cmp-cache": // dump the cache
+			case "no-cache":
+				frag = this.flushCache(null, true);
+				this.cache = null;
+				break;
+			case "val-cache":
+				frag = this.flushGEPCaches();
+				if (this.cache === null) {
+					frag.merge( this.deref(scope, true, 1) );
+				}
+				break;
+			default:
+				throw new Error(`Unable to sync register on form "${form}"`);
+		}
+
+		return frag;
+	}
+
+	/**
+	 * Returns the prominent form of the register
+	 * @param {Register[]} regs
+	 * @returns {String} no-cache | val-cache | cmp-cache
+	 */
+	static GetProminentForm (regs) {
+		let hasCache = false;
+		let hasComp = false;
+		for (let reg of regs) {
+			if (reg.cache !== null) {
+				hasCache = true;
+			} else if (reg.hasGEPCache()) {
+				hasComp = true;
+			}
+
+			if (hasCache) {
+				break;
+			}
+		}
+
+		return hasCache ? "val-cache" :
+			hasComp ? "cmp-cache" :
+			"no-cache";
+	}
+
+
+
 
 
 	toLLVM(ref) {
 		return new LLVM.Argument(
-			new LLVM.Type(this.type.represent, this.pointer, this.declared),
-			new LLVM.Name(this.id.toString(), false, this.declared),
+			this.type.toLLVM(this.declared),
+			new LLVM.Name(this.id, false, this.declared),
 			ref,
 			this.name
 		);

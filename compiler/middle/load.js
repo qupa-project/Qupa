@@ -3,10 +3,8 @@ const Instruction = require("./instruction.js");
 class Load extends Instruction {
 	/**
 	 *
-	 * @param {LLVM.Name} reg_store Where the data is being stored
 	 * @param {LLVM.Type} type The type of data
-	 * @param {LLVM.Name} reg_address The register which holds the address of the data
-	 * @param {Number} width The width of hte data
+	 * @param {LLVM.Argument} reg_address The register which holds the address of the data
 	 * @param {BNF_Reference?} ref
 	 */
 	constructor(type, reg_address, ref) {
@@ -15,11 +13,13 @@ class Load extends Instruction {
 		this.address = reg_address;
 	}
 
-	toLLVM(indent) {
-		return super.toLLVM(
-			`load ${this.type.toLLVM()}, ${this.type.toLLVM()}* ${this.address.toLLVM()}, align 4`,
-			indent
-		);
+	flattern(indent) {
+		return super.flattern(
+			`load ${this.type.flattern()}, ` +
+			`${this.type.flattern()}* ` +
+			`${this.address.flattern()}, ` +
+			`align 4`,
+		indent);
 	}
 }
 

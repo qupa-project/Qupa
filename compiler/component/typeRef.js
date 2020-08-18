@@ -14,6 +14,18 @@ class TypeRef {
 		this.type = type;
 	}
 
+	getName () {
+		return this.type.name || constant;
+	}
+
+	getTerm (ast, reg) {
+		return this.type.getTerm(ast, reg);
+	}
+
+	getElement (ast, target) {
+		return this.type.getElement(ast, target);
+	}
+
 	/**
 	 *
 	 * @param {TypeRef} other
@@ -25,6 +37,24 @@ class TypeRef {
 
 		return this.pointer == other.pointer && this.type == other.type;
 	}
+
+	/**
+	 * Increases/decreases the pointer reference level
+	 * @param {Number} inc
+	 */
+	offsetPointer(inc) {
+		this.pointer += inc;
+		return this;
+	}
+
+
+	/**
+	 * Creates a clone of this reference
+	 */
+	duplicate () {
+		return new TypeRef(this.pointer, this.type);
+	}
+
 
 	/**
 	 * @returns {String}

@@ -18,7 +18,7 @@ const root = path.resolve("./");
 /*------------------------------------------
 	Compiler configuration flags
 ------------------------------------------*/
-if (process.argv.indexOf("-v") != -1) {
+if (process.argv.includes("--version")) {
 	console.info(version);
 	process.exit(0);
 }
@@ -33,12 +33,10 @@ let index = process.argv.indexOf('-o');
 if (index != -1 && index > 2) {
 	config.output = process.argv[index+1] || "out";
 }
-index = process.argv.indexOf('--no-caching');
-if (index != -1) {
+if (process.argv.includes('--no-caching')) {
 	config.caching = false;
 }
-index = process.argv.indexOf('--execute');
-if (index != -1) {
+if (process.argv.includes('--execute')) {
 	config.execute = true;
 }
 index = process.argv.indexOf('-S');
@@ -76,7 +74,7 @@ if (project.error) {
 	process.exit(1);
 }
 
-fs.writeFileSync(`${config.output}.ll`, asm.toLLVM(), 'utf8');
+fs.writeFileSync(`${config.output}.ll`, asm.flattern(), 'utf8');
 
 
 
@@ -93,7 +91,12 @@ if (config.execute && config.source !== false) {
 if (config.source != "llvm") {
 	let runtime_path = path.resolve(__dirname, "./../runtime/runtime.ll");
 	// let prebuilt_path = path.resolve(__dirname, "./../runtime/prebuilt.ll");
-	let args = [runtime_path, /*prebuilt_path,*/ `${config.output}.ll`];
+	let args = [
+		"-x", "ir",
+		runtime_path,
+		"-x", "ir",
+		`${config.output}.ll`
+	];
 
 	let exec_out = config.output;
 	if (config.source == "asm") {
@@ -104,7 +107,7 @@ if (config.source != "llvm") {
 	} else if (os.platform() == "darwin") {
 		exec_out += ".app";
 	} else {
-		exec_out += ".o";
+		exec_out += ".out";
 	}
 	args = args.concat(["-o", exec_out]);
 

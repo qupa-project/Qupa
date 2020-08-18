@@ -50,12 +50,8 @@ class Structure extends TypeDef {
 		let preamble = new LLVM.Fragment();
 		let signature = `.${i}`;
 		let instruction = new LLVM.GEP(
-			new LLVM.Type(register.type.represent, register.pointer-1, register.declared),
-			new LLVM.Argument(
-				new LLVM.Type(register.type.represent, register.pointer, register.declared),
-				new LLVM.Name(register.id, false, name.ref.start),
-				name.ref.start
-			),
+			register.type.duplicate().offsetPointer(-1, register.declared).toLLVM(),
+			register.toLLVM(),
 			[
 				new LLVM.Argument(
 					Primative.types.i32.toLLVM(),

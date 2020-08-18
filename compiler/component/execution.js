@@ -1,10 +1,12 @@
+const Constant = require('./memory/constant.js');
+const Register = require('./memory/register.js');
+const Scope = require('./memory/scope.js');
+
 const Flattern = require('../parser/flattern.js');
-const LLVM = require("../middle/llvm.js");
-const TypeRef = require('./typeRef.js');
-const Scope = require('./scope.js');
-const State = require('./state.js');
-const { Argument, Type } = require('../middle/llvm.js');
-const Register = require('./register.js');
+const LLVM     = require("../middle/llvm.js");
+const TypeRef  = require('./typeRef.js');
+const State    = require('./state.js');
+const { Name } = require('../middle/llvm.js');
 
 const Primative = {
 	types: require('./../primative/types.js')
@@ -17,12 +19,14 @@ class Execution {
 	 * @param {*} returnType
 	 * @param {*} scope
 	 */
-	constructor(ctx, returnType, scope) {
+	constructor(ctx, returnType, scope, entryPoint = new LLVM.ID()) {
 		this.ctx        = ctx;
 		this.scope      = scope;
 		this.returnType = returnType;
 		this.returned   = false;
 		this.isChild    = false;
+
+		this.entryPoint = entryPoint.reference();
 	}
 
 	/**
@@ -106,15 +110,10 @@ class Execution {
 		frag.merge(cache.preamble);
 
 		return {
-			instruction: new LLVM.Argument(
-				new LLVM.Type(cache.register.type.represent, cache.register.pointer),
-				new LLVM.Name(cache.register.id, null),
-				null,
-				load.register.name
-			),
+			instruction: cache.register.toLLVM(),
 			preamble: frag,
 			epilog: new LLVM.Fragment(),
-			type: new TypeRef(cache.register.pointer, cache.register.type),
+			type: cache.register.type,
 			register: cache.register
 		};
 	}
@@ -224,15 +223,24 @@ class Execution {
 		switch (ast.tokens[0].type) {
 			case "float":
 				type = new TypeRef(0, Primative.types.float);
-				val = ast.tokens[0].tokens;
+				val = new LLVM.Constant(
+					ast.tokens[0].tokens,
+					ast.ref.start
+				);
 				break;
 			case "boolean":
 				type = new TypeRef(0, Primative.types.bool);
-				val = val == "true" ? 1 : 0;
+				val = new LLVM.Constant(
+					val == "true" ? 1 : 0,
+					ast.ref.start
+				);
 				break;
 			case "integer":
 				type = new TypeRef(0, Primative.types.i32);
-				val = ast.tokens[0].tokens;
+				val = new LLVM.Constant(
+					ast.tokens[0].tokens,
+					ast.ref.start
+				);
 				break;
 			case "string":
 				let bytes = ast.tokens[0].tokens[1].length + 1;
@@ -240,16 +248,12 @@ class Execution {
 
 				let ir_t1 = new LLVM.Type(`[ ${bytes} x i8 ]`, 0, ast.ref);
 				let ir_t2 = new LLVM.Type(`i8`, 1);
-				let ir_str = new LLVM.Name(this.scope.genID(), false, ast.ref);
-				let ir_ptr = new LLVM.Name(this.scope.genID(), false, ast.ref);
 
-				let ir_arg1 = new LLVM.Argument(
-					new LLVM.Type(`[ ${bytes} x i8 ]*`, 0, ast.ref),
-					ir_str, ast.ref, "#str_const"
-				);
+				let str_id = new LLVM.ID();
+				let ptr_id = new LLVM.ID();
 
 				preamble.append(new LLVM.Set(
-					ir_str,
+					new LLVM.Name(str_id, false, ast.ref),
 					new LLVM.Alloc(
 						ir_t1,
 						ast.ref
@@ -257,7 +261,11 @@ class Execution {
 					ast.ref
 				));
 				preamble.append(new LLVM.Store(
-					ir_arg1,
+					new LLVM.Argument(
+						new LLVM.Type(`[ ${bytes} x i8 ]*`, 0, ast.ref),
+						new LLVM.Name(str_id.reference(), false, ast.ref),
+						ast.ref, "#str_const"
+					),
 					new LLVM.Argument(
 						ir_t1,
 						new LLVM.Constant(`c"${str}"`, ast.ref),
@@ -265,17 +273,21 @@ class Execution {
 					)
 				));
 				preamble.append(new LLVM.Set(
-					ir_ptr,
+					new LLVM.Name(ptr_id, false, ast.ref),
 					new LLVM.Bitcast(
 						ir_t2,
-						ir_arg1,
+						new LLVM.Argument(
+							new LLVM.Type(`[ ${bytes} x i8 ]*`, 0, ast.ref),
+							new LLVM.Name(str_id.reference(), false, ast.ref),
+							ast.ref, "#str_const"
+						),
 						ast.ref
 					),
 					ast.ref
 				));
 
 				type = new TypeRef(1, Primative.types.i8);
-				val = ir_ptr.toLLVM();
+				val = new Name(ptr_id, false, ast.ref);
 				break;
 			default:
 				throw new Error(`Unknown constant type ${ast.tokens[0].type}`);
@@ -284,7 +296,7 @@ class Execution {
 		return {
 			instruction: new LLVM.Argument(
 				new LLVM.Type(type.type.represent, type.pointer, ast.ref.start),
-				new LLVM.Constant(val, ast.ref.start),
+				val,
 				ast.ref
 			),
 			preamble,
@@ -324,7 +336,8 @@ class Execution {
 			args.push(expr.instruction);
 			signature.push(expr.type);
 
-			if (expr.register) {
+			if (expr.register instanceof Register) {
+				preamble.merge(expr.register.flushCache());
 				regs.push(expr.register);
 			}
 		}
@@ -435,8 +448,7 @@ class Execution {
 		typeRef.pointer = ast.tokens[0].tokens[0];
 
 		let reg = this.scope.register_Var(
-			typeRef.type,
-			typeRef.pointer+1,
+			typeRef.duplicate().offsetPointer(1),
 			name,
 			ast.ref.start
 		);
@@ -444,7 +456,7 @@ class Execution {
 		frag.append(new LLVM.Set(
 			new LLVM.Name(reg.id, false, ast.tokens[1].ref.start),
 			new LLVM.Alloc(
-				new LLVM.Type(reg.type.represent, typeRef.pointer, ast.tokens[0].ref.start),
+				reg.type.duplicate().offsetPointer(-1).toLLVM(),
 				ast.ref.start
 			),
 			ast.ref.start
@@ -479,7 +491,7 @@ class Execution {
 		}
 		frag.merge(load.preamble);
 
-		let targetType = new TypeRef(load.register.pointer-1, load.register.type);
+		let targetType = load.register.type.duplicate().offsetPointer(-1);
 		if (!expr.type.match(targetType)) {
 			this.getFile().throw(
 				`Error: Assignment type mis-match` +
@@ -492,21 +504,11 @@ class Execution {
 
 		if (expr.register) {
 			load.register.clearCache(expr.register);
-			load.register.markUpdated();
 		} else {
-			frag.append(new LLVM.Store(
-				new LLVM.Argument(
-					new LLVM.Type(load.register.type.represent, load.register.pointer),
-					new LLVM.Name(`${load.register.id}`, false),
-					ast.tokens[0].ref,
-					// Flattern.VariableStr(ast.tokens[0]) TODO fix
-				),
-				expr.instruction,
-				ast.ref.start
-			));
-			load.register.clearCache();
+			load.register.clearCache(new Constant(expr.type, expr.instruction.name.val, expr.ref.start), expr.ref.start);
 		}
 
+		load.register.markUpdated();
 		frag.merge(expr.epilog);
 		return frag;
 	}
@@ -582,7 +584,7 @@ class Execution {
 		}
 
 		// Ensure that pointers actually write their data before returning
-		frag.merge(this.scope.flushAllConcurrents(ast.ref));
+		frag.merge(this.compile_cleanup(ast.ref));
 
 		frag.append(new LLVM.Return(inner, ast.ref.start));
 		return frag;
@@ -620,43 +622,67 @@ class Execution {
 		/**
 		 * Prepare condition true body
 		 */
-		let label_true = new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false, ast.tokens[0].tokens[1]), ast.tokens[0].tokens[1]
-		);
+		let true_id = new LLVM.ID(ast.tokens[0].tokens[1].ref);
 		let scope_true = this.clone();
+		scope_true.entryPoint = true_id;
 		let body_true = scope_true.compile(ast.tokens[0].tokens[1]);
-		body_true.prepend(label_true.toDefinition());
+		body_true.prepend(new LLVM.Label(
+			true_id,
+			ast.tokens[0].tokens[1].ref
+		).toDefinition());
+		body_true.merge(scope_true.flushAllClones());
 
 
 		/**
 		 * Prepare condition false body
 		 */
 		let hasElse = ast.tokens[2] !== null;
-		let label_false = new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false)
-		);
+		let false_id = new LLVM.ID();
 		let body_false = new LLVM.Fragment();
 		let scope_false = this.clone();
+		scope_false.entryPoint = false_id;
 		if (hasElse) {
-			body_false.prepend(label_false.toDefinition());
 			body_false = scope_false.compile(ast.tokens[2].tokens[0]);
-			body_false.prepend(label_false.toDefinition());
+			body_false.prepend(new LLVM.Label(
+				false_id
+			).toDefinition());
+			body_false.merge(scope_false.flushAllClones());
 		}
 
 
 		/**
 		 * Cleanup and merging
 		 */
-		let endpoint = hasElse ? new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false)
-		) : label_false;
+		let endpoint_id = new LLVM.ID();
+		let endpoint = new LLVM.Label(
+			new LLVM.Name(endpoint_id.reference(), false)
+		);
 
+
+		// Push the branching jump
 		frag.append(new LLVM.Branch(
 			cond.instruction,
-			label_true,
-			label_false,
+			new LLVM.Label(
+				new LLVM.Name(true_id.reference(), false, ast.tokens[0].tokens[1].ref),
+				ast.tokens[0].tokens[1].ref
+			),
+			new LLVM.Label(
+				new LLVM.Name( hasElse ? false_id.reference() : endpoint_id.reference() , false)
+			),
 			ast.ref.start
 		));
+
+
+
+		// Prepare the synchronisation pre-process for each branch
+		let sync = this.mergeUpdates([
+			scope_true,
+			hasElse ? scope_false : this
+		]);
+		body_true.merge  (sync.frags[0]);
+		body_false.merge (sync.frags[1]);
+
+
 
 		// Push the if branch
 		if (!scope_true.returned) {
@@ -679,13 +705,19 @@ class Execution {
 
 		// Push the end point
 		if (!this.returned) {
-			frag.append(endpoint.toDefinition());
+			frag.append(new LLVM.Label(
+				endpoint_id
+			).toDefinition());
 		}
 
-		// If any variables were updated within child scopes
-		//   Flush their caches if needed
-		this.mergeUpdates(scope_true, false);
-		this.mergeUpdates(scope_false, false);
+
+
+
+		// Push the final clean up an synchronisation
+		frag.merge(sync.sync);
+
+		// Mark current branch
+		this.entryPoint = hasElse ? false_id : endpoint_id;
 
 		return frag;
 	}
@@ -694,53 +726,102 @@ class Execution {
 	compile_while (ast) {
 		let frag = new LLVM.Fragment();
 
+		let check_id = new LLVM.ID(ast.tokens[0].ref);
+		let loop_id  = new LLVM.ID(ast.tokens[1].ref);
+		let end_id   = new LLVM.ID();
+
+
+		// Loop Entry
 		let scope_check = this.clone();
-		scope_check.clearAllCaches();
-		let label_check = new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false, ast.tokens[0].ref),
-			ast.tokens[0].tokens[0]
-		);
 		let check = scope_check.compile_while_condition(ast.tokens[0]);
 		if (check === null) {
 			return null;
 		}
+		check.instructions.append(new LLVM.Branch(
+			check.register,
+			new LLVM.Label(
+				new LLVM.Name(loop_id.reference(), false, ast.tokens[0].tokens[0]),
+				ast.tokens[0].tokens[0]
+			),
+			new LLVM.Label(
+				new LLVM.Name(end_id.reference(), false, ast.tokens[0].tokens[0]),
+				ast.tokens[0].tokens[0]
+			),
+			ast.ref.start
+		));
 
-		let scope_loop = this.clone();
-		scope_loop.clearAllCaches();
-		let label_loop = new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false, ast.tokens[0].tokens[0]),
-			ast.tokens[0].tokens[0]
-		);
+
+		// Compute Loop
+		let scope_loop = scope_check.clone();
+		scope_loop.entryPoint = loop_id;
+		let recurr = scope_loop.scope.prepareRecursion(this.entryPoint.reference());
 		let loop = scope_loop.compile(ast.tokens[1]);
 		if (loop === null) {
 			return null;
 		}
-		loop.merge(scope_loop.flushAllClones());
 
-		let label_end = new LLVM.Label(
-			new LLVM.Name(`${this.scope.genID()}`, false, ast.tokens[0].tokens[0]),
-			ast.tokens[0].tokens[0]
-		);
+		// Add any preparation needed before entry to the loop
+		check.instructions.merge(recurr.prolog);
+		frag.merge(check.instructions);
 
-		frag.append(new LLVM.Branch_Unco(label_check));
-		frag.append(label_check.toDefinition());
+
+		// Recursion check
+		frag.append(new LLVM.Label(check_id, check_id.ref).toDefinition());
+		scope_check = scope_loop.clone();
+		scope_check.entryPoint = check_id;
+		check = scope_check.compile_while_condition(ast.tokens[0]);
+		if (check === null) {
+			return null;
+		}
 		frag.merge(check.instructions);
 		frag.append(new LLVM.Branch(
 			check.register,
-			label_loop,
-			label_end,
+			new LLVM.Label(
+				new LLVM.Name(loop_id.reference(), false, loop_id.ref),
+				ast.tokens[0].tokens[0]
+			),
+			new LLVM.Label(
+				new LLVM.Name(end_id.reference(), false, loop_id.ref),
+				ast.tokens[0].tokens[0]
+			),
 			ast.ref.start
 		));
-		frag.append(label_loop.toDefinition());
-		frag.merge(loop);
-		frag.append(new LLVM.Branch_Unco(label_check));
-		frag.append(label_end.toDefinition());
+
+
+
+		// Resolve loop values
+		let recurr_resolve = scope_loop.scope.resolveRecursion(
+			recurr.state,
+			scope_check.entryPoint
+		);
+		loop.merge_front(recurr_resolve.prolog);
+		loop.merge(recurr_resolve.epilog);
+
 
 
 		// If any variables were updated within child scopes
 		//   Flush their caches if needed
-		this.mergeUpdates(scope_check, true);
-		this.mergeUpdates(scope_loop, true);
+		scope_loop.entryPoint = scope_check.entryPoint;
+		let sync = this.mergeUpdates([this, scope_loop]);
+		frag.merge(sync.frags[0]);
+		loop.merge(sync.frags[1]);
+
+
+		// Insert loop instructions
+		frag.append(new LLVM.Label(loop_id, loop_id.ref).toDefinition());
+		frag.merge(loop);
+		// Jump to the check
+		frag.append(new LLVM.Branch_Unco(new LLVM.Label(
+			new LLVM.Name(check_id.reference(), false, ast.tokens[0].ref),
+			ast.tokens[0].tokens[0]
+		)));
+
+
+		// End point
+		frag.append(new LLVM.Label(end_id, end_id.ref).toDefinition());
+
+		this.entryPoint = end_id;
+		frag.merge(sync.sync);
 
 		return frag;
 	}
@@ -831,7 +912,7 @@ class Execution {
 		 */
 		if (
 			simple &&
-			!( res.instruction instanceof Argument )
+			!( res.instruction instanceof LLVM.Argument )
 		) {
 			let inner = res.instruction;
 			let irType = null;
@@ -844,21 +925,15 @@ class Execution {
 				irType = res.type;
 			}
 
-			let id = this.scope.genID();
-
-			res.register = new Register(id, res.type.type, "temp", res.type.pointer, ast.ref.start);
-			let regIR = new LLVM.Name(id.toString(), false, ast.ref.start);
+			res.register = new Register(res.type, "temp", ast.ref.start);
+			let regIR = res.register.toLLVM();
 
 			res.preamble.append(new LLVM.Set(
-				regIR,
+				regIR.name,
 				inner,
 				ast.ref.start
 			));
-			res.instruction = new LLVM.Argument(
-				irType,
-				regIR,
-				ast.ref.start
-			);
+			res.instruction = regIR;
 		}
 
 		res.ref = ast.ref;
@@ -1162,10 +1237,16 @@ class Execution {
 
 
 
+	compile_cleanup (ref) {
+		return this.scope.flushAllConcurrents(ref);
+	}
+
+
+
+
 
 	compile(ast) {
 		let fragment = new LLVM.Fragment();
-
 		let returnWarned = false;
 		let failed = false;
 		let inner = null;
@@ -1254,14 +1335,35 @@ class Execution {
 
 	/**
 	 * Updates any caches due to alterations in child scope
-	 * @param {Execution} child the scope to be merged
+	 * @param {Execution[]} child the scope to be merged
 	 * @param {Boolean} alwaysExecute If this scope will always execute and is non optional (i.e. not if statement)
+	 * @returns {LLVM.Fragment[]}
 	 */
-	mergeUpdates(child, alwaysExecute = false) {
-		this.scope.mergeUpdates(child.scope, alwaysExecute);
-		if (alwaysExecute && child.returned) {
-			this.returned = true;
+	mergeUpdates(children) {
+		if ( !Array.isArray(children) || children.length < 1) {
+			throw new Error("Cannot merge a zero children");
 		}
+
+		// Synchornise this scope to others
+		let output = this.scope.syncScopes(
+			children.map( x => x.scope ),
+			children.map( x => x.entryPoint )
+		);
+
+
+		// Determine definite return
+		let allReturned = true;
+		for (let child of children) {
+			if (child.returned == false) {
+				allReturned = false;
+				break;
+			}
+		}
+		this.returned = allReturned;
+
+
+
+		return output;
 	}
 }
 

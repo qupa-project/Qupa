@@ -7,7 +7,7 @@ class GEP extends Instruction {
 	 * @param {LLVM.Type} type
 	 * @param {LLVM.Argument} reg_address
 	 * @param {LLVM.Constant[]} cnst_term
-	 * @param {BNF_Reference} ref
+	 * @param {BNF_Reference?} ref
 	 */
 	constructor(type, reg_address, cnst_term, ref) {
 		super (ref);
@@ -16,13 +16,12 @@ class GEP extends Instruction {
 		this.term = cnst_term;
 	}
 
-	toLLVM(indent) {
-		return super.toLLVM(
+	flattern(indent) {
+		return super.flattern(
 			`getelementptr inbounds ` +
-			`${this.type.toLLVM()}, ` +
-			// `${this.type.toLLVM()}* ` +
-			`${this.address.toLLVM()}, ` +
-			`${this.term.map( x => x.toLLVM() ).join(', ')}`,
+			`${this.type.flattern()}, ` +
+			`${this.address.flattern()}, ` +
+			`${this.term.map( x => x.flattern() ).join(', ')}`,
 		indent);
 	}
 }

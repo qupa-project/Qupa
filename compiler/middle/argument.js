@@ -17,12 +17,16 @@ class Argument extends Instruction {
 		this.origin = originalName;
 	}
 
+	assign_ID (gen) {
+		this.name.assign_ID(gen);
+	}
+
 	isConstant() {
 		return this.name instanceof Constant;
 	}
 
-	toLLVM() {
-		return `${this.type.toLLVM()} ${this.name.toLLVM()}`;
+	flattern() {
+		return `${this.type.flattern()} ${this.name.flattern()}`;
 	}
 }
 

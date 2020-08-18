@@ -19,16 +19,16 @@ i32 main() {
 	@i32 b = static_cast#[@i32](addr);
 	$b = 2;
 
-	print(" a: 20 ==");
+	print(" a: 20 == ");
 	println(a);
-	print("$b: 2 ==");
+	print("$b: 2 == ");
 	i32_println($b);
 
 	Add(b, a);
 
-	print(" a: 20 ==");
+	print(" a: 20 == ");
 	i32_println(a);
-	print("$b: 22 ==");
+	print("$b: 22 == ");
 	i32_println($b);
 
 	return 0;

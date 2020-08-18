@@ -3,11 +3,12 @@ const LLVM = require('./llvm.js');
 
 class Compare extends Instruction {
 	/**
-	 *
+	 * @param {String} mode
+	 * @param {String} condition
 	 * @param {LLVM.Type} type
-	 * @param {LLVM.Name} reg_address
-	 * @param {LLVM.Constant[]} cnst_term
-	 * @param {BNF_Reference} ref
+	 * @param {LLVM.Name} opperand_a
+	 * @param {LLVM.Name} opperand_b
+	 * @param {BNF_Reference?} ref
 	 */
 	constructor(mode, conditon, type, opperand_a, opperand_b, ref) {
 		super (ref);
@@ -18,15 +19,15 @@ class Compare extends Instruction {
 		this.b = opperand_b;
 	}
 
-	toLLVM() {
-		return super.toLLVM(
+	flattern(indent) {
+		return super.flattern(
 			( this.mode == 2 ? "f" : "i" ) +
 			`cmp ` +
 			`${this.cond} ` +
-			`${this.type.toLLVM()} ` +
-			`${this.a.toLLVM()}, ` +
-			`${this.b.toLLVM()}`,
-		0);
+			`${this.type.flattern()} ` +
+			`${this.a.flattern()}, ` +
+			`${this.b.flattern()}`,
+		indent);
 	}
 }
 

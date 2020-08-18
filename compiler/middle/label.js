@@ -3,27 +3,36 @@ let LLVM = require('./llvm.js');
 
 class Label extends Instruction {
 	/**
-	 * 
-	 * @param {LLVM.Name} term 
-	 * @param {BNF_Reference?} ref 
+	 *
+	 * @param {LLVM.ID} term
+	 * @param {BNF_Reference?} ref
 	 */
 	constructor(name, ref) {
 		super (ref);
 		this.name = name;
 	}
 
-	toDefinition() {
-		return new Label_Definition(this.name, this.ref);
+	toDefinition(ommit = false) {
+		return new Label_Definition(this.name, ommit, this.ref);
 	}
 
-	toLLVM() {
-		return `label ${this.name.toLLVM()}`;
+	flattern() {
+		return `label ${this.name.flattern()}`;
 	}
 }
 
 class Label_Definition extends Label {
-	toLLVM() {
-		return `\n${this.name.term}:`;
+	constructor (name, ommit = false, ref = null) {
+		super(name, ref);
+		this.ommit = ommit;
+	}
+
+	assign_ID (gen) {
+		this.name.assign_ID(gen);
+	}
+
+	flattern() {
+		return (this.ommit ? "" : "\n") + `${this.name.flattern()}:`;
 	}
 }
 
