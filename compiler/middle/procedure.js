@@ -32,7 +32,7 @@ class Procedure extends Fragment {
 		let out = `${this.external ? "declare" : "define"} dso_local ` +
 			`${this.rtrnType.flattern()} ` +
 			`${this.name.flattern()} ` +
-			`(${this.args.map(x => x.flattern()).join(', ')}) ` +
+			`(${this.args.map(x => this.external ? x.type.flattern() : x.flattern()).join(', ')}) ` +
 			`${this.attributes}`;
 
 		if (this.stmts.length > 0) {
