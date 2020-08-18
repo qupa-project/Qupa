@@ -1,10 +1,11 @@
 # Change Log
 
-## Unreleased
+## v0.0.4
 
 ### Added
 
 + Constants are not longer forcibly written to memory
++ If/While statements now use phi statements to result value changes
 
 ### Tweaks
 
@@ -12,10 +13,10 @@
 
 ### Fixes
 
-+ Fixed not flushing values before while loop
-+ Fixed if statment not affecting reloads
 + Fixed not flushing pointers before function calls
-+ Fixed compiler crashing on invalid array access on non-array
++ Fixed not flushing pointers on return function
++ Fixed not flushing values before while loop
++ Fixed compiler crashing with invalid array access on non-array
 
 ## v0.0.3
 

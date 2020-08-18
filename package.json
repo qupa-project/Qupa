@@ -1,6 +1,6 @@
 {
   "name": "@qupa/qupa",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Queued Parallelism Language",
   "main": "compile/compile.js",
   "preferGlobal": true,
@@ -15,7 +15,7 @@
     "setup": "npm install && npm run build",
     "start": "node compiler/compile.js",
     "compile": "node compiler/compile.js",
-    "test": "npm run test-compilation",
+    "test": "npm run test-exec",
     "test-parser": "node compiler/parser/test.js",
     "test-compilation": "node compiler/test.js",
     "test-assemble": "node compiler/test.js --bin",
