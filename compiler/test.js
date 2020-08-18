@@ -12,9 +12,13 @@ const exists = util.promisify( fs.exists );
 const mkdir = util.promisify( fs.mkdir );
 
 let flags = {
-	clang: process.argv.includes('--clang'),
+	clang: process.argv.includes('--bin'),
 	exec: process.argv.includes('--exec')
 };
+
+if (flags.exec) {
+	flags.clang = true;
+}
 
 let config = {
 	caching: true,
