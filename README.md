@@ -32,8 +32,8 @@ qupa {entry_file}
 
 | Flag | Description |
 | :- | :- |
-| ``-S {llvm?}`` | The flag specifies not to build a binary, if optional term ``llvm`` is entered it will only output LLVM-IR, otherwise it will output the assembly of the target platform |
-| ``-o {file}`` | Specify the output filename from the compiler |
-| ``--no-caching`` | Specifies that the compiler should not reuse values cached in registers, and should instead reload any reference values each time they are used |
-| ``--execute`` | Specifies that the compiler should not reuse values cached in registers, and should instead reload any reference values each time they are used |
-| ``-v`` | Will log out the current version number of the compiler |
+| ``-o {name}`` | Specify the output filename from the compiler |
+| ``--execute`` | Run the compiled binary produced (if any) |
+| ``--version`` | Will log out the current version number of the compiler |
+| ``-S`` | Compile to human readable assembly rather than executable |
+| ``--llvm`` | Compile to human readable LLVM-IR rather than executable |

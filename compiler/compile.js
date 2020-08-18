@@ -18,7 +18,7 @@ const root = path.resolve("./");
 /*------------------------------------------
 	Compiler configuration flags
 ------------------------------------------*/
-if (process.argv.indexOf("-v") != -1) {
+if (process.argv.includes("--version") != -1) {
 	console.info(version);
 	process.exit(0);
 }
@@ -33,12 +33,10 @@ let index = process.argv.indexOf('-o');
 if (index != -1 && index > 2) {
 	config.output = process.argv[index+1] || "out";
 }
-index = process.argv.indexOf('--no-caching');
-if (index != -1) {
+if (process.argv.includes('--no-caching')) {
 	config.caching = false;
 }
-index = process.argv.indexOf('--execute');
-if (index != -1) {
+if (process.argv.includes('--execute')) {
 	config.execute = true;
 }
 index = process.argv.indexOf('-S');
