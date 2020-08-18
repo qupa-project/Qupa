@@ -18,7 +18,7 @@ const root = path.resolve("./");
 /*------------------------------------------
 	Compiler configuration flags
 ------------------------------------------*/
-if (process.argv.includes("--version") != -1) {
+if (process.argv.includes("--version")) {
 	console.info(version);
 	process.exit(0);
 }
