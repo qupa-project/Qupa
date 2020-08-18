@@ -178,10 +178,12 @@ class Function_Instance {
 			this.returnType.toLLVM(head.tokens[0].ref),
 			new LLVM.Name(this.represent, true, head.tokens[1].ref),
 			res.registers.map( x => x.toLLVM() ),
-			"#1",
+			"#0",
 			this.external,
 			this.ref
 		);
+
+		let gen = new Generator_ID(0);
 
 		if (!this.abstract && !this.external) {
 			// Mark the entry point
@@ -200,12 +202,24 @@ class Function_Instance {
 				entry_id.reference()
 			);
 			frag.merge(exec.compile(this.ast.tokens[1]));
+
+
+			// Skip entry block ID for arguments
+			if (args.length > 0 && process.env.llvm9) {
+				gen.next();
+			}
+
+			frag.assign_ID(gen);
+
+			if (args.length > 0 && process.env.llvm9) {
+				entry_id.id = 0;
+			}
+		} else {
+			frag.assign_ID(gen);
 		}
 
-		let gen = new Generator_ID(0);
-		frag.assign_ID(gen);
-		frag.flattern();
 
+		frag.flattern();
 		return frag;
 	}
 }
