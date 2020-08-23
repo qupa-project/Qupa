@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
+console.log('Loading');
 const Project = require('./component/project.js');
 
 const path = require('path');
@@ -89,39 +90,48 @@ if (config.execute && config.source !== false) {
 }
 
 if (config.source != "llvm") {
-	let runtime_path = path.resolve(__dirname, "./../runtime/runtime.ll");
-	// let prebuilt_path = path.resolve(__dirname, "./../runtime/prebuilt.ll");
-	let args = [
-		"-x", "ir",
-		runtime_path,
-		"-x", "ir",
-		`${config.output}.ll`
-	];
+	// Simplify coroutines
+	console.log("Processing Coroutines...");
+	let coro = spawn("opt", [ "out.ll", "-enable-coroutines", "-O3", "-o", "out.bc" ]);
+	coro.stderr.pipe (process.stderr);
+	coro.stdout.pipe (process.stdout);
 
-	let exec_out = config.output;
-	if (config.source == "asm") {
-		args.push('-S');
-		exec_out += ".s";
-	} else if (os.platform() == "win32") {
-		exec_out += ".exe";
-	} else if (os.platform() == "darwin") {
-		exec_out += ".app";
-	} else {
-		exec_out += ".out";
-	}
-	args = args.concat(["-o", exec_out]);
+	coro.on('exit', ()=>{
+		console.log("Generating executable...");
+		let runtime_path = path.resolve(__dirname, "./../runtime/runtime.ll");
+		// let prebuilt_path = path.resolve(__dirname, "./../runtime/prebuilt.ll");
+		let args = [
+			"-x", "ir",
+			runtime_path,
+			"-x", "ir",
+			`${config.output}.bc`
+		];
 
-	let clang = spawn('clang++', args);
-	clang.stderr.pipe (process.stderr);
-	clang.stdout.pipe (process.stdout);
+		let exec_out = config.output;
+		if (config.source == "asm") {
+			args.push('-S');
+			exec_out += ".s";
+		} else if (os.platform() == "win32") {
+			exec_out += ".exe";
+		} else if (os.platform() == "darwin") {
+			exec_out += ".app";
+		} else {
+			exec_out += ".out";
+		}
+		args = args.concat(["-o", exec_out]);
+
+		let clang = spawn('clang++', args);
+		clang.stderr.pipe (process.stderr);
+		clang.stdout.pipe (process.stdout);
 
 
-	if (config.execute) {
-		clang.on('exit', ()=> {
-			console.info('\nRunning...');
-			let app = spawn(exec_out);
-			app.stderr.pipe (process.stderr);
-			app.stdout.pipe (process.stdout);
-		});
-	}
+		if (config.execute) {
+			clang.on('exit', ()=> {
+				console.info('\nRunning...');
+				let app = spawn(`./${exec_out}`);
+				app.stderr.pipe (process.stderr);
+				app.stdout.pipe (process.stdout);
+			});
+		}
+	});
 }
