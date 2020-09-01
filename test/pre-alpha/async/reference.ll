@@ -1,6 +1,6 @@
 %Task = type { i8*, i8*, i8, %Task* } ; hdl, contID, returnID, caller
 
-declare void @print ( i32 )
+declare void @i32_print(i32)
 
 declare i8* @malloc(i32)
 declare void @free(i8*)
@@ -271,11 +271,11 @@ entry:
   %promise.addr.raw = call i8* @llvm.coro.promise(i8* %hdl, i32 4, i1 false)
   %promise.addr = bitcast i8* %promise.addr.raw to i32*
   %val0 = load i32, i32* %promise.addr
-  call void @print(i32 %val0)
+  call void @i32_print(i32 %val0)
 
   call void @llvm.coro.resume(i8* %hdl)
   %val1 = load i32, i32* %promise.addr
-  call void @print(i32 %val1)
+  call void @i32_print(i32 %val1)
 
   call void @llvm.coro.destroy(i8* %hdl)
 

@@ -1,0 +1,43 @@
+int fib(int index): [ async ] {
+	bool part = false;
+	int a;
+	int b;
+
+
+
+	// Fake load
+	int ittr = 10000;
+	while (ittr > 0) {
+		print("a");
+		ittr = ittr - 1;
+	}
+
+
+	if (index < 1) {
+		return 1;
+	}
+
+	fib ( index - 1 ) => a {
+		if (part) {
+			return a + b;
+		}
+
+		part = true;
+	}
+
+	fib ( index - 2 ) => b {
+		if (part) {
+			return a + b;
+		}
+
+		part = true;
+	}
+}
+
+void main(): [ async ] {
+	int res;
+
+	dispatch fib(10000) => x {
+		print(x);
+	}
+}
