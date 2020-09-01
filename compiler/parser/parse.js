@@ -755,23 +755,21 @@ function Simplify_Expr_Binary (node) {
 function Simplify_Expr_Opperand (node) {
 	switch (node.tokens[0].type) {
 		case "call":
-			node = Simplify_Call(node.tokens[0]);
-			break;
+			return Simplify_Call(node.tokens[0]);
 		case "constant":
-			node = Simplify_Constant(node.tokens[0]);
-			break;
+			return Simplify_Constant(node.tokens[0]);
 		case "variable":
-			node = Simplify_Variable(node.tokens[0]);
-			break;
+			return Simplify_Variable(node.tokens[0]);
+		case "expr_brackets":
+			return Simplify_Expr_Brackets(node.tokens[0]);
 		default:
-			throw new TypeError(`Unexpected expr_p1 statement ${node.tokens[0].type}`);
+			throw new TypeError(`Unexpected expr_opperand statement ${node.tokens[0].type}`);
 	}
-
-	node.reached = null;
-	return node;
 }
 function Simplify_Expr_Brackets (node) {
-	return Simplify_Expr ( node.tokens[2][0] );
+	node.tokens = [Simplify_Expr ( node.tokens[2][0] )];
+	node.reached = null;
+	return node;
 }
 
 

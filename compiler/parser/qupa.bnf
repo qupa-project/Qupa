@@ -131,7 +131,7 @@ program ::= w* ( stmt_top w* )*
 #=============================
 	expr ::= w* expr_np
 
-	expr_np       ::= expr_compare | expr_arithmetic | expr_bool | call | expr_op
+	expr_np       ::= expr_compare | expr_arithmetic | expr_bool | expr_op
 		expr_ternary ::= expr_op w* "?" w* expr_op w* ":" w* expr_op
 	expr_bool ::= expr_and | expr_or | expr_not
 		expr_and     ::= expr_op w* "&&" w* expr_op
@@ -150,7 +150,7 @@ program ::= w* ( stmt_top w* )*
 		expr_div     ::= expr_op w* "/" w* expr_op
 		expr_add     ::= expr_op w* "+" w* expr_op
 		expr_sub     ::= expr_op w* "-" w* expr_op
-	expr_op ::= constant | variable
+	expr_op ::= constant | call | variable | expr_brackets
 		expr_brackets    ::= "(" w* expr w* ")"
 
 
