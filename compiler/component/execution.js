@@ -852,6 +852,10 @@ class Execution {
 	 * @param {Boolean} simple Simplifies the result to a single register when possible
 	 */
 	compile_expr (ast, expects = null, simple = false, block = false) {
+		if (ast.type == "expr_brackets") {
+			ast = ast.tokens[0];
+		}
+
 		let recursiveFail = false;
 		let res = null;
 		switch (ast.type) {
@@ -946,8 +950,11 @@ class Execution {
 				return this.compile_loadVariable(ast);
 			case "constant":
 				return this.compile_constant(ast);
+			case "expr_brackets":
+			case "call":
+				return this.compile_expr(ast, null, true);
 			default:
-				throw new Error(`Unexpected expression opperand type ${ast.type}`);
+				throw new Error(`Unexpected expression opperand type ${ast.type} ${ast.ref.start.toString()}:${ast.ref.end.toString()}`);
 		}
 	}
 
@@ -983,6 +990,10 @@ class Execution {
 			this.compile_expr_opperand(ast.tokens[0]),
 			this.compile_expr_opperand(ast.tokens[2])
 		];
+
+		if (opperands[0] === null || opperands[1] === null) {
+			return null;
+		}
 
 		// Append the load instructions
 		preamble.merge(opperands[0].preamble);
